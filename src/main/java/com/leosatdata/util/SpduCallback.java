@@ -1,6 +1,7 @@
 package com.leosatdata.util;
 
 import com.leosatdata.model.ControlParameters;
+import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
@@ -32,4 +33,6 @@ public interface SpduCallback {
 	void onStatusReport(byte[] statusReport);
 
 	void onLinkEstablishment(LinkEstablishment linkEstablishment);
+
+	void onLink2Establishment(Link2Establishment link2);
 }
