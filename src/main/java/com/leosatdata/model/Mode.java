@@ -1,10 +1,10 @@
 package com.leosatdata.model;
 
-public enum TransmitterMode {
+public enum Mode {
 
 	MISSION_SPECIFIC, PROXIMITY1, RESERVED, UNKNOWN;
 
-	public static TransmitterMode valueOfCode(int code) {
+	public static Mode valueOfCode(int code) {
 		switch (code) {
 		case 0b000:
 		case 0b010:

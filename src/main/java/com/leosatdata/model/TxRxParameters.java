@@ -1,9 +1,9 @@
 package com.leosatdata.model;
 
-public class TransmitterParameters {
+public class TxRxParameters {
 
 	private SpduHeader header;
-	private TransmitterMode mode;
+	private Mode mode;
 	private DataRate dataRate;
 	private Modulation modulation;
 	private DataEncoding dataEncoding;
@@ -17,11 +17,11 @@ public class TransmitterParameters {
 		return header;
 	}
 
-	public TransmitterMode getMode() {
+	public Mode getMode() {
 		return mode;
 	}
 
-	public void setMode(TransmitterMode mode) {
+	public void setMode(Mode mode) {
 		this.mode = mode;
 	}
 
