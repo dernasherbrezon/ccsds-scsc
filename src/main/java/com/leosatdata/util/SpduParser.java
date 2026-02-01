@@ -54,6 +54,9 @@ public class SpduParser {
 	private final static int REPORT_SOURCE_SCID = 0b111;
 
 	private final static int LINK_ESTABLISHMENT_CONTROL = 0b000;
+	private final static int LINK_REPORT_REQUEST = 0b001;
+	private final static int LINK_SET_VR = 0b010;
+	private final static int LINK_REPORT_SOURCE_SCID = 0b011;
 
 	private final SpduCallback callback;
 
@@ -159,8 +162,7 @@ public class SpduParser {
 					callback.onPlExtensions(plExtensions);
 					break;
 				case REPORT_SOURCE_SCID:
-					int sourceSpacecraftId = dirStream.readUnsignedInt(10); // SCID
-					callback.onSourceSpacecraftId(sourceSpacecraftId);
+					callback.onSourceSpacecraftId(dirStream.readUnsignedInt(10)); // SCID
 					break;
 				default:
 					break;
@@ -201,6 +203,26 @@ public class SpduParser {
 				linkEstablishment.setLinkSnr(bis.readUnsignedInt(8));
 				linkEstablishment.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
 				callback.onLinkEstablishment(linkEstablishment);
+				break;
+			case LINK_REPORT_REQUEST:
+				ReportRequest reportRequest = new ReportRequest();
+				reportRequest.setHeader(header);
+				reportRequest.setPcid0PlcwRequest(bis.readBoolean());
+				reportRequest.setPcid1PlcwRequest(bis.readBoolean());
+				reportRequest.setTimeTagRequest(bis.readUnsignedInt(6));
+				reportRequest.setStatusReportRequest(bis.readUnsignedInt(5));
+				callback.onReportRequest(reportRequest);
+				break;
+			case LINK_SET_VR:
+				Vr vr = new Vr();
+				bis.skipBits(5);
+				vr.setHeader(header);
+				vr.setFrameSequenceNumber(bis.readUnsignedInt(8));
+				callback.onVr(vr);
+				break;
+			case LINK_REPORT_SOURCE_SCID:
+				bis.skipBits(13);
+				callback.onSourceSpacecraftId(bis.readUnsignedInt(16));
 				break;
 			default:
 				break;
