@@ -1,20 +1,22 @@
 package com.leosatdata.util;
 
 import com.leosatdata.model.ControlParameters;
+import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.ReportRequest;
+import com.leosatdata.model.TimeDistribution;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Vr;
 
 public interface SpduCallback {
 
 	void onPlsw(Plcw message);
-	
+
 	void onTransmitterParameters(TxRxParameters message);
-	
+
 	void onReceiverParameters(TxRxParameters message);
-	
+
 	void onControlParameters(ControlParameters message);
 
 	void onVr(Vr vr);
@@ -24,4 +26,10 @@ public interface SpduCallback {
 	void onPlExtensions(PlExtensions plExtensions);
 
 	void onSourceSpacecraftId(int sourceSpacecraftId);
+
+	void onTimeDistribution(TimeDistribution timeDistribution);
+
+	void onStatusReport(byte[] statusReport);
+
+	void onLinkEstablishment(LinkEstablishment linkEstablishment);
 }

@@ -3,6 +3,7 @@ package com.leosatdata.util;
 import java.io.IOException;
 
 import com.leosatdata.model.CarrierModulation;
+import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataModulation;
@@ -10,15 +11,24 @@ import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Direction;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
+import com.leosatdata.model.LinkDirection;
+import com.leosatdata.model.LinkEstablishment;
+import com.leosatdata.model.LinkModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.Modulation;
+import com.leosatdata.model.ModulationIndex;
+import com.leosatdata.model.NegotiationType;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
+import com.leosatdata.model.Polarization;
+import com.leosatdata.model.QueryResponse;
 import com.leosatdata.model.ReportRequest;
 import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.SpduHeader;
+import com.leosatdata.model.TimeDistribution;
+import com.leosatdata.model.TimeDistributionType;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Vr;
 
@@ -31,6 +41,9 @@ public class SpduParser {
 	private final static int LONG_PLCW = 1; // Type F2
 
 	private final static int TYPE1_DIRECTIVE = 0b000;
+	private final static int TYPE2_DIRECTIVE = 0b001;
+	private final static int TYPE3_DIRECTIVE = 0b010;
+	private final static int TYPE4_DIRECTIVE = 0b011;
 
 	private final static int SET_TRANSMITTER_PARAMETERS = 0b000;
 	private final static int SET_CONTROL_PARAMETERS = 0b001;
@@ -39,6 +52,8 @@ public class SpduParser {
 	private final static int REPORT_REQUEST = 0b100;
 	private final static int SET_PL_EXTENSIONS = 0b110;
 	private final static int REPORT_SOURCE_SCID = 0b111;
+
+	private final static int LINK_ESTABLISHMENT_CONTROL = 0b000;
 
 	private final SpduCallback callback;
 
@@ -73,9 +88,9 @@ public class SpduParser {
 
 		// VARIABLE_SPDU
 		header.setType(bis.readUnsignedInt(3));
+		int lengthBytes = bis.readUnsignedInt(4);
 		switch (header.getType()) {
 		case TYPE1_DIRECTIVE:
-			int lengthBytes = bis.readUnsignedInt(4);
 			byte[] directive = new byte[2];
 			for (int i = 0; i < lengthBytes; i += 2) {
 				directive[0] = bis.readByte();
@@ -152,7 +167,45 @@ public class SpduParser {
 				}
 			}
 			break;
-
+		case TYPE2_DIRECTIVE:
+			TimeDistribution timeDistribution = new TimeDistribution();
+			timeDistribution.setType(TimeDistributionType.valueOfCode(bis.readUnsignedByte()));
+			timeDistribution.setTransceiverClock(bis.readLong());
+			timeDistribution.setSendSideDelay(bis.readUnsignedInt(3 * 8));
+			timeDistribution.setOneWayLightTime(bis.readUnsignedInt(3 * 8));
+			callback.onTimeDistribution(timeDistribution);
+			break;
+		case TYPE3_DIRECTIVE:
+			byte[] statusReport = new byte[16];
+			bis.readFully(statusReport);
+			callback.onStatusReport(statusReport);
+			break;
+		case TYPE4_DIRECTIVE:
+			int type = bis.readUnsignedInt(3);
+			switch (type) {
+			case LINK_ESTABLISHMENT_CONTROL:
+				LinkEstablishment linkEstablishment = new LinkEstablishment();
+				linkEstablishment.setHeader(header);
+				linkEstablishment.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
+				linkEstablishment.setDemandQuery(NegotiationType.valueOfCode(bis.readUnsignedInt(1)));
+				linkEstablishment.setQueryResponse(QueryResponse.valueOfCode(bis.readUnsignedInt(1)));
+				linkEstablishment.setRnmd(bis.readBoolean());
+				linkEstablishment.setTransmitToken(bis.readBoolean());
+				linkEstablishment.setDuplex(Duplex.valueOfCode(bis.readUnsignedInt(3)));
+				linkEstablishment.setFreqChannel(bis.readUnsignedInt(5));
+				linkEstablishment.setPolarization(Polarization.valueOfCode(bis.readUnsignedInt(1)));
+				linkEstablishment.setModulationIndex(ModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
+				linkEstablishment.setModulation(LinkModulation.valueOfCode(bis.readUnsignedInt(4)));
+				bis.skipBits(2);
+				linkEstablishment.setCoding(Coding.valueOfCode(bis.readUnsignedInt(6)));
+				linkEstablishment.setLinkSnr(bis.readUnsignedInt(8));
+				linkEstablishment.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
+				callback.onLinkEstablishment(linkEstablishment);
+				break;
+			default:
+				break;
+			}
+			break;
 		default:
 			break;
 		}
