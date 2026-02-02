@@ -5,6 +5,7 @@ import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
+import com.leosatdata.model.PnRaging;
 import com.leosatdata.model.ReportRequest;
 import com.leosatdata.model.TimeDistribution;
 import com.leosatdata.model.TxRxParameters;
@@ -35,4 +36,6 @@ public interface SpduCallback {
 	void onLinkEstablishment(LinkEstablishment linkEstablishment);
 
 	void onLink2Establishment(Link2Establishment link2);
+
+	void onPnRanging(PnRaging pnRanging);
 }
