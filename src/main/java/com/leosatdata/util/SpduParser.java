@@ -55,6 +55,7 @@ public class SpduParser {
 	private final static int TYPE4_DIRECTIVE = 0b011;
 	private final static int TYPE5_DIRECTIVE = 0b100;
 
+  // Directives/Reports for UHF operations 
 	private final static int SET_TRANSMITTER_PARAMETERS = 0b000;
 	private final static int SET_CONTROL_PARAMETERS = 0b001;
 	private final static int SET_RECEIVER_PARAMETERS = 0b010;
@@ -63,11 +64,13 @@ public class SpduParser {
 	private final static int SET_PL_EXTENSIONS = 0b110;
 	private final static int REPORT_SOURCE_SCID = 0b111;
 
+  // First Generation Lunar Use
 	private final static int LINK_ESTABLISHMENT_CONTROL = 0b000;
 	private final static int LINK_REPORT_REQUEST = 0b001;
 	private final static int LINK_SET_VR = 0b010;
 	private final static int LINK_REPORT_SOURCE_SCID = 0b011;
 
+  // Second Generation Lunar Use 
 	private final static int LINK2_ESTABLISHMENT_CONTROL = 0b000;
 	private final static int LINK2_REPORT_REQUEST = 0b001;
 	private final static int LINK2_SET_VR = 0b010;
