@@ -6,10 +6,13 @@ import java.util.concurrent.TimeUnit;
 
 public class NullTransceiver implements Transceiver {
 
-	private SendCallback sendCallback;
-	private ReceiveCallback receiveCallback;
+	private TxCallback sendCallback;
+	private RxCallback receiveCallback;
 	private final NullTransceiver otherSide;
 	private ScheduledExecutorService executor;
+	private boolean rx = false;
+	private boolean tx = false;
+	private boolean modulation = false;
 
 	public NullTransceiver(NullTransceiver otherSide) {
 		this.otherSide = otherSide;
@@ -28,13 +31,8 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setAsm(byte[] asm) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public void send(byte[] data) {
+		assert (tx == true);
 		try {
 			// FIXME wait expected baud rate timeout
 			Thread.sleep(1000);
@@ -42,46 +40,77 @@ public class NullTransceiver implements Transceiver {
 			Thread.currentThread().interrupt();
 			return;
 		}
-		getSendCallback().onSent();
+		getTxCallback().onTx();
 		// FIXME expected channel timeout
-		executor.schedule(new DelayedTask(otherSide.getReceiveCallback(), data), 10000, TimeUnit.MILLISECONDS);
+		assert (otherSide.rx == true);
+		executor.schedule(new DelayedTask(otherSide.getRxCallback(), data), 10000, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public void setSendCallback(SendCallback callback) {
+	public void setTxCallback(TxCallback callback) {
 		this.sendCallback = callback;
 	}
 
 	@Override
-	public SendCallback getSendCallback() {
+	public TxCallback getTxCallback() {
 		return sendCallback;
 	}
 
 	@Override
-	public void setReceiveCallback(ReceiveCallback callback) {
+	public void setRxCallback(RxCallback callback) {
 		this.receiveCallback = callback;
 	}
 
 	@Override
-	public ReceiveCallback getReceiveCallback() {
+	public RxCallback getRxCallback() {
 		return receiveCallback;
 	}
 
 	private static class DelayedTask implements Runnable {
 
 		private final byte[] data;
-		private final ReceiveCallback callback;
+		private final RxCallback callback;
 
-		public DelayedTask(ReceiveCallback callback, byte[] data) {
+		public DelayedTask(RxCallback callback, byte[] data) {
 			this.data = data;
 			this.callback = callback;
 		}
 
 		@Override
 		public void run() {
-			callback.onReceive(data);
+			callback.onRx(data);
 		}
 
+	}
+
+	@Override
+	public void startRx() {
+		rx = true;
+	}
+
+	@Override
+	public void stopRx() {
+		rx = false;
+	}
+
+	@Override
+	public void startTx() {
+		tx = true;
+	}
+
+	@Override
+	public void stopTx() {
+		tx = false;
+	}
+
+	@Override
+	public void setModulation(boolean modulation) {
+		this.modulation = modulation;
+	}
+
+	@Override
+	public boolean getModulation() {
+		return modulation;
 	}
 
 }

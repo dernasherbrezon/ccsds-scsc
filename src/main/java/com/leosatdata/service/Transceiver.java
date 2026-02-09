@@ -1,17 +1,30 @@
 package com.leosatdata.service;
 
 public interface Transceiver {
-	
-	void setAsm(byte[] asm);
-	
+
 	void send(byte[] data);
-	
-	void setSendCallback(SendCallback callback);
-	
-	SendCallback getSendCallback();
-	
-	void setReceiveCallback(ReceiveCallback callback);
-	
-	ReceiveCallback getReceiveCallback();
-	
+
+	void setTxCallback(TxCallback callback);
+
+	TxCallback getTxCallback();
+
+	void setRxCallback(RxCallback callback);
+
+	RxCallback getRxCallback();
+
+	// FIXME status codes?
+	void startRx();
+
+	void stopRx();
+
+	void startTx();
+
+	void stopTx();
+
+	// When MODULATION=on, the coded symbols are modulated onto the radiated
+	// carrier; when MODULATION=off, the radiated output is not modulated (i.e.,
+	// carrier only).
+	void setModulation(boolean modulation);
+
+	boolean getModulation();
 }
