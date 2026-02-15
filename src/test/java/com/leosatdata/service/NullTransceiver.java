@@ -4,17 +4,24 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.leosatdata.util.Configuration;
+
 public class NullTransceiver implements Transceiver {
 
+	private final Configuration config;
 	private TxCallback sendCallback;
 	private RxCallback receiveCallback;
-	private final NullTransceiver otherSide;
+	private NullTransceiver otherSide;
 	private ScheduledExecutorService executor;
 	private boolean rx = false;
 	private boolean tx = false;
 	private boolean modulation = false;
 
-	public NullTransceiver(NullTransceiver otherSide) {
+	public NullTransceiver(Configuration config) {
+		this.config = config;
+	}
+
+	public void setOtherSide(NullTransceiver otherSide) {
 		this.otherSide = otherSide;
 	}
 
@@ -94,9 +101,28 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void startTx() {
-		tx = true;
+	public void startCarrier() {
+		// do nothing
 	}
+
+	@Override
+	public void startIdle() {
+		// do nothing
+	}
+
+//	@Override
+//	public void startTx() {
+//		try {
+//			// radiate carrier frequency only
+//			Thread.sleep(config.getLong("carrier_only_duration", 1000));
+//			// radiate idle sequence 0101010
+//			Thread.sleep(config.getLong("acquisition_idle_duration", 1000));
+//		} catch (InterruptedException e) {
+//			Thread.currentThread().interrupt();
+//			return;
+//		}
+//		tx = true;
+//	}
 
 	@Override
 	public void stopTx() {

@@ -1,0 +1,16 @@
+package com.leosatdata.model;
+
+public enum EventType {
+
+	// @formatter:off
+	E1_CONNECTING_L,
+	E2_CONNECTING_T,
+	E3_HAIL_DIRECTIVES_RECEIVED,
+	E4_CARRIER_ONLY_TIMEOUT,
+	E5_ACQUISITION_IDLE_TIMEOUT,
+	E6_OUTPUT_FIFO_EMPTY,
+	E7_TAIL_IDLE_TIMEOUT,
+	E8_HAIL_WAIT_TIMEOUT
+	// @formatter:on
+	
+}

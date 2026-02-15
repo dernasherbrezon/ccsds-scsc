@@ -17,8 +17,8 @@ public interface Transceiver {
 
 	void stopRx();
 
-	void startTx();
-
+	void startCarrier();
+	
 	void stopTx();
 
 	// When MODULATION=on, the coded symbols are modulated onto the radiated
@@ -27,4 +27,7 @@ public interface Transceiver {
 	void setModulation(boolean modulation);
 
 	boolean getModulation();
+
+	void startIdle();
+
 }
