@@ -9,7 +9,7 @@ public class Type1Directive implements Spdu {
 	private Vr vr;
 	private ReportRequest reportReq;
 	private PlExtensions plExtensions;
-	private int sourceSpacecraftId;
+	private Integer sourceSpacecraftId;
 
 	@Override
 	public SpduHeader getHeader() {
@@ -69,11 +69,11 @@ public class Type1Directive implements Spdu {
 		this.plExtensions = plExtensions;
 	}
 
-	public int getSourceSpacecraftId() {
+	public Integer getSourceSpacecraftId() {
 		return sourceSpacecraftId;
 	}
-
-	public void setSourceSpacecraftId(int sourceSpacecraftId) {
+	
+	public void setSourceSpacecraftId(Integer sourceSpacecraftId) {
 		this.sourceSpacecraftId = sourceSpacecraftId;
 	}
 

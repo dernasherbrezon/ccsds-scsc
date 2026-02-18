@@ -51,7 +51,6 @@ public class Type4DirectiveParser {
 				break;
 			case LINK_REPORT_REQUEST:
 				ReportRequest reportRequest = new ReportRequest();
-				reportRequest.setHeader(header);
 				reportRequest.setPcid0PlcwRequest(bis.readBoolean());
 				reportRequest.setPcid1PlcwRequest(bis.readBoolean());
 				reportRequest.setTimeTagRequest(bis.readUnsignedInt(6));
@@ -61,7 +60,6 @@ public class Type4DirectiveParser {
 			case LINK_SET_VR:
 				Vr vr = new Vr();
 				bis.skipBits(5);
-				vr.setHeader(header);
 				vr.setFrameSequenceNumber(bis.readUnsignedInt(8));
 				result.setVr(vr);
 				break;

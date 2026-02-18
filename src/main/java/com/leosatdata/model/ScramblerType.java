@@ -18,4 +18,17 @@ public enum ScramblerType {
 		}
 	}
 
+	public int getCode() {
+		switch (this) {
+		case BYPASS:
+			return 0b00;
+		case CCITT:
+			return 0b01;
+		case IESS:
+			return 0b11;
+		default:
+			return 0b00;
+		}
+	}
+
 }

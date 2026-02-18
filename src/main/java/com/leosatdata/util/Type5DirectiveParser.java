@@ -63,7 +63,6 @@ public class Type5DirectiveParser {
 				break;
 			case LINK2_REPORT_REQUEST:
 				ReportRequest reportRequest = new ReportRequest();
-				reportRequest.setHeader(header);
 				reportRequest.setPcid0PlcwRequest(bis.readBoolean());
 				reportRequest.setPcid1PlcwRequest(bis.readBoolean());
 				reportRequest.setTimeTagRequest(bis.readUnsignedInt(6));
@@ -72,7 +71,6 @@ public class Type5DirectiveParser {
 				break;
 			case LINK2_SET_VR:
 				Vr vr = new Vr();
-				vr.setHeader(header);
 				bis.skipBits(5);
 				vr.setFrameSequenceNumber(bis.readUnsignedInt(8));
 				result.setVr(vr);
@@ -105,7 +103,7 @@ public class Type5DirectiveParser {
 
 	public static void encode(Type5Directive message, BitOutputStream payload) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

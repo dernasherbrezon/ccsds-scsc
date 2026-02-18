@@ -18,9 +18,11 @@ public class TimeDistributionParser {
 		return timeDistribution;
 	}
 
-	public static void encode(TimeDistribution message, BitOutputStream payload) {
-		// TODO Auto-generated method stub
-		
+	public static void encode(TimeDistribution message, BitOutputStream bos) throws IOException {
+		bos.writeUnsignedByte(message.getType().getCode());
+		bos.writeLong(message.getTransceiverClock());
+		bos.writeUnsignedInt(3 * 8, message.getSendSideDelay());
+		bos.writeUnsignedInt(3 * 8, message.getOneWayLightTime());
 	}
 
 }

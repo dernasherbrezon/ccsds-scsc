@@ -13,4 +13,12 @@ public enum Direction {
 		return UNKNOWN;
 	}
 
+	public int getCode() {
+		if (this == TRANSMITTER) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
 }

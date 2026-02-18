@@ -2,17 +2,25 @@ package com.leosatdata.model;
 
 public enum TimeDistributionType {
 
-	NULL, TIME_TRANSFER, RESERVED;
+	NULL(0b00000000), TIME_TRANSFER(0b00000001), RESERVED(255);
+
+	private final int code;
+
+	private TimeDistributionType(int code) {
+		this.code = code;
+	}
 
 	public static TimeDistributionType valueOfCode(int code) {
-		switch (code) {
-		case 0b00000000:
-			return NULL;
-		case 0b00000001:
-			return TIME_TRANSFER;
-		default:
-			return RESERVED;
+		for (TimeDistributionType cur : values()) {
+			if (cur.code == code) {
+				return cur;
+			}
 		}
+		return RESERVED;
+	}
+
+	public int getCode() {
+		return code;
 	}
 
 }

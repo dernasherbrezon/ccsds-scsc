@@ -21,4 +21,17 @@ public enum Mode {
 		}
 	}
 
+	public int getCode() {
+		switch (this) {
+		case MISSION_SPECIFIC:
+			return 0b100;
+		case PROXIMITY1:
+			return 0b001;
+		case RESERVED:
+			return 0b111;
+		default:
+			return 0b111;
+		}
+	}
+
 }

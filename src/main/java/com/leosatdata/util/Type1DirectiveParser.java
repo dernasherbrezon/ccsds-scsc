@@ -44,18 +44,13 @@ public class Type1DirectiveParser {
 			int directiveType = directive[1] & 0b111;
 			switch (directiveType) {
 			case SET_TRANSMITTER_PARAMETERS:
-				TxRxParameters message = new TxRxParameters();
-				message.setHeader(header);
-				message.setMode(Mode.valueOfCode(dirStream.readUnsignedInt(3)));
-				message.setDataRate(DataRate.valueOfCode(dirStream.readUnsignedInt(4)));
-				message.setModulation(Modulation.valueOfCode(dirStream.readUnsignedInt(1)));
-				message.setDataEncoding(DataEncoding.valueOfCode(dirStream.readUnsignedInt(2)));
-				message.setFrequency(Frequency.valueOfCode(dirStream.readUnsignedInt(3)));
-				result.setTxParams(message);
+				result.setTxParams(decodeTxRxParameters(dirStream));
+				break;
+			case SET_RECEIVER_PARAMETERS:
+				result.setRxParams(decodeTxRxParameters(dirStream));
 				break;
 			case SET_CONTROL_PARAMETERS:
 				ControlParameters controlParams = new ControlParameters();
-				controlParams.setHeader(header);
 				controlParams.setTimeSampleField(dirStream.readUnsignedInt(6));
 				controlParams.setDuplex(Duplex.valueOfCode(dirStream.readUnsignedInt(3)));
 				dirStream.skipBits(2);
@@ -63,25 +58,14 @@ public class Type1DirectiveParser {
 				controlParams.setTransmitToken(dirStream.readBoolean());
 				result.setControlParams(controlParams);
 				break;
-			case SET_RECEIVER_PARAMETERS:
-				TxRxParameters rxParams = new TxRxParameters();
-				rxParams.setHeader(header);
-				rxParams.setMode(Mode.valueOfCode(dirStream.readUnsignedInt(3)));
-				rxParams.setDataRate(DataRate.valueOfCode(dirStream.readUnsignedInt(4)));
-				rxParams.setModulation(Modulation.valueOfCode(dirStream.readUnsignedInt(1)));
-				rxParams.setDataEncoding(DataEncoding.valueOfCode(dirStream.readUnsignedInt(2)));
-				rxParams.setFrequency(Frequency.valueOfCode(dirStream.readUnsignedInt(3)));
-				result.setRxParams(rxParams);
-				break;
 			case SET_VR:
 				Vr vr = new Vr();
-				vr.setHeader(header);
 				vr.setFrameSequenceNumber(dirStream.readUnsignedInt(8));
+				dirStream.skipBits(5);
 				result.setVr(vr);
 				break;
 			case REPORT_REQUEST:
 				ReportRequest reportReq = new ReportRequest();
-				reportReq.setHeader(header);
 				dirStream.skipBits(3);
 				reportReq.setStatusReportRequest(dirStream.readUnsignedInt(5));
 				reportReq.setTimeTagRequest(dirStream.readUnsignedInt(3));
@@ -113,9 +97,73 @@ public class Type1DirectiveParser {
 		return result;
 	}
 
-	public static void encode(Type1Directive message, BitOutputStream payload) {
-		// TODO Auto-generated method stub
+	public static void encode(Type1Directive message, BitOutputStream bos) throws IOException {
+		if (message.getTxParams() != null) {
+			encodeTxRxParameters(SET_TRANSMITTER_PARAMETERS, message.getTxParams(), bos);
+		}
+		if (message.getRxParams() != null) {
+			encodeTxRxParameters(SET_RECEIVER_PARAMETERS, message.getRxParams(), bos);
+		}
+		if (message.getControlParams() != null) {
+			ControlParameters params = message.getControlParams();
+			bos.writeUnsignedInt(6, params.getTimeSampleField());
+			bos.writeUnsignedInt(3, params.getDuplex().getCode());
+			bos.writeUnsignedInt(2, 0); // unused
+			bos.writeBoolean(params.isRnmd());
+			bos.writeBoolean(params.isTransmitToken());
+			bos.writeUnsignedInt(3, SET_CONTROL_PARAMETERS);
+		}
+		if (message.getVr() != null) {
+			bos.writeUnsignedInt(8, message.getVr().getFrameSequenceNumber());
+			bos.writeUnsignedInt(5, 0);// unused
+			bos.writeUnsignedInt(3, SET_VR);
+		}
+		if (message.getReportReq() != null) {
+			ReportRequest params = message.getReportReq();
+			bos.writeUnsignedInt(3, 0); // unused
+			bos.writeUnsignedInt(5, params.getStatusReportRequest());
+			bos.writeUnsignedInt(3, params.getTimeTagRequest());
+			bos.writeBoolean(params.isPcid0PlcwRequest());
+			bos.writeBoolean(params.isPcid1PlcwRequest());
+			bos.writeUnsignedInt(3, REPORT_REQUEST);
+		}
+		if (message.getPlExtensions() != null) {
+			PlExtensions params = message.getPlExtensions();
+			bos.writeUnsignedInt(1, params.getDirection().getCode());
+			bos.writeBoolean(params.isUseExtendedFreqSet());
+			bos.writeBoolean(params.isUseExtendedDataRate());
+			bos.writeUnsignedInt(2, params.getCarrierModulation().getCode());
+			bos.writeUnsignedInt(2, params.getDataModulation().getCode());
+			bos.writeUnsignedInt(2, params.getModeSelect().getCode());
+			bos.writeUnsignedInt(2, params.getScrambler().getCode());
+			bos.writeBoolean(params.isDifferentialEncoding());
+			bos.writeUnsignedInt(1, params.getRsCode().getCode());
+			bos.writeUnsignedInt(3, SET_PL_EXTENSIONS);
+		}
+		if (message.getSourceSpacecraftId() != null) {
+			bos.writeUnsignedInt(10, message.getSourceSpacecraftId());
+			bos.writeUnsignedInt(3, 0); // unused
+			bos.writeUnsignedInt(3, REPORT_SOURCE_SCID);
+		}
+	}
 
+	private static TxRxParameters decodeTxRxParameters(BitInputStream dirStream) throws IOException {
+		TxRxParameters message = new TxRxParameters();
+		message.setMode(Mode.valueOfCode(dirStream.readUnsignedInt(3)));
+		message.setDataRate(DataRate.valueOfCode(dirStream.readUnsignedInt(4)));
+		message.setModulation(Modulation.valueOfCode(dirStream.readUnsignedInt(1)));
+		message.setDataEncoding(DataEncoding.valueOfCode(dirStream.readUnsignedInt(2)));
+		message.setFrequency(Frequency.valueOfCode(dirStream.readUnsignedInt(3)));
+		return message;
+	}
+
+	private static void encodeTxRxParameters(int type, TxRxParameters params, BitOutputStream bos) throws IOException {
+		bos.writeUnsignedInt(3, params.getMode().getCode());
+		bos.writeUnsignedInt(4, params.getDataRate().getCode());
+		bos.writeUnsignedInt(1, params.getModulation().getCode());
+		bos.writeUnsignedInt(2, params.getDataEncoding().getCode());
+		bos.writeUnsignedInt(3, params.getFrequency().getCode());
+		bos.writeUnsignedInt(3, type);
 	}
 
 }

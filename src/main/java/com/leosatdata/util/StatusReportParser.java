@@ -16,9 +16,8 @@ public class StatusReportParser {
 		return result;
 	}
 
-	public static void encode(StatusReport message, BitOutputStream payload) {
-		// TODO Auto-generated method stub
-		
+	public static void encode(StatusReport message, BitOutputStream bos) throws IOException {
+		bos.writeFully(message.getReport());
 	}
 
 }

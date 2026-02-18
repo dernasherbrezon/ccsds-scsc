@@ -18,4 +18,15 @@ public enum DataModulation {
 		}
 	}
 
+	public int getCode() {
+		switch (this) {
+		case NRZ_L:
+			return 0b00;
+		case MANCHESTER:
+			return 0b01;
+		default:
+			return 0b11;
+		}
+	}
+
 }

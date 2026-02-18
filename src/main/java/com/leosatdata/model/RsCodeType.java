@@ -14,4 +14,12 @@ public enum RsCodeType {
 		return UNKNOWN;
 	}
 
+	public int getCode() {
+		if (this == RS204_188) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
 }

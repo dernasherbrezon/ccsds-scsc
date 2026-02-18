@@ -14,4 +14,15 @@ public enum Modulation {
 		return UNKNOWN;
 	}
 
+	public int getCode() {
+		switch (this) {
+		case COHERENT_PSK:
+			return 0;
+		case NON_COHERENT_PSK:
+			return 1;
+		default:
+			return 0;
+		}
+	}
+
 }

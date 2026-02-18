@@ -2,20 +2,11 @@ package com.leosatdata.model;
 
 public class TxRxParameters {
 
-	private SpduHeader header;
 	private Mode mode;
 	private DataRate dataRate;
 	private Modulation modulation;
 	private DataEncoding dataEncoding;
 	private Frequency frequency;
-
-	public void setHeader(SpduHeader header) {
-		this.header = header;
-	}
-
-	public SpduHeader getHeader() {
-		return header;
-	}
 
 	public Mode getMode() {
 		return mode;

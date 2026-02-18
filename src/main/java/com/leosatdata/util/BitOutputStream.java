@@ -32,4 +32,14 @@ public class BitOutputStream implements Closeable {
 		os.close();
 	}
 
+	public void writeUnsignedByte(int code) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void writeLong(long transceiverClock) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

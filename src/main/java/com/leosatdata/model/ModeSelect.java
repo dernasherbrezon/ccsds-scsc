@@ -18,4 +18,15 @@ public enum ModeSelect {
 		}
 	}
 
+	public int getCode() {
+		switch (this) {
+		case SUPPRESSED_CARRIER:
+			return 0b00;
+		case RESIDUAL_CARRIER:
+			return 0b01;
+		default:
+			return 0b11;
+		}
+	}
+
 }
