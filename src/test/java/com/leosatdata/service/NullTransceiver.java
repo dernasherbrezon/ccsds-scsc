@@ -4,6 +4,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.leosatdata.model.DataEncoding;
+import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
 
 public class NullTransceiver implements Transceiver {
@@ -15,7 +19,14 @@ public class NullTransceiver implements Transceiver {
 	private ScheduledExecutorService executor;
 	private boolean rx = false;
 	private boolean tx = false;
-	private boolean modulation = false;
+	private boolean modulationEnabled = false;
+
+	private int symbolRate;
+	private DataModulation dataModulation;
+	private long frequency;
+	private DataEncoding dataEncoding;
+	private Polarization polarization;
+	private Modulation modulation;
 
 	public NullTransceiver(Configuration config) {
 		this.config = config;
@@ -131,12 +142,42 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setModulation(boolean modulation) {
-		this.modulation = modulation;
+		this.modulationEnabled = modulation;
 	}
 
 	@Override
 	public boolean getModulation() {
-		return modulation;
+		return modulationEnabled;
+	}
+
+	@Override
+	public void setSymbolRate(int baud) {
+		this.symbolRate = baud;
+	}
+
+	@Override
+	public void setDataModulation(DataModulation dataModulation) {
+		this.dataModulation = dataModulation;
+	}
+
+	@Override
+	public void setFrequency(long frequency) {
+		this.frequency = frequency;
+	}
+
+	@Override
+	public void setDataEncoding(DataEncoding dataEncoding) {
+		this.dataEncoding = dataEncoding;
+	}
+
+	@Override
+	public void setPolarization(Polarization polarization) {
+		this.polarization = polarization;
+	}
+
+	@Override
+	public void setModulation(Modulation modulation) {
+		this.modulation = modulation;
 	}
 
 }

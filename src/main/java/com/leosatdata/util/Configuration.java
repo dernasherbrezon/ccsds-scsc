@@ -16,7 +16,7 @@ public class Configuration {
 
 	public long getLong(String name, long defaultValue) {
 		String result = config.getProperty(name);
-		if (result == null) {
+		if (result == null || result.trim().length() == 0) {
 			return defaultValue;
 		}
 		return Long.valueOf(result);
@@ -29,5 +29,13 @@ public class Configuration {
 			return 0;
 		}
 		return Long.valueOf(clock) * Long.valueOf(value);
+	}
+
+	public int getInteger(String name, int defaultValue) {
+		String result = config.getProperty(name);
+		if (result == null || result.trim().length() == 0) {
+			return defaultValue;
+		}
+		return Integer.valueOf(result);
 	}
 }

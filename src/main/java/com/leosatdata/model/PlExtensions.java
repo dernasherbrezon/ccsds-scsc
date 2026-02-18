@@ -2,7 +2,6 @@ package com.leosatdata.model;
 
 public class PlExtensions {
 
-	private SpduHeader header;
 	private RsCodeType rsCode;
 	private boolean differentialEncoding;
 	private ScramblerType scrambler;
@@ -12,14 +11,6 @@ public class PlExtensions {
 	private boolean useExtendedDataRate;
 	private boolean useExtendedFreqSet;
 	private Direction direction;
-
-	public SpduHeader getHeader() {
-		return header;
-	}
-
-	public void setHeader(SpduHeader header) {
-		this.header = header;
-	}
 
 	public RsCodeType getRsCode() {
 		return rsCode;

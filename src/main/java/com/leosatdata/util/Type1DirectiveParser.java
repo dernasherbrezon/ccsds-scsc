@@ -75,7 +75,6 @@ public class Type1DirectiveParser {
 				break;
 			case SET_PL_EXTENSIONS:
 				PlExtensions plExtensions = new PlExtensions();
-				plExtensions.setHeader(header);
 				plExtensions.setDirection(Direction.valueOfCode(dirStream.readUnsignedInt(1)));
 				plExtensions.setUseExtendedFreqSet(dirStream.readBoolean());
 				plExtensions.setUseExtendedDataRate(dirStream.readBoolean());

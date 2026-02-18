@@ -1,5 +1,10 @@
 package com.leosatdata.service;
 
+import com.leosatdata.model.DataEncoding;
+import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Polarization;
+
 public interface Transceiver {
 
 	void send(byte[] data);
@@ -18,7 +23,7 @@ public interface Transceiver {
 	void stopRx();
 
 	void startCarrier();
-	
+
 	void stopTx();
 
 	// When MODULATION=on, the coded symbols are modulated onto the radiated
@@ -29,5 +34,17 @@ public interface Transceiver {
 	boolean getModulation();
 
 	void startIdle();
+
+	void setSymbolRate(int baud);
+
+	void setDataModulation(DataModulation manchester);
+
+	void setFrequency(long frequency);
+
+	void setDataEncoding(DataEncoding none);
+
+	void setPolarization(Polarization rhcp);
+
+	void setModulation(Modulation nonCoherentPsk);
 
 }

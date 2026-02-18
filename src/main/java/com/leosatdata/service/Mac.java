@@ -11,11 +11,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.ControlParameters;
+import com.leosatdata.model.DataEncoding;
+import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacDuplex;
 import com.leosatdata.model.MacMode;
+import com.leosatdata.model.Mode;
+import com.leosatdata.model.Modulation;
 import com.leosatdata.model.PlExtensions;
+import com.leosatdata.model.Polarization;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
@@ -56,7 +61,7 @@ public class Mac implements Runnable {
 
 	public void start() {
 		t.start();
-		waitTimer = new Timer("wt");
+		waitTimer = new Timer("wt"); // this will start Thread
 //		fop.start();
 //		// FIXME start fop / farm
 	}
@@ -80,6 +85,9 @@ public class Mac implements Runnable {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
+		if (waitTimer != null) {
+			waitTimer.cancel();
+		}
 	}
 
 	private void handle(Event e) {
@@ -98,6 +106,7 @@ public class Mac implements Runnable {
 
 			persistence = true;
 			mode = MacMode.CONNECTING_T;
+			configureTransceiverForHail();
 			transceiver.startCarrier();
 			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
@@ -230,5 +239,49 @@ public class Mac implements Runnable {
 				sendEvent(new Event(type));
 			}
 		}, duration);
+	}
+
+	private void configureTransceiverForHail() {
+		// frame verion is the closest parameter to control hailing parameters
+		String frameVersion = config.getProperty("frame_version");
+		int symbolRate = config.getInteger("hailing_symbol_rate", 0);
+		int channel = config.getInteger("hailing_channel", -1);
+		if (frameVersion.equals("3")) {
+			// proximity-1
+			if (symbolRate != 0) {
+				transceiver.setSymbolRate(symbolRate);
+			} else {
+				transceiver.setSymbolRate(8000);
+			}
+			transceiver.setDataModulation(DataModulation.MANCHESTER);
+			// FIXME resolve channel
+			if (channel != -1) {
+				transceiver.setFrequency(channel);
+			} else {
+				transceiver.setFrequency(1);
+			}
+			transceiver.setDataEncoding(DataEncoding.NONE);
+			transceiver.setPolarization(Polarization.RHCP);
+			transceiver.setModulation(Modulation.NON_COHERENT_PSK);
+		} else if (frameVersion.equals("4")) {
+			// USLP
+			if (symbolRate != 0) {
+				transceiver.setSymbolRate(symbolRate);
+			} else {
+				transceiver.setSymbolRate(2000);
+			}
+			transceiver.setDataModulation(DataModulation.MANCHESTER);
+			// FIXME resolve channel
+			if (channel != -1) {
+				transceiver.setFrequency(channel);
+			} else {
+				transceiver.setFrequency(0);
+			}
+			transceiver.setDataEncoding(DataEncoding.LDPC);
+			transceiver.setPolarization(Polarization.LHCP);
+			transceiver.setModulation(Modulation.NON_COHERENT_PSK);
+		} else {
+			throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
+		}
 	}
 }
