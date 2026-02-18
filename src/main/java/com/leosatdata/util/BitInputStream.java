@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public class BitInputStream {
 
-	private static final int MAX_UNSIGNED_LONG = 63;
+	public static final int MAX_UNSIGNED_LONG = 63;
 
 	private final DataInputStream dis;
 	private int spareBitsInCurrentByte;
