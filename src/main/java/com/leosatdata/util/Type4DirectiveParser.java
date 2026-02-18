@@ -1,0 +1,84 @@
+package com.leosatdata.util;
+
+import java.io.IOException;
+
+import com.leosatdata.model.Coding;
+import com.leosatdata.model.Duplex;
+import com.leosatdata.model.LinkDirection;
+import com.leosatdata.model.LinkEstablishment;
+import com.leosatdata.model.LinkModulation;
+import com.leosatdata.model.ModulationIndex;
+import com.leosatdata.model.NegotiationType;
+import com.leosatdata.model.Polarization;
+import com.leosatdata.model.QueryResponse;
+import com.leosatdata.model.ReportRequest;
+import com.leosatdata.model.SpduHeader;
+import com.leosatdata.model.Type4Directive;
+import com.leosatdata.model.Vr;
+
+public class Type4DirectiveParser {
+
+	// First Generation Lunar Use
+	private final static int LINK_ESTABLISHMENT_CONTROL = 0b000;
+	private final static int LINK_REPORT_REQUEST = 0b001;
+	private final static int LINK_SET_VR = 0b010;
+	private final static int LINK_REPORT_SOURCE_SCID = 0b011;
+
+	public static Type4Directive decode(SpduHeader header, BitInputStream bis) throws IOException {
+		Type4Directive result = new Type4Directive();
+		result.setHeader(header);
+		while (bis.available() > 0) {
+			int type = bis.readUnsignedInt(3);
+			switch (type) {
+			case LINK_ESTABLISHMENT_CONTROL:
+				LinkEstablishment linkEstablishment = new LinkEstablishment();
+				linkEstablishment.setHeader(header);
+				linkEstablishment.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
+				linkEstablishment.setDemandQuery(NegotiationType.valueOfCode(bis.readUnsignedInt(1)));
+				linkEstablishment.setQueryResponse(QueryResponse.valueOfCode(bis.readUnsignedInt(1)));
+				linkEstablishment.setRnmd(bis.readBoolean());
+				linkEstablishment.setTransmitToken(bis.readBoolean());
+				linkEstablishment.setDuplex(Duplex.valueOfCode(bis.readUnsignedInt(3)));
+				linkEstablishment.setFreqChannel(bis.readUnsignedInt(5));
+				linkEstablishment.setPolarization(Polarization.valueOfCode(bis.readUnsignedInt(1)));
+				linkEstablishment.setModulationIndex(ModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
+				linkEstablishment.setModulation(LinkModulation.valueOfCode(bis.readUnsignedInt(4)));
+				bis.skipBits(2);
+				linkEstablishment.setCoding(Coding.valueOfCode(bis.readUnsignedInt(6)));
+				linkEstablishment.setLinkSnr(bis.readUnsignedInt(8));
+				linkEstablishment.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
+				result.setLinkEstablishment(linkEstablishment);
+				break;
+			case LINK_REPORT_REQUEST:
+				ReportRequest reportRequest = new ReportRequest();
+				reportRequest.setHeader(header);
+				reportRequest.setPcid0PlcwRequest(bis.readBoolean());
+				reportRequest.setPcid1PlcwRequest(bis.readBoolean());
+				reportRequest.setTimeTagRequest(bis.readUnsignedInt(6));
+				reportRequest.setStatusReportRequest(bis.readUnsignedInt(5));
+				result.setReportRequest(reportRequest);
+				break;
+			case LINK_SET_VR:
+				Vr vr = new Vr();
+				bis.skipBits(5);
+				vr.setHeader(header);
+				vr.setFrameSequenceNumber(bis.readUnsignedInt(8));
+				result.setVr(vr);
+				break;
+			case LINK_REPORT_SOURCE_SCID:
+				bis.skipBits(13);
+				result.setSourceSpacecraftId(bis.readUnsignedInt(16));
+				break;
+			default:
+				break;
+			}
+		}
+		return result;
+	}
+
+	public static void encode(Type4Directive message, BitOutputStream payload) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

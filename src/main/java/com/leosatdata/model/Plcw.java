@@ -1,6 +1,9 @@
 package com.leosatdata.model;
 
-public class Plcw {
+public class Plcw implements Spdu {
+
+	public final static int SHORT_PLCW = 0; // Type F1
+	public final static int LONG_PLCW = 1; // Type F2
 
 	private SpduHeader header;
 
@@ -13,10 +16,12 @@ public class Plcw {
 		// do nothing
 	}
 
+	@Override
 	public SpduHeader getHeader() {
 		return header;
 	}
 
+	@Override
 	public void setHeader(SpduHeader header) {
 		this.header = header;
 	}

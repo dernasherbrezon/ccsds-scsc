@@ -1,5 +1,8 @@
 package com.leosatdata.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -15,6 +18,7 @@ import com.leosatdata.model.MacMode;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.SpduParser;
 
 public class Mac implements Runnable {
 
@@ -38,6 +42,8 @@ public class Mac implements Runnable {
 	private int y;
 	private int z;
 	private final Thread t;
+
+	private byte[] commValueBuffer;
 
 	public Mac(Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.config = config;
@@ -80,6 +86,16 @@ public class Mac implements Runnable {
 		switch (e.getType()) {
 		case E2_CONNECTING_T:
 			// FIXME create hail directives
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			DataOutputStream dos = new DataOutputStream(baos);
+//			SpduParser.encode(dos, new Object());
+			try {
+				dos.close();
+			} catch (IOException e1) {
+				// ignore
+			}
+			commValueBuffer = baos.toByteArray();
+
 			persistence = true;
 			mode = MacMode.CONNECTING_T;
 			transceiver.startCarrier();
@@ -90,8 +106,7 @@ public class Mac implements Runnable {
 			scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
-			// FIXME send prepared hail directives
-			transceiver.send(null);
+			transceiver.send(commValueBuffer);
 			break;
 		case E6_OUTPUT_FIFO_EMPTY:
 			scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));

@@ -1,6 +1,8 @@
 package com.leosatdata.model;
 
-public class TimeDistribution {
+public class TimeDistribution implements Spdu {
+
+	private SpduHeader header;
 
 	private TimeDistributionType type;
 	// FIXME see reference 3. 5bytes coarse, 3bytes fine
@@ -10,6 +12,16 @@ public class TimeDistribution {
 	private int sendSideDelay;
 	// FIXME 1 coarse, 2 bytes fine
 	private int oneWayLightTime;
+
+	@Override
+	public SpduHeader getHeader() {
+		return header;
+	}
+
+	@Override
+	public void setHeader(SpduHeader header) {
+		this.header = header;
+	}
 
 	public TimeDistributionType getType() {
 		return type;
@@ -22,7 +34,7 @@ public class TimeDistribution {
 	public long getTransceiverClock() {
 		return transceiverClock;
 	}
-	
+
 	public void setTransceiverClock(long transceiverClock) {
 		this.transceiverClock = transceiverClock;
 	}
