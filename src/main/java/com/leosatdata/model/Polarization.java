@@ -13,4 +13,12 @@ public enum Polarization {
 		return UNKNOWN;
 	}
 
+	public int getCode() {
+		if (this == LHCP) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
 }

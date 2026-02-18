@@ -6,7 +6,7 @@ public class Type4Directive implements Spdu {
 	private LinkEstablishment linkEstablishment;
 	private ReportRequest reportRequest;
 	private Vr vr;
-	private int sourceSpacecraftId;
+	private Integer sourceSpacecraftId;
 
 	public LinkEstablishment getLinkEstablishment() {
 		return linkEstablishment;
@@ -32,11 +32,11 @@ public class Type4Directive implements Spdu {
 		this.vr = vr;
 	}
 
-	public int getSourceSpacecraftId() {
+	public Integer getSourceSpacecraftId() {
 		return sourceSpacecraftId;
 	}
 
-	public void setSourceSpacecraftId(int sourceSpacecraftId) {
+	public void setSourceSpacecraftId(Integer sourceSpacecraftId) {
 		this.sourceSpacecraftId = sourceSpacecraftId;
 	}
 

@@ -18,5 +18,9 @@ public enum NegotiationType2 {
 		}
 		return UNKNOWN;
 	}
+	
+	public int getCode() {
+		return code;
+	}
 
 }

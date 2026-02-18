@@ -13,4 +13,12 @@ public enum LinkDirection {
 		return UNKNOWN;
 	}
 
+	public int getCode() {
+		if (this == RETURN) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
 }

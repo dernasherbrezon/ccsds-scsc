@@ -2,7 +2,6 @@ package com.leosatdata.model;
 
 public class LinkEstablishment {
 
-	private SpduHeader header;
 	private LinkDirection direction;
 	private NegotiationType demandQuery;
 	private QueryResponse queryResponse;
@@ -16,14 +15,6 @@ public class LinkEstablishment {
 	private Coding coding;
 	private int linkSnr;
 	private float symbolRate; // IEEE 754 standard for half-precision floating point numbers
-
-	public SpduHeader getHeader() {
-		return header;
-	}
-
-	public void setHeader(SpduHeader header) {
-		this.header = header;
-	}
 
 	public LinkDirection getDirection() {
 		return direction;

@@ -13,4 +13,12 @@ public enum QueryResponse {
 		return UNKNOWN;
 	}
 
+	public int getCode() {
+		if (this == ACK) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
 }

@@ -2,7 +2,6 @@ package com.leosatdata.model;
 
 public class Link2Establishment {
 
-	private SpduHeader header;
 	private LinkDirection direction;
 	private NegotiationType2 demandQuery;
 	private boolean rnmd; // Remote Node has No More Data to Send
@@ -18,14 +17,6 @@ public class Link2Establishment {
 	private int aosFrameLength;
 	private float symbolRate; // IEEE 754 standard for half-precision floating point numbers
 	private float frequency;
-
-	public SpduHeader getHeader() {
-		return header;
-	}
-
-	public void setHeader(SpduHeader header) {
-		this.header = header;
-	}
 
 	public LinkDirection getDirection() {
 		return direction;

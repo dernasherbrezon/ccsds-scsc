@@ -13,4 +13,12 @@ public enum NegotiationType {
 		return UNKNOWN;
 	}
 
+	public int getCode() {
+		if (this == DEMAND) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
 }

@@ -18,5 +18,9 @@ public enum LinkModulation {
 		}
 		return UNKNOWN;
 	}
+	
+	public int getCode() {
+		return code;
+	}
 
 }

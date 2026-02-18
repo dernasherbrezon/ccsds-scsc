@@ -40,7 +40,6 @@ public class Type5DirectiveParser {
 			switch (type) {
 			case LINK2_ESTABLISHMENT_CONTROL:
 				Link2Establishment link2 = new Link2Establishment();
-				link2.setHeader(header);
 				bis.skipBits(1);
 				link2.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
 				link2.setDemandQuery(NegotiationType2.valueOfCode(bis.readUnsignedInt(3)));
@@ -57,7 +56,7 @@ public class Type5DirectiveParser {
 				link2.setLinkSnr(bis.readUnsignedInt(8));
 				link2.setTransceiverMode(TransceiverMode.valueOfCode(bis.readUnsignedInt(3)));
 				link2.setAosFrameLength(bis.readUnsignedInt(16));
-				link2.setSymbolRate(bis.readUnsignedInt(16));
+				link2.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
 				link2.setFrequency(bis.readFloat());
 				result.setLinkEstablishment(link2);
 				break;
@@ -89,7 +88,7 @@ public class Type5DirectiveParser {
 				pnRanging.setModulationIndex(RangingModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
 				DaySegmented daySegmented = new DaySegmented();
 				daySegmented.setDay(bis.readUnsignedInt(bis.readUnsignedInt(16)));
-				daySegmented.setMillisecondsOfTheDay(bis.readUnsignedInt(32));
+				daySegmented.setMillisecondsOfTheDay(bis.readUnsignedLong(32));
 				pnRanging.setPnEpochTime(daySegmented);
 				pnRanging.setReportRequest(RangingReportRequest.valueOfCode(bis.readUnsignedInt(5)));
 				result.setPnRanging(pnRanging);
@@ -101,8 +100,60 @@ public class Type5DirectiveParser {
 		return result;
 	}
 
-	public static void encode(Type5Directive message, BitOutputStream payload) {
-		// TODO Auto-generated method stub
+	public static void encode(Type5Directive message, BitOutputStream bos) throws IOException {
+		if (message.getLinkEstablishment() != null) {
+			Link2Establishment params = message.getLinkEstablishment();
+			bos.writeUnsignedInt(3, LINK2_ESTABLISHMENT_CONTROL);
+			bos.writeUnsignedInt(1, 0); // unused
+			bos.writeUnsignedInt(1, params.getDirection().getCode());
+			bos.writeUnsignedInt(3, params.getDemandQuery().getCode());
+			bos.writeBoolean(params.isRnmd());
+			bos.writeBoolean(params.isTransmitToken());
+			bos.writeUnsignedInt(3, params.getDuplex().getCode());
+			bos.writeUnsignedInt(1, params.getPolarization().getCode());
+			bos.writeUnsignedInt(1, params.getCoherency().getCode());
+			bos.writeUnsignedInt(1, 0); // unused
+			bos.writeUnsignedInt(4, params.getModulation().getCode());
+			bos.writeUnsignedInt(3, params.getModulationIndex().getCode());
+			bos.writeUnsignedInt(1, 0); // unused
+			bos.writeUnsignedInt(5, params.getCoding().getCode());
+			bos.writeUnsignedInt(8, params.getLinkSnr());
+			bos.writeUnsignedInt(3, params.getTransceiverMode().getCode());
+			bos.writeUnsignedInt(16, params.getAosFrameLength());
+			bos.writeUnsignedInt(16, (int) params.getSymbolRate()); // FIXME convert from float
+			bos.writeFloat(params.getFrequency());
+		}
+		if (message.getReportRequest() != null) {
+			ReportRequest params = message.getReportRequest();
+			bos.writeUnsignedInt(3, LINK2_REPORT_REQUEST);
+			bos.writeBoolean(params.isPcid0PlcwRequest());
+			bos.writeBoolean(params.isPcid1PlcwRequest());
+			bos.writeUnsignedInt(6, params.getTimeTagRequest());
+			bos.writeUnsignedInt(5, params.getStatusReportRequest());
+		}
+		if (message.getVr() != null) {
+			bos.writeUnsignedInt(3, LINK2_SET_VR);
+			bos.writeUnsignedInt(5, 0); // unused
+			bos.writeUnsignedInt(8, message.getVr().getFrameSequenceNumber());
+		}
+		if (message.getSourceSpacecraftId() != null) {
+			bos.writeUnsignedInt(3, LINK2_REPORT_SOURCE_SCID);
+			bos.writeUnsignedInt(13, 0); // unused
+			bos.writeUnsignedInt(16, message.getSourceSpacecraftId());
+		}
+		if (message.getPnRanging() != null) {
+			PnRaging params = message.getPnRanging();
+			bos.writeUnsignedInt(3, LINK2_PN_RANGING);
+			bos.writeUnsignedInt(2, params.getRangingType().getCode());
+			bos.writeUnsignedInt(2, params.getRangingCode().getCode());
+			bos.writeUnsignedInt(3, params.getChipRateK());
+			bos.writeUnsignedInt(14, params.getChipRateL());
+			bos.writeUnsignedInt(14, params.getChipRateM());
+			bos.writeUnsignedInt(3, params.getModulationIndex().getCode());
+			bos.writeUnsignedInt(16, params.getPnEpochTime().getDay());
+			bos.writeUnsignedLong(32, params.getPnEpochTime().getMillisecondsOfTheDay());
+			bos.writeUnsignedInt(5, params.getReportRequest().getCode());
+		}
 
 	}
 

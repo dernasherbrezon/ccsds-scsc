@@ -32,7 +32,6 @@ public class Type4DirectiveParser {
 			switch (type) {
 			case LINK_ESTABLISHMENT_CONTROL:
 				LinkEstablishment linkEstablishment = new LinkEstablishment();
-				linkEstablishment.setHeader(header);
 				linkEstablishment.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
 				linkEstablishment.setDemandQuery(NegotiationType.valueOfCode(bis.readUnsignedInt(1)));
 				linkEstablishment.setQueryResponse(QueryResponse.valueOfCode(bis.readUnsignedInt(1)));
@@ -74,9 +73,43 @@ public class Type4DirectiveParser {
 		return result;
 	}
 
-	public static void encode(Type4Directive message, BitOutputStream payload) {
-		// TODO Auto-generated method stub
-
+	public static void encode(Type4Directive message, BitOutputStream bos) throws IOException {
+		if (message.getLinkEstablishment() != null) {
+			LinkEstablishment params = message.getLinkEstablishment();
+			bos.writeUnsignedInt(3, LINK_ESTABLISHMENT_CONTROL);
+			bos.writeUnsignedInt(1, params.getDirection().getCode());
+			bos.writeUnsignedInt(1, params.getDemandQuery().getCode());
+			bos.writeUnsignedInt(1, params.getQueryResponse().getCode());
+			bos.writeBoolean(params.isRnmd());
+			bos.writeBoolean(params.isTransmitToken());
+			bos.writeUnsignedInt(3, params.getDuplex().getCode());
+			bos.writeUnsignedInt(5, params.getFreqChannel());
+			bos.writeUnsignedInt(1, params.getPolarization().getCode());
+			bos.writeUnsignedInt(3, params.getModulationIndex().getCode());
+			bos.writeUnsignedInt(4, params.getModulation().getCode());
+			bos.writeUnsignedInt(2, 0); // unused
+			bos.writeUnsignedInt(6, params.getCoding().getCode());
+			bos.writeUnsignedInt(8, params.getLinkSnr());
+			bos.writeUnsignedInt(16, (int) params.getSymbolRate()); // FIXME convert from float
+		}
+		if (message.getReportRequest() != null) {
+			ReportRequest params = message.getReportRequest();
+			bos.writeUnsignedInt(3, LINK_REPORT_REQUEST);
+			bos.writeBoolean(params.isPcid0PlcwRequest());
+			bos.writeBoolean(params.isPcid1PlcwRequest());
+			bos.writeUnsignedInt(6, params.getTimeTagRequest());
+			bos.writeUnsignedInt(5, params.getStatusReportRequest());
+		}
+		if (message.getVr() != null) {
+			bos.writeUnsignedInt(3, LINK_SET_VR);
+			bos.writeUnsignedInt(5, 0); // unused
+			bos.writeUnsignedInt(8, message.getVr().getFrameSequenceNumber());
+		}
+		if (message.getSourceSpacecraftId() != null) {
+			bos.writeUnsignedInt(3, LINK_REPORT_SOURCE_SCID);
+			bos.writeUnsignedInt(13, 0); // unused
+			bos.writeUnsignedInt(16, message.getSourceSpacecraftId());
+		}
 	}
 
 }

@@ -42,4 +42,14 @@ public class BitOutputStream implements Closeable {
 		
 	}
 
+	public void writeFloat(float frequency) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void writeUnsignedLong(int numberOfBits, long millisecondsOfTheDay) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }
