@@ -25,7 +25,7 @@ import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
 
-public class Mac implements Runnable {
+public class Mac implements Runnable, TxCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);
 
@@ -54,6 +54,7 @@ public class Mac implements Runnable {
 		this.config = config;
 		this.callback = callback;
 		this.transceiver = transceiver;
+		this.transceiver.setTxCallback(this);
 		this.fop = new Fop(transceiver);
 		this.farm = new Farm();
 		t = new Thread(this, "mac-thread");
@@ -283,5 +284,10 @@ public class Mac implements Runnable {
 		} else {
 			throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
 		}
+	}
+
+	@Override
+	public void onTx() {
+		sendEvent(new Event(EventType.E6_OUTPUT_FIFO_EMPTY));
 	}
 }

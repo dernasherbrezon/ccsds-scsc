@@ -51,9 +51,10 @@ public class NullTransceiver implements Transceiver {
 	@Override
 	public void send(byte[] data) {
 		assert (tx == true);
+		assert (symbolRate != 0);
 		try {
-			// FIXME wait expected baud rate timeout
-			Thread.sleep(1000);
+			long millisToWait = (data.length * 8 * 1000) / symbolRate;
+			Thread.sleep(millisToWait);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			return;
