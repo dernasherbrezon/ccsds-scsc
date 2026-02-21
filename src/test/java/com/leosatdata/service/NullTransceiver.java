@@ -181,4 +181,9 @@ public class NullTransceiver implements Transceiver {
 		this.modulation = modulation;
 	}
 
+	@Override
+	public void stopIdle() {
+		// do nothing
+	}
+
 }

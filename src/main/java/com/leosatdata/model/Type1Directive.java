@@ -4,11 +4,12 @@ public class Type1Directive implements Spdu {
 
 	private SpduHeader header;
 	private TxRxParameters txParams;
+	private PlExtensions txPlExtensions;
 	private ControlParameters controlParams;
 	private TxRxParameters rxParams;
+	private PlExtensions rxPlExtensions;
 	private Vr vr;
 	private ReportRequest reportReq;
-	private PlExtensions plExtensions;
 	private Integer sourceSpacecraftId;
 
 	@Override
@@ -61,12 +62,20 @@ public class Type1Directive implements Spdu {
 		this.reportReq = reportReq;
 	}
 
-	public PlExtensions getPlExtensions() {
-		return plExtensions;
+	public PlExtensions getRxPlExtensions() {
+		return rxPlExtensions;
 	}
-
-	public void setPlExtensions(PlExtensions plExtensions) {
-		this.plExtensions = plExtensions;
+	
+	public void setRxPlExtensions(PlExtensions rxPlExtensions) {
+		this.rxPlExtensions = rxPlExtensions;
+	}
+	
+	public PlExtensions getTxPlExtensions() {
+		return txPlExtensions;
+	}
+	
+	public void setTxPlExtensions(PlExtensions txPlExtensions) {
+		this.txPlExtensions = txPlExtensions;
 	}
 
 	public Integer getSourceSpacecraftId() {

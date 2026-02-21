@@ -47,4 +47,6 @@ public interface Transceiver {
 
 	void setModulation(Modulation nonCoherentPsk);
 
+	void stopIdle();
+
 }

@@ -17,10 +17,18 @@ public class CommTest {
 	@Test
 	public void testSuccess() throws Exception {
 		Mac satellite = new Mac(config, satelliteTransceiver, new NodeCallback() {
+			@Override
+			public void onCarrier() {
+				// TODO Auto-generated method stub
+			}
 		});
 		satellite.setMode(MacMode.CONNECTING_L);
 
 		Mac ground = new Mac(config, groundTransceiver, new NodeCallback() {
+			@Override
+			public void onCarrier() {
+				// TODO Auto-generated method stub
+			}
 		});
 		ground.setMode(MacMode.CONNECTING_T);
 		

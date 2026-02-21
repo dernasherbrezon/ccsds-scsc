@@ -84,7 +84,11 @@ public class Type1DirectiveParser {
 				plExtensions.setScrambler(ScramblerType.valueOfCode(dirStream.readUnsignedInt(2)));
 				plExtensions.setDifferentialEncoding(dirStream.readBoolean());
 				plExtensions.setRsCode(RsCodeType.valueOfCode(dirStream.readUnsignedInt(1)));
-				result.setPlExtensions(plExtensions);
+				if (plExtensions.getDirection().equals(Direction.RECEIVER)) {
+					result.setRxPlExtensions(plExtensions);
+				} else {
+					result.setTxPlExtensions(plExtensions);
+				}
 				break;
 			case REPORT_SOURCE_SCID:
 				result.setSourceSpacecraftId(dirStream.readUnsignedInt(10));
@@ -126,18 +130,11 @@ public class Type1DirectiveParser {
 			bos.writeBoolean(params.isPcid1PlcwRequest());
 			bos.writeUnsignedInt(3, REPORT_REQUEST);
 		}
-		if (message.getPlExtensions() != null) {
-			PlExtensions params = message.getPlExtensions();
-			bos.writeUnsignedInt(1, params.getDirection().getCode());
-			bos.writeBoolean(params.isUseExtendedFreqSet());
-			bos.writeBoolean(params.isUseExtendedDataRate());
-			bos.writeUnsignedInt(2, params.getCarrierModulation().getCode());
-			bos.writeUnsignedInt(2, params.getDataModulation().getCode());
-			bos.writeUnsignedInt(2, params.getModeSelect().getCode());
-			bos.writeUnsignedInt(2, params.getScrambler().getCode());
-			bos.writeBoolean(params.isDifferentialEncoding());
-			bos.writeUnsignedInt(1, params.getRsCode().getCode());
-			bos.writeUnsignedInt(3, SET_PL_EXTENSIONS);
+		if (message.getRxPlExtensions() != null) {
+			encodePlExtensions(message.getRxPlExtensions(), bos);
+		}
+		if (message.getTxPlExtensions() != null) {
+			encodePlExtensions(message.getTxPlExtensions(), bos);
 		}
 		if (message.getSourceSpacecraftId() != null) {
 			bos.writeUnsignedInt(10, message.getSourceSpacecraftId());
@@ -163,6 +160,19 @@ public class Type1DirectiveParser {
 		bos.writeUnsignedInt(2, params.getDataEncoding().getCode());
 		bos.writeUnsignedInt(3, params.getFrequency().getCode());
 		bos.writeUnsignedInt(3, type);
+	}
+
+	private static void encodePlExtensions(PlExtensions params, BitOutputStream bos) throws IOException {
+		bos.writeUnsignedInt(1, params.getDirection().getCode());
+		bos.writeBoolean(params.isUseExtendedFreqSet());
+		bos.writeBoolean(params.isUseExtendedDataRate());
+		bos.writeUnsignedInt(2, params.getCarrierModulation().getCode());
+		bos.writeUnsignedInt(2, params.getDataModulation().getCode());
+		bos.writeUnsignedInt(2, params.getModeSelect().getCode());
+		bos.writeUnsignedInt(2, params.getScrambler().getCode());
+		bos.writeBoolean(params.isDifferentialEncoding());
+		bos.writeUnsignedInt(1, params.getRsCode().getCode());
+		bos.writeUnsignedInt(3, SET_PL_EXTENSIONS);
 	}
 
 }

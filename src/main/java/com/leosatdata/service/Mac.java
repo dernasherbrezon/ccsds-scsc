@@ -17,15 +17,13 @@ import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacDuplex;
 import com.leosatdata.model.MacMode;
-import com.leosatdata.model.Mode;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.util.Configuration;
-import com.leosatdata.util.SpduParser;
 
-public class Mac implements Runnable, TxCallback {
+public class Mac implements Runnable, TxCallback, RxCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);
 
@@ -41,6 +39,7 @@ public class Mac implements Runnable, TxCallback {
 	private MacMode mode = MacMode.INACTIVE;
 	private boolean transmit = false;
 	private boolean persistence = false;
+	private boolean hailCarrierReceived = false;
 	private MacDuplex duplex = MacDuplex.FULL; // FIXME check defaults
 	private int ss;
 	private int x;
@@ -122,7 +121,19 @@ public class Mac implements Runnable, TxCallback {
 			scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
+			transceiver.stopIdle();
+			transceiver.startRx();
 			scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
+			break;
+		case E8_1_CARRIER_RECEIVED:
+			hailCarrierReceived = true;
+			break;
+		case E8_HAIL_WAIT_TIMEOUT:
+			if (hailCarrierReceived) {
+				callback.onCarrier();
+				hailCarrierReceived = false;
+			}
+			sendEvent(new Event(EventType.E2_CONNECTING_T));
 			break;
 		default:
 			LOG.error("unknown event type: {}", e.getType());
@@ -147,15 +158,15 @@ public class Mac implements Runnable, TxCallback {
 	public void setMode(MacMode mode) {
 		switch (mode) {
 		case INACTIVE:
-			transceiver.setModulation(false);
-			transceiver.stopRx();
-			transceiver.stopTx();
-			transmit = false;
-			persistence = false;
-			ss = 0;
-			x = 0;
-			y = 0;
-			z = 0;
+//			transceiver.setModulation(false);
+//			transceiver.stopRx();
+//			transceiver.stopTx();
+//			transmit = false;
+//			persistence = false;
+//			ss = 0;
+//			x = 0;
+//			y = 0;
+//			z = 0;
 			// cancel all timers
 			// reset sequence counters
 			break;
@@ -163,8 +174,8 @@ public class Mac implements Runnable, TxCallback {
 			sendEvent(new Event(EventType.E2_CONNECTING_T));
 			break;
 		case CONNECTING_L:
-			transceiver.startRx();
-			transceiver.stopTx();
+//			transceiver.startRx();
+//			transceiver.stopTx();
 			break;
 		// FIXME active?
 		default:
@@ -290,4 +301,16 @@ public class Mac implements Runnable, TxCallback {
 	public void onTx() {
 		sendEvent(new Event(EventType.E6_OUTPUT_FIFO_EMPTY));
 	}
+
+	@Override
+	public void onRx(byte[] data) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onCarrier() {
+		sendEvent(new Event(EventType.E8_1_CARRIER_RECEIVED));
+	}
+
 }
