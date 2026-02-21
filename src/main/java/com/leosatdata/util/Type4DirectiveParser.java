@@ -46,7 +46,11 @@ public class Type4DirectiveParser {
 				linkEstablishment.setCoding(Coding.valueOfCode(bis.readUnsignedInt(6)));
 				linkEstablishment.setLinkSnr(bis.readUnsignedInt(8));
 				linkEstablishment.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
-				result.setLinkEstablishment(linkEstablishment);
+				if (linkEstablishment.getDirection().equals(LinkDirection.RETURN)) {
+					result.setRxLink(linkEstablishment);
+				} else {
+					result.setTxLink(linkEstablishment);
+				}
 				break;
 			case LINK_REPORT_REQUEST:
 				ReportRequest reportRequest = new ReportRequest();
@@ -74,23 +78,11 @@ public class Type4DirectiveParser {
 	}
 
 	public static void encode(Type4Directive message, BitOutputStream bos) throws IOException {
-		if (message.getLinkEstablishment() != null) {
-			LinkEstablishment params = message.getLinkEstablishment();
-			bos.writeUnsignedInt(3, LINK_ESTABLISHMENT_CONTROL);
-			bos.writeUnsignedInt(1, params.getDirection().getCode());
-			bos.writeUnsignedInt(1, params.getDemandQuery().getCode());
-			bos.writeUnsignedInt(1, params.getQueryResponse().getCode());
-			bos.writeBoolean(params.isRnmd());
-			bos.writeBoolean(params.isTransmitToken());
-			bos.writeUnsignedInt(3, params.getDuplex().getCode());
-			bos.writeUnsignedInt(5, params.getFreqChannel());
-			bos.writeUnsignedInt(1, params.getPolarization().getCode());
-			bos.writeUnsignedInt(3, params.getModulationIndex().getCode());
-			bos.writeUnsignedInt(4, params.getModulation().getCode());
-			bos.writeUnsignedInt(2, 0); // unused
-			bos.writeUnsignedInt(6, params.getCoding().getCode());
-			bos.writeUnsignedInt(8, params.getLinkSnr());
-			bos.writeUnsignedInt(16, (int) params.getSymbolRate()); // FIXME convert from float
+		if (message.getRxLink() != null) {
+			encodeLink(message.getRxLink(), bos);
+		}
+		if (message.getTxLink() != null) {
+			encodeLink(message.getTxLink(), bos);
 		}
 		if (message.getReportRequest() != null) {
 			ReportRequest params = message.getReportRequest();
@@ -110,6 +102,24 @@ public class Type4DirectiveParser {
 			bos.writeUnsignedInt(13, 0); // unused
 			bos.writeUnsignedInt(16, message.getSourceSpacecraftId());
 		}
+	}
+
+	private static void encodeLink(LinkEstablishment params, BitOutputStream bos) throws IOException {
+		bos.writeUnsignedInt(3, LINK_ESTABLISHMENT_CONTROL);
+		bos.writeUnsignedInt(1, params.getDirection().getCode());
+		bos.writeUnsignedInt(1, params.getDemandQuery().getCode());
+		bos.writeUnsignedInt(1, params.getQueryResponse().getCode());
+		bos.writeBoolean(params.isRnmd());
+		bos.writeBoolean(params.isTransmitToken());
+		bos.writeUnsignedInt(3, params.getDuplex().getCode());
+		bos.writeUnsignedInt(5, params.getFreqChannel());
+		bos.writeUnsignedInt(1, params.getPolarization().getCode());
+		bos.writeUnsignedInt(3, params.getModulationIndex().getCode());
+		bos.writeUnsignedInt(4, params.getModulation().getCode());
+		bos.writeUnsignedInt(2, 0); // unused
+		bos.writeUnsignedInt(6, params.getCoding().getCode());
+		bos.writeUnsignedInt(8, params.getLinkSnr());
+		bos.writeUnsignedInt(16, (int) params.getSymbolRate()); // FIXME convert from float
 	}
 
 }

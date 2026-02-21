@@ -58,7 +58,11 @@ public class Type5DirectiveParser {
 				link2.setAosFrameLength(bis.readUnsignedInt(16));
 				link2.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
 				link2.setFrequency(bis.readFloat());
-				result.setLinkEstablishment(link2);
+				if (link2.getDirection().equals(LinkDirection.RETURN)) {
+					result.setRxLink(link2);
+				} else {
+					result.setTxLink(link2);
+				}
 				break;
 			case LINK2_REPORT_REQUEST:
 				ReportRequest reportRequest = new ReportRequest();
@@ -101,27 +105,11 @@ public class Type5DirectiveParser {
 	}
 
 	public static void encode(Type5Directive message, BitOutputStream bos) throws IOException {
-		if (message.getLinkEstablishment() != null) {
-			Link2Establishment params = message.getLinkEstablishment();
-			bos.writeUnsignedInt(3, LINK2_ESTABLISHMENT_CONTROL);
-			bos.writeUnsignedInt(1, 0); // unused
-			bos.writeUnsignedInt(1, params.getDirection().getCode());
-			bos.writeUnsignedInt(3, params.getDemandQuery().getCode());
-			bos.writeBoolean(params.isRnmd());
-			bos.writeBoolean(params.isTransmitToken());
-			bos.writeUnsignedInt(3, params.getDuplex().getCode());
-			bos.writeUnsignedInt(1, params.getPolarization().getCode());
-			bos.writeUnsignedInt(1, params.getCoherency().getCode());
-			bos.writeUnsignedInt(1, 0); // unused
-			bos.writeUnsignedInt(4, params.getModulation().getCode());
-			bos.writeUnsignedInt(3, params.getModulationIndex().getCode());
-			bos.writeUnsignedInt(1, 0); // unused
-			bos.writeUnsignedInt(5, params.getCoding().getCode());
-			bos.writeUnsignedInt(8, params.getLinkSnr());
-			bos.writeUnsignedInt(3, params.getTransceiverMode().getCode());
-			bos.writeUnsignedInt(16, params.getAosFrameLength());
-			bos.writeUnsignedInt(16, (int) params.getSymbolRate()); // FIXME convert from float
-			bos.writeFloat(params.getFrequency());
+		if (message.getRxLink() != null) {
+			encodeLink(message.getRxLink(), bos);
+		}
+		if (message.getTxLink() != null) {
+			encodeLink(message.getTxLink(), bos);
 		}
 		if (message.getReportRequest() != null) {
 			ReportRequest params = message.getReportRequest();
@@ -155,6 +143,28 @@ public class Type5DirectiveParser {
 			bos.writeUnsignedInt(5, params.getReportRequest().getCode());
 		}
 
+	}
+
+	private static void encodeLink(Link2Establishment params, BitOutputStream bos) throws IOException {
+		bos.writeUnsignedInt(3, LINK2_ESTABLISHMENT_CONTROL);
+		bos.writeUnsignedInt(1, 0); // unused
+		bos.writeUnsignedInt(1, params.getDirection().getCode());
+		bos.writeUnsignedInt(3, params.getDemandQuery().getCode());
+		bos.writeBoolean(params.isRnmd());
+		bos.writeBoolean(params.isTransmitToken());
+		bos.writeUnsignedInt(3, params.getDuplex().getCode());
+		bos.writeUnsignedInt(1, params.getPolarization().getCode());
+		bos.writeUnsignedInt(1, params.getCoherency().getCode());
+		bos.writeUnsignedInt(1, 0); // unused
+		bos.writeUnsignedInt(4, params.getModulation().getCode());
+		bos.writeUnsignedInt(3, params.getModulationIndex().getCode());
+		bos.writeUnsignedInt(1, 0); // unused
+		bos.writeUnsignedInt(5, params.getCoding().getCode());
+		bos.writeUnsignedInt(8, params.getLinkSnr());
+		bos.writeUnsignedInt(3, params.getTransceiverMode().getCode());
+		bos.writeUnsignedInt(16, params.getAosFrameLength());
+		bos.writeUnsignedInt(16, (int) params.getSymbolRate()); // FIXME convert from float
+		bos.writeFloat(params.getFrequency());
 	}
 
 }

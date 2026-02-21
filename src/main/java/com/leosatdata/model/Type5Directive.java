@@ -3,18 +3,27 @@ package com.leosatdata.model;
 public class Type5Directive implements Spdu {
 
 	private SpduHeader header;
-	private Link2Establishment linkEstablishment;
+	private Link2Establishment rxLink;
+	private Link2Establishment txLink;
 	private ReportRequest reportRequest;
 	private Vr vr;
 	private Integer sourceSpacecraftId;
 	private PnRaging pnRanging;
 
-	public Link2Establishment getLinkEstablishment() {
-		return linkEstablishment;
+	public Link2Establishment getRxLink() {
+		return rxLink;
 	}
-
-	public void setLinkEstablishment(Link2Establishment linkEstablishment) {
-		this.linkEstablishment = linkEstablishment;
+	
+	public void setRxLink(Link2Establishment rxLink) {
+		this.rxLink = rxLink;
+	}
+	
+	public Link2Establishment getTxLink() {
+		return txLink;
+	}
+	
+	public void setTxLink(Link2Establishment txLink) {
+		this.txLink = txLink;
 	}
 
 	public ReportRequest getReportRequest() {
