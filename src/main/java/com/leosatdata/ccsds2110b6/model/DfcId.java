@@ -1,4 +1,4 @@
-package com.leosatdata.ccsds2110B6.model;
+package com.leosatdata.ccsds2110b6.model;
 
 public enum DfcId {
 

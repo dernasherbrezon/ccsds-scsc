@@ -1,4 +1,4 @@
-package com.leosatdata.ccsds2110B6.model;
+package com.leosatdata.ccsds2110b6.model;
 
 // PROXIMITY-1 CCSDS 211.0-B-6 Transfer Frame version 3
 public class TransferFrame {

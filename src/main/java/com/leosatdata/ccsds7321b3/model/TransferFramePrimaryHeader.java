@@ -1,8 +1,8 @@
 package com.leosatdata.ccsds7321b3.model;
 
-import com.leosatdata.ccsds2110B6.model.PduTypeId;
-import com.leosatdata.ccsds2110B6.model.QualityOfService;
-import com.leosatdata.ccsds2110B6.model.SourceDestination;
+import com.leosatdata.ccsds2110b6.model.PduTypeId;
+import com.leosatdata.ccsds2110b6.model.QualityOfService;
+import com.leosatdata.ccsds2110b6.model.SourceDestination;
 
 public class TransferFramePrimaryHeader {
 

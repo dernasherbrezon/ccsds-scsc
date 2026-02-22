@@ -1,13 +1,13 @@
-package com.leosatdata.ccsds2110B6.util;
+package com.leosatdata.ccsds2110b6.util;
 
 import java.io.IOException;
 
-import com.leosatdata.ccsds2110B6.model.DfcId;
-import com.leosatdata.ccsds2110B6.model.PduTypeId;
-import com.leosatdata.ccsds2110B6.model.QualityOfService;
-import com.leosatdata.ccsds2110B6.model.SourceDestination;
-import com.leosatdata.ccsds2110B6.model.TransferFrame;
-import com.leosatdata.ccsds2110B6.model.TransferFrameHeader;
+import com.leosatdata.ccsds2110b6.model.DfcId;
+import com.leosatdata.ccsds2110b6.model.PduTypeId;
+import com.leosatdata.ccsds2110b6.model.QualityOfService;
+import com.leosatdata.ccsds2110b6.model.SourceDestination;
+import com.leosatdata.ccsds2110b6.model.TransferFrame;
+import com.leosatdata.ccsds2110b6.model.TransferFrameHeader;
 import com.leosatdata.util.BitInputStream;
 
 public class TransferFrameParser {

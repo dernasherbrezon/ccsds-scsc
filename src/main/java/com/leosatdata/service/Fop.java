@@ -1,6 +1,6 @@
 package com.leosatdata.service;
 
-import com.leosatdata.ccsds2110B6.model.TransferFrame;
+import com.leosatdata.ccsds2110b6.model.TransferFrame;
 
 public class Fop implements Runnable {
 
