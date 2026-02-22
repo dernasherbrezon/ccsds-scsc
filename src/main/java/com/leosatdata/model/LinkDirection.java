@@ -2,7 +2,17 @@ package com.leosatdata.model;
 
 public enum LinkDirection {
 
-	RETURN, FORWARD, UNKNOWN;
+	RETURN("r"), FORWARD("f"), UNKNOWN("");
+
+	private final String shortCode;
+
+	private LinkDirection(String shortCode) {
+		this.shortCode = shortCode;
+	}
+
+	public String getShortCode() {
+		return shortCode;
+	}
 
 	public static LinkDirection valueOfCode(int code) {
 		if (code == 0) {

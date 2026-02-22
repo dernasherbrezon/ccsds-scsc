@@ -11,17 +11,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.ControlParameters;
-import com.leosatdata.model.DataEncoding;
-import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
+import com.leosatdata.model.Link2Establishment;
+import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.MacDuplex;
 import com.leosatdata.model.MacMode;
-import com.leosatdata.model.Modulation;
 import com.leosatdata.model.PlExtensions;
-import com.leosatdata.model.Polarization;
 import com.leosatdata.model.TxRxParameters;
+import com.leosatdata.model.Type1Directive;
+import com.leosatdata.model.Type4Directive;
+import com.leosatdata.model.Type5Directive;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.TransceiverUtil;
 
 public class Mac implements Runnable, TxCallback, RxCallback {
 
@@ -35,6 +37,10 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 
 	private final LinkedBlockingQueue<Event> queue = new LinkedBlockingQueue<>();
 	private Timer waitTimer;
+
+	private Type1Directive currentType1;
+	private Type4Directive currentType4;
+	private Type5Directive currentType5;
 
 	private MacMode mode = MacMode.INACTIVE;
 	private boolean transmit = false;
@@ -135,6 +141,40 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			}
 			sendEvent(new Event(EventType.E2_CONNECTING_T));
 			break;
+		case E12_LOCAL_COMM_CHANGE:
+			if (e.getArg() == null) {
+				LOG.error("received comm change without payload");
+				return;
+			}
+			if (e.getArg() instanceof Type1Directive) {
+				Type1Directive obj = (Type1Directive) e.getArg();
+				if (currentType1 == null) {
+					currentType1 = obj;
+				} else {
+					currentType1.merge(obj);
+				}
+			} else if (e.getArg() instanceof Type4Directive) {
+				Type4Directive obj = (Type4Directive) e.getArg();
+				if (currentType4 == null) {
+					currentType4 = obj;
+				} else {
+					currentType4.merge(obj);
+				}
+			} else if (e.getArg() instanceof Type5Directive) {
+				Type5Directive obj = (Type5Directive) e.getArg();
+				if (currentType5 == null) {
+					currentType5 = obj;
+				} else {
+					currentType5.merge(obj);
+				}
+			} else {
+				LOG.error("unknown arg type: {}", e.getArg());
+				return;
+			}
+			if (mode.equals(MacMode.ACTIVE)) {
+				// FIXME send remote change
+			}
+			break;
 		default:
 			LOG.error("unknown event type: {}", e.getType());
 		}
@@ -190,9 +230,37 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 		farm.setInitializeMode();
 	}
 
-	public void setLocalCommChange(TxRxParameters tx, TxRxParameters rx, PlExtensions ext) {
-//		transceiver.setTxParameters(tx);
-//		transceiver.setRxParameters(tx);
+	public void setLocalCommChange(TxRxParameters tx, TxRxParameters rx, PlExtensions txExt, PlExtensions rxExt) {
+		if (!config.getProperty("frame_version").equals("3")) {
+			throw new IllegalArgumentException("expected proximity-1");
+		}
+		Type1Directive obj = new Type1Directive();
+		obj.setRxPlExtensions(rxExt);
+		obj.setTxPlExtensions(txExt);
+		obj.setRxParams(rx);
+		obj.setTxParams(tx);
+		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, obj));
+	}
+
+	public void setLocalCommChange(LinkEstablishment rxLink, LinkEstablishment txLink) {
+		// FIXME when to send type4 vs type5?
+		if (!config.getProperty("frame_version").equals("4")) {
+			throw new IllegalArgumentException("expected USLP");
+		}
+		Type4Directive obj = new Type4Directive();
+		obj.setRxLink(rxLink);
+		obj.setTxLink(txLink);
+		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, obj));
+	}
+
+	public void setLocalCommChange(Link2Establishment rxLink, Link2Establishment txLink) {
+		if (!config.getProperty("frame_version").equals("4")) {
+			throw new IllegalArgumentException("expected USLP");
+		}
+		Type5Directive obj = new Type5Directive();
+		obj.setRxLink(rxLink);
+		obj.setTxLink(txLink);
+		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, obj));
 	}
 
 	public void setCommunicationsValueBuffer() {
@@ -226,7 +294,11 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 
 	}
 
-	void setPlExtensions(PlExtensions ext) {
+	void setRxPlExtensions(PlExtensions ext) {
+
+	}
+
+	void setTxPlExtensions(PlExtensions ext) {
 
 	}
 
@@ -256,42 +328,10 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	private void configureTransceiverForHail() {
 		// frame verion is the closest parameter to control hailing parameters
 		String frameVersion = config.getProperty("frame_version");
-		int symbolRate = config.getInteger("hailing_symbol_rate", 0);
-		int channel = config.getInteger("hailing_channel", -1);
 		if (frameVersion.equals("3")) {
-			// proximity-1
-			if (symbolRate != 0) {
-				transceiver.setSymbolRate(symbolRate);
-			} else {
-				transceiver.setSymbolRate(8000);
-			}
-			transceiver.setDataModulation(DataModulation.MANCHESTER);
-			// FIXME resolve channel
-			if (channel != -1) {
-				transceiver.setFrequency(channel);
-			} else {
-				transceiver.setFrequency(1);
-			}
-			transceiver.setDataEncoding(DataEncoding.NONE);
-			transceiver.setPolarization(Polarization.RHCP);
-			transceiver.setModulation(Modulation.NON_COHERENT_PSK);
+			TransceiverUtil.applyParameters(TransceiverUtil.createDefaultProximityHail(config), config, transceiver);
 		} else if (frameVersion.equals("4")) {
-			// USLP
-			if (symbolRate != 0) {
-				transceiver.setSymbolRate(symbolRate);
-			} else {
-				transceiver.setSymbolRate(2000);
-			}
-			transceiver.setDataModulation(DataModulation.MANCHESTER);
-			// FIXME resolve channel
-			if (channel != -1) {
-				transceiver.setFrequency(channel);
-			} else {
-				transceiver.setFrequency(0);
-			}
-			transceiver.setDataEncoding(DataEncoding.LDPC);
-			transceiver.setPolarization(Polarization.LHCP);
-			transceiver.setModulation(Modulation.NON_COHERENT_PSK);
+			TransceiverUtil.applyParameters(TransceiverUtil.createDefaultUslp(config), transceiver);
 		} else {
 			throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
 		}

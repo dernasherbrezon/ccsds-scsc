@@ -4,6 +4,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.leosatdata.model.Coding;
 import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Modulation;
@@ -21,10 +22,10 @@ public class NullTransceiver implements Transceiver {
 	private boolean tx = false;
 	private boolean modulationEnabled = false;
 
-	private int symbolRate;
+	private float symbolRate;
 	private DataModulation dataModulation;
-	private long frequency;
-	private DataEncoding dataEncoding;
+	private float frequency;
+	private Coding dataEncoding;
 	private Polarization polarization;
 	private Modulation modulation;
 
@@ -53,7 +54,7 @@ public class NullTransceiver implements Transceiver {
 		assert (tx == true);
 		assert (symbolRate != 0);
 		try {
-			long millisToWait = (data.length * 8 * 1000) / symbolRate;
+			long millisToWait = (long) ((data.length * 8 * 1000) / symbolRate);
 			Thread.sleep(millisToWait);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -121,6 +122,11 @@ public class NullTransceiver implements Transceiver {
 	public void startIdle() {
 		// do nothing
 	}
+	
+	@Override
+	public void stopIdle() {
+		// do nothing
+	}
 
 //	@Override
 //	public void startTx() {
@@ -152,38 +158,69 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setSymbolRate(int baud) {
+	public void setRxSymbolRate(float baud) {
 		this.symbolRate = baud;
 	}
 
 	@Override
-	public void setDataModulation(DataModulation dataModulation) {
+	public void setRxDataModulation(DataModulation dataModulation) {
 		this.dataModulation = dataModulation;
 	}
 
 	@Override
-	public void setFrequency(long frequency) {
+	public void setRxFrequency(float frequency) {
 		this.frequency = frequency;
 	}
 
 	@Override
-	public void setDataEncoding(DataEncoding dataEncoding) {
+	public void setRxDataEncoding(Coding dataEncoding) {
 		this.dataEncoding = dataEncoding;
 	}
 
 	@Override
-	public void setPolarization(Polarization polarization) {
+	public void setRxPolarization(Polarization polarization) {
 		this.polarization = polarization;
 	}
 
 	@Override
-	public void setModulation(Modulation modulation) {
+	public void setRxModulation(Modulation modulation) {
 		this.modulation = modulation;
 	}
 
 	@Override
-	public void stopIdle() {
-		// do nothing
+	public void setTxSymbolRate(float baud) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setTxDataModulation(DataModulation modulation) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setTxFrequency(float frequency) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setTxDataEncoding(Coding encoding) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setTxPolarization(Polarization polarization) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setTxModulation(Modulation modulation) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

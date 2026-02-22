@@ -1,9 +1,11 @@
 package com.leosatdata.util;
 
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 public class Configuration {
 
+	private final static Pattern UNDERSCORE = Pattern.compile("_");
 	private final Properties config;
 
 	public Configuration(Properties config) {
@@ -19,7 +21,7 @@ public class Configuration {
 		if (result == null || result.trim().length() == 0) {
 			return defaultValue;
 		}
-		return Long.valueOf(result);
+		return Long.valueOf(UNDERSCORE.matcher(result).replaceAll(""));
 	}
 
 	public long getDuration(String name) {
@@ -37,5 +39,13 @@ public class Configuration {
 			return defaultValue;
 		}
 		return Integer.valueOf(result);
+	}
+
+	public float getFloat(String name, int defaultValue) {
+		String result = config.getProperty(name);
+		if (result == null) {
+			return defaultValue;
+		}
+		return Float.valueOf(UNDERSCORE.matcher(result).replaceAll(""));
 	}
 }

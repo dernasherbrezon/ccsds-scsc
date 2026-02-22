@@ -12,6 +12,21 @@ public class Type1Directive implements Spdu {
 	private ReportRequest reportReq;
 	private Integer sourceSpacecraftId;
 
+	public void merge(Type1Directive obj) {
+		if (obj.getTxParams() != null) {
+			txParams = obj.getTxParams();
+		}
+		if (obj.getTxPlExtensions() != null) {
+			txPlExtensions = obj.getTxPlExtensions();
+		}
+		if (obj.getRxParams() != null) {
+			rxParams = obj.getRxParams();
+		}
+		if (obj.getRxPlExtensions() != null) {
+			rxPlExtensions = obj.getRxPlExtensions();
+		}
+	}
+
 	@Override
 	public SpduHeader getHeader() {
 		return header;
@@ -65,15 +80,15 @@ public class Type1Directive implements Spdu {
 	public PlExtensions getRxPlExtensions() {
 		return rxPlExtensions;
 	}
-	
+
 	public void setRxPlExtensions(PlExtensions rxPlExtensions) {
 		this.rxPlExtensions = rxPlExtensions;
 	}
-	
+
 	public PlExtensions getTxPlExtensions() {
 		return txPlExtensions;
 	}
-	
+
 	public void setTxPlExtensions(PlExtensions txPlExtensions) {
 		this.txPlExtensions = txPlExtensions;
 	}
@@ -81,7 +96,7 @@ public class Type1Directive implements Spdu {
 	public Integer getSourceSpacecraftId() {
 		return sourceSpacecraftId;
 	}
-	
+
 	public void setSourceSpacecraftId(Integer sourceSpacecraftId) {
 		this.sourceSpacecraftId = sourceSpacecraftId;
 	}

@@ -1,6 +1,6 @@
 package com.leosatdata.service;
 
-import com.leosatdata.model.DataEncoding;
+import com.leosatdata.model.Coding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
@@ -35,18 +35,23 @@ public interface Transceiver {
 
 	void startIdle();
 
-	void setSymbolRate(int baud);
-
-	void setDataModulation(DataModulation manchester);
-
-	void setFrequency(long frequency);
-
-	void setDataEncoding(DataEncoding none);
-
-	void setPolarization(Polarization rhcp);
-
-	void setModulation(Modulation nonCoherentPsk);
-
 	void stopIdle();
+
+	// RX parameters
+	void setRxSymbolRate(float baud);
+	void setRxDataModulation(DataModulation modulation);
+	void setRxFrequency(float frequency);
+	void setRxDataEncoding(Coding encoding);
+	void setRxPolarization(Polarization polarization);
+	void setRxModulation(Modulation modulation);
+
+	// TX parameters
+	void setTxSymbolRate(float baud);
+	void setTxDataModulation(DataModulation modulation);
+	void setTxFrequency(float frequency);
+	void setTxDataEncoding(Coding encoding);
+	void setTxPolarization(Polarization polarization);
+	void setTxModulation(Modulation modulation);	
+	
 
 }

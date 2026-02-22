@@ -10,18 +10,27 @@ public class Type5Directive implements Spdu {
 	private Integer sourceSpacecraftId;
 	private PnRaging pnRanging;
 
+	public void merge(Type5Directive obj) {
+		if (obj.getRxLink() != null) {
+			rxLink = obj.getRxLink();
+		}
+		if (obj.getTxLink() != null) {
+			txLink = obj.getTxLink();
+		}
+	}
+
 	public Link2Establishment getRxLink() {
 		return rxLink;
 	}
-	
+
 	public void setRxLink(Link2Establishment rxLink) {
 		this.rxLink = rxLink;
 	}
-	
+
 	public Link2Establishment getTxLink() {
 		return txLink;
 	}
-	
+
 	public void setTxLink(Link2Establishment txLink) {
 		this.txLink = txLink;
 	}
@@ -45,7 +54,7 @@ public class Type5Directive implements Spdu {
 	public Integer getSourceSpacecraftId() {
 		return sourceSpacecraftId;
 	}
-	
+
 	public void setSourceSpacecraftId(Integer sourceSpacecraftId) {
 		this.sourceSpacecraftId = sourceSpacecraftId;
 	}

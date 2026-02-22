@@ -9,18 +9,27 @@ public class Type4Directive implements Spdu {
 	private Vr vr;
 	private Integer sourceSpacecraftId;
 
+	public void merge(Type4Directive obj) {
+		if (obj.getRxLink() != null) {
+			rxLink = obj.getRxLink();
+		}
+		if (obj.getTxLink() != null) {
+			txLink = obj.getTxLink();
+		}
+	}
+
 	public LinkEstablishment getRxLink() {
 		return rxLink;
 	}
-	
+
 	public void setRxLink(LinkEstablishment rxLink) {
 		this.rxLink = rxLink;
 	}
-	
+
 	public void setTxLink(LinkEstablishment txLink) {
 		this.txLink = txLink;
 	}
-	
+
 	public LinkEstablishment getTxLink() {
 		return txLink;
 	}
