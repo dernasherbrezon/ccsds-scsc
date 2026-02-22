@@ -9,11 +9,11 @@ import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds2110b6.model.TransferFrame;
 import com.leosatdata.ccsds2110b6.model.TransferFrameHeader;
 import com.leosatdata.util.BitInputStream;
+import com.leosatdata.util.BitOutputStream;
 
 public class TransferFrameParser {
 
-	public static TransferFrame parse(byte[] data) throws IOException {
-		BitInputStream bis = new BitInputStream(data);
+	public static TransferFrame decode(BitInputStream bis) throws IOException {
 		TransferFrameHeader header = new TransferFrameHeader();
 		header.setVersionNumber(bis.readUnsignedInt(2));
 		header.setQualityOfService(QualityOfService.valueOfCode(bis.readUnsignedInt(1)));
@@ -31,6 +31,10 @@ public class TransferFrameParser {
 		bis.readFully(dataField);
 		result.setDataField(dataField);
 		return result;
+	}
+
+	public static void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
+		// FIXME
 	}
 
 }

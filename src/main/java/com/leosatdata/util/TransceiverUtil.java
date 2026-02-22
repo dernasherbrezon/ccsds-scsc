@@ -37,6 +37,7 @@ public class TransceiverUtil {
 	}
 
 	private static TxRxParameters createDefaultTxRx(Configuration config) {
+		// TODO not clear why hailing_data_rate exist
 		int symbolRate = config.getInteger("hailing_symbol_rate", -1);
 		int channel = config.getInteger("hailing_channel", -1);
 		TxRxParameters result = new TxRxParameters();

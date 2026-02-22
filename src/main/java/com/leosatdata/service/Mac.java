@@ -10,6 +10,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.leosatdata.ccsds2110b6.model.DfcId;
+import com.leosatdata.ccsds2110b6.model.PduTypeId;
+import com.leosatdata.ccsds2110b6.model.QualityOfService;
+import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
@@ -18,11 +22,14 @@ import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.MacDuplex;
 import com.leosatdata.model.MacMode;
 import com.leosatdata.model.PlExtensions;
+import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.TransceiverUtil;
 
 public class Mac implements Runnable, TxCallback, RxCallback {
@@ -52,6 +59,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	private int y;
 	private int z;
 	private final Thread t;
+	private int expFsn = 0;
 
 	private byte[] commValueBuffer;
 
@@ -99,16 +107,16 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	private void handle(Event e) {
 		switch (e.getType()) {
 		case E2_CONNECTING_T:
-			// FIXME create hail directives
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			DataOutputStream dos = new DataOutputStream(baos);
-//			SpduParser.encode(dos, new Object());
-			try {
-				dos.close();
-			} catch (IOException e1) {
-				// ignore
+			if (currentType1 != null) {
+				commValueBuffer = encode(currentType1);
+			} else if (currentType4 != null) {
+				commValueBuffer = encode(currentType4);
+			} else if (currentType5 != null) {
+				commValueBuffer = encode(currentType5);
+			} else {
+				// FIXME notify OBC about failure
+				return;
 			}
-			commValueBuffer = baos.toByteArray();
 
 			persistence = true;
 			mode = MacMode.CONNECTING_T;
@@ -128,6 +136,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
 			transceiver.stopIdle();
+			hailCarrierReceived = false;
 			transceiver.startRx();
 			scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
@@ -137,7 +146,6 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {
 				callback.onCarrier();
-				hailCarrierReceived = false;
 			}
 			sendEvent(new Event(EventType.E2_CONNECTING_T));
 			break;
@@ -334,6 +342,55 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			TransceiverUtil.applyParameters(TransceiverUtil.createDefaultUslp(config), transceiver);
 		} else {
 			throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
+		}
+	}
+
+	private byte[] encode(Spdu spdu) {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			SpduParser.encode(spdu, bos);
+		} catch (IOException e1) {
+			// FIXME
+		}
+		byte[] payload = baos.toByteArray();
+		String frameVersion = config.getProperty("frame_version");
+		if (frameVersion.equals("3")) {
+			com.leosatdata.ccsds2110b6.model.TransferFrameHeader header = new com.leosatdata.ccsds2110b6.model.TransferFrameHeader();
+			header.setVersionNumber(0b10);
+			header.setQualityOfService(QualityOfService.EXPEDITED);
+			header.setPduTypeId(PduTypeId.SPDU);
+			header.setDfcId(DfcId.PACKETS);
+			header.setSourceOrDestination(SourceDestination.SOURCE);
+			header.setScid(config.getInteger("local_spacecraft_id", 0));
+			header.setPortId(0); // not used in P frames
+			header.setPcid(config.getInteger("local_pcid", 0));
+			header.setFrameLength(payload.length);
+			header.setFrameSequenceNumber(expFsn++);
+			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
+			frame.setHeader(header);
+			frame.setDataField(payload);
+			baos = new ByteArrayOutputStream();
+			try (BitOutputStream bos = new BitOutputStream(baos)) {
+				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
+			} catch (IOException e1) {
+				// FIXME
+			}
+			return baos.toByteArray();
+		} else if (frameVersion.equals("4")) {
+			com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = new com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader();
+			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
+			frame.setHeader(header);
+			frame.setDataField(payload);
+			baos = new ByteArrayOutputStream();
+			try (BitOutputStream bos = new BitOutputStream(baos)) {
+				com.leosatdata.ccsds7321b3.util.TransferFrameParser.encode(frame, bos);
+			} catch (IOException e1) {
+				// FIXME
+			}
+			return baos.toByteArray();
+		} else {
+			// FIXME
+			return null;
 		}
 	}
 
