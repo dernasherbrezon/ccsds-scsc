@@ -1,7 +1,6 @@
 package com.leosatdata.service;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -107,14 +106,16 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	private void handle(Event e) {
 		switch (e.getType()) {
 		case E2_CONNECTING_T:
+			commValueBuffer = null;
 			if (currentType1 != null) {
 				commValueBuffer = encode(currentType1);
 			} else if (currentType4 != null) {
 				commValueBuffer = encode(currentType4);
 			} else if (currentType5 != null) {
 				commValueBuffer = encode(currentType5);
-			} else {
-				// FIXME notify OBC about failure
+			}
+			if (commValueBuffer == null) {
+				callback.onFailure();
 				return;
 			}
 
@@ -350,13 +351,14 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 		try (BitOutputStream bos = new BitOutputStream(baos)) {
 			SpduParser.encode(spdu, bos);
 		} catch (IOException e1) {
-			// FIXME
+			LOG.error("can't serialize spdu", e1);
+			return null;
 		}
 		byte[] payload = baos.toByteArray();
 		String frameVersion = config.getProperty("frame_version");
 		if (frameVersion.equals("3")) {
 			com.leosatdata.ccsds2110b6.model.TransferFrameHeader header = new com.leosatdata.ccsds2110b6.model.TransferFrameHeader();
-			header.setVersionNumber(0b10);
+			header.setVersionNumber(0b10); // version 3
 			header.setQualityOfService(QualityOfService.EXPEDITED);
 			header.setPduTypeId(PduTypeId.SPDU);
 			header.setDfcId(DfcId.PACKETS);
@@ -373,11 +375,24 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
 			} catch (IOException e1) {
-				// FIXME
+				LOG.error("can't serialize transferframe3", e1);
+				return null;
 			}
 			return baos.toByteArray();
 		} else if (frameVersion.equals("4")) {
 			com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = new com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader();
+			header.setVersionNumber(0b1100); // version 4
+			header.setScid(config.getInteger("local_spacecraft_id", 0));
+			header.setSourceOrDestination(SourceDestination.SOURCE);
+			header.setVcid(0); // not clear
+			header.setMapid(0); // not clear
+			header.setHeaderTruncated(false);
+			header.setFrameLength(payload.length);
+			header.setSequenceControl(QualityOfService.EXPEDITED);
+			header.setProtocolControl(PduTypeId.SPDU);
+			header.setOcf(false);
+			header.setVcfCountLength(0b100); // 4 bytes for vcf count
+			header.setVcfCount(expFsn++);
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
@@ -385,11 +400,12 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				com.leosatdata.ccsds7321b3.util.TransferFrameParser.encode(frame, bos);
 			} catch (IOException e1) {
-				// FIXME
+				LOG.error("can't serialize transferframe4", e1);
+				return null;
 			}
 			return baos.toByteArray();
 		} else {
-			// FIXME
+			LOG.error("unsupported frame version: {}", frameVersion);
 			return null;
 		}
 	}

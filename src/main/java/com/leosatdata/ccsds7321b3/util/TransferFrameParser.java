@@ -28,7 +28,7 @@ public class TransferFrameParser {
 			header.setOcf(bis.readBoolean());
 			header.setVcfCountLength(bis.readUnsignedInt(3));
 			if (header.getVcfCountLength() != 0b000) {
-				header.setVcfCount(bis.readUnsignedInt(header.getVcfCountLength()));
+				header.setVcfCount(bis.readUnsignedInt(header.getVcfCountLength() * 8));
 			}
 		}
 
