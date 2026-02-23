@@ -34,7 +34,18 @@ public class TransferFrameParser {
 	}
 
 	public static void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
-		// FIXME
+		TransferFrameHeader header = frame.getHeader();
+		bos.writeUnsignedInt(2, header.getVersionNumber());
+		bos.writeUnsignedInt(1, header.getQualityOfService().getCode());
+		bos.writeUnsignedInt(1, header.getPduTypeId().getCode());
+		bos.writeUnsignedInt(2, header.getDfcId().getCode());
+		bos.writeUnsignedInt(10, header.getScid());
+		bos.writeUnsignedInt(1, header.getPcid());
+		bos.writeUnsignedInt(3, header.getPortId());
+		bos.writeUnsignedInt(1, header.getSourceOrDestination().getCode());
+		bos.writeUnsignedInt(11, header.getFrameLength());
+		bos.writeUnsignedInt(8, header.getFrameSequenceNumber());
+		bos.writeFully(frame.getDataField());
 	}
 
 }

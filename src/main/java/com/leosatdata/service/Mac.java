@@ -113,6 +113,8 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 				commValueBuffer = encode(currentType4);
 			} else if (currentType5 != null) {
 				commValueBuffer = encode(currentType5);
+			} else {
+				LOG.error("local comm is not configured");
 			}
 			if (commValueBuffer == null) {
 				callback.onFailure();

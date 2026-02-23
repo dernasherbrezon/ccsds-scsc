@@ -26,6 +26,11 @@ public class CommTest {
 			public void onCarrier() {
 				// TODO Auto-generated method stub
 			}
+			@Override
+			public void onFailure() {
+				// TODO Auto-generated method stub
+				
+			}
 		});
 		satellite.setMode(MacMode.CONNECTING_L);
 
@@ -33,6 +38,11 @@ public class CommTest {
 			@Override
 			public void onCarrier() {
 				// TODO Auto-generated method stub
+			}
+			@Override
+			public void onFailure() {
+				// TODO Auto-generated method stub
+				
 			}
 		});
 		ground.setMode(MacMode.CONNECTING_T);
