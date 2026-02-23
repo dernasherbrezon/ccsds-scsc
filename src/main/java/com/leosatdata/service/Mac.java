@@ -22,6 +22,8 @@ import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.MacDuplex;
 import com.leosatdata.model.MacMode;
+import com.leosatdata.model.PersistentActivity;
+import com.leosatdata.model.PersistentActivityType;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TxRxParameters;
@@ -36,6 +38,8 @@ import com.leosatdata.util.TransceiverUtil;
 public class Mac implements Runnable, TxCallback, RxCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);
+	private final static int HAIL_RESPONSE_FRAME = 0;
+	private final static int HAIL_RESPONSE_SYMBOL_IN_LOCK = 1;
 
 	private final Fop fop;
 	private final Farm farm;
@@ -122,7 +126,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 				LOG.error("local comm is not configured");
 			}
 			if (commValueBuffer == null) {
-				callback.handle(new ControllerEvent(ControllerEventType.INTERNAL_FAILURE));
+				callback.handle(createHailNotification(false));
 				return;
 			}
 
@@ -153,7 +157,9 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			break;
 		case E8_2_SYMBOL_IN_LOCK:
 			symbolInLock = true;
-			// FIXME check hail_response parameter
+			if (config.getInteger("hail_response", 0) == HAIL_RESPONSE_SYMBOL_IN_LOCK) {
+				callback.handle(createHailNotification(true));
+			}
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {
@@ -163,7 +169,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			int maxAttempts = config.getInteger("hail_lifetime", 0);
 			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
 				currentHailAttempt = 0;
-				callback.handle(new ControllerEvent(ControllerEventType.UNABLE_TO_HAIL));
+				callback.handle(createHailNotification(false));
 				return;
 			}
 			sendEvent(new Event(EventType.E2_CONNECTING_T));
@@ -447,6 +453,18 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	@Override
 	public void onSymbolInLock() {
 		sendEvent(new Event(EventType.E8_2_SYMBOL_IN_LOCK));
+	}
+
+	private ControllerEvent createHailNotification(boolean success) {
+		PersistentActivity activity = new PersistentActivity();
+		activity.setType(PersistentActivityType.HAILING);
+		activity.setSuccess(success);
+		// not clear why OBC need these parameters
+		activity.setLifetime(config.getInteger("hail_lifetime", 0));
+		activity.setWaitingPeriod(config.getInteger("hail_wait_duration", 0));
+		activity.setNotification(config.getInteger("hail_notification", 0));
+		activity.setResponse(config.getInteger("hail_response", 0));
+		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}
 
 }

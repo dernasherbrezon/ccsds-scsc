@@ -8,6 +8,7 @@ import java.util.Properties;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.MacMode;
 import com.leosatdata.util.Configuration;
 
@@ -23,11 +24,7 @@ public class CommTest {
 	public void testSuccess() throws Exception {
 		Mac satellite = new Mac(satelliteConfig, satelliteTransceiver, new NodeCallback() {
 			@Override
-			public void onCarrier() {
-				// TODO Auto-generated method stub
-			}
-			@Override
-			public void onFailure() {
+			public void handle(ControllerEvent event) {
 				// TODO Auto-generated method stub
 				
 			}
@@ -36,11 +33,7 @@ public class CommTest {
 
 		Mac ground = new Mac(groundConfig, groundTransceiver, new NodeCallback() {
 			@Override
-			public void onCarrier() {
-				// TODO Auto-generated method stub
-			}
-			@Override
-			public void onFailure() {
+			public void handle(ControllerEvent event) {
 				// TODO Auto-generated method stub
 				
 			}
