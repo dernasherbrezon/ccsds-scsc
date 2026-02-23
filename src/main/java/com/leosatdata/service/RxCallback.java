@@ -4,6 +4,8 @@ public interface RxCallback {
 	
 	void onRx(byte[] data);
 	
-	void onCarrier();
+	void onCarrierAcquired();
+	
+	void onSymbolInLock();
 
 }

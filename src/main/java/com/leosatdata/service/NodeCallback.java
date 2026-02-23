@@ -1,8 +1,9 @@
 package com.leosatdata.service;
 
+import com.leosatdata.model.ControllerEvent;
+
 public interface NodeCallback {
 
-	void onCarrier();
-	
-	void onFailure();
+	void handle(ControllerEvent event);
+
 }

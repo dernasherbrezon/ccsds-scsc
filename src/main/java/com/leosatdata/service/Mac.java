@@ -14,6 +14,8 @@ import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.ControlParameters;
+import com.leosatdata.model.ControllerEvent;
+import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.Link2Establishment;
@@ -52,6 +54,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	private boolean transmit = false;
 	private boolean persistence = false;
 	private boolean hailCarrierReceived = false;
+	private boolean symbolInLock = false;
 	private MacDuplex duplex = MacDuplex.FULL; // FIXME check defaults
 	private int ss;
 	private int x;
@@ -59,6 +62,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	private int z;
 	private final Thread t;
 	private int expFsn = 0;
+	private int currentHailAttempt = 0;
 
 	private byte[] commValueBuffer;
 
@@ -106,6 +110,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	private void handle(Event e) {
 		switch (e.getType()) {
 		case E2_CONNECTING_T:
+			LOG.info("attempting hail: {} of {}", currentHailAttempt, config.getInteger("hail_lifetime", 0));
 			commValueBuffer = null;
 			if (currentType1 != null) {
 				commValueBuffer = encode(currentType1);
@@ -117,7 +122,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 				LOG.error("local comm is not configured");
 			}
 			if (commValueBuffer == null) {
-				callback.onFailure();
+				callback.handle(new ControllerEvent(ControllerEventType.INTERNAL_FAILURE));
 				return;
 			}
 
@@ -146,9 +151,20 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 		case E8_1_CARRIER_RECEIVED:
 			hailCarrierReceived = true;
 			break;
+		case E8_2_SYMBOL_IN_LOCK:
+			symbolInLock = true;
+			// FIXME check hail_response parameter
+			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {
-				callback.onCarrier();
+				callback.handle(new ControllerEvent(ControllerEventType.CARRIER_ONLY_RECEIVED));
+			}
+			currentHailAttempt++;
+			int maxAttempts = config.getInteger("hail_lifetime", 0);
+			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
+				currentHailAttempt = 0;
+				callback.handle(new ControllerEvent(ControllerEventType.UNABLE_TO_HAIL));
+				return;
 			}
 			sendEvent(new Event(EventType.E2_CONNECTING_T));
 			break;
@@ -424,8 +440,13 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	}
 
 	@Override
-	public void onCarrier() {
+	public void onCarrierAcquired() {
 		sendEvent(new Event(EventType.E8_1_CARRIER_RECEIVED));
+	}
+
+	@Override
+	public void onSymbolInLock() {
+		sendEvent(new Event(EventType.E8_2_SYMBOL_IN_LOCK));
 	}
 
 }
