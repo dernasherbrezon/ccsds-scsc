@@ -23,7 +23,6 @@ import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.MacDuplex;
 import com.leosatdata.model.MacMode;
 import com.leosatdata.model.PersistentActivity;
-import com.leosatdata.model.PersistentActivityType;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TxRxParameters;
@@ -35,7 +34,7 @@ import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.TransceiverUtil;
 
-public class Mac implements Runnable, TxCallback, RxCallback {
+public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierCallback, SpduCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);
 	private final static int HAIL_RESPONSE_FRAME = 0;
@@ -49,6 +48,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 
 	private final LinkedBlockingQueue<Event> queue = new LinkedBlockingQueue<>();
 	private Timer waitTimer;
+	private TimerTask waitTimerTask;
 
 	private Type1Directive currentType1;
 	private Type4Directive currentType4;
@@ -60,23 +60,25 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	private boolean hailCarrierReceived = false;
 	private boolean symbolInLock = false;
 	private MacDuplex duplex = MacDuplex.FULL; // FIXME check defaults
+	private FrameSublayer frameSublayer;
 	private int ss;
 	private int x;
 	private int y;
 	private int z;
 	private final Thread t;
-	private int expFsn = 0;
 	private int currentHailAttempt = 0;
 
-	private byte[] commValueBuffer;
+	private Object commValueBuffer;
 
-	public Mac(Configuration config, Transceiver transceiver, NodeCallback callback) {
+	public Mac(Configuration config, Transceiver transceiver, FrameSublayer frameSublayer, NodeCallback callback) {
 		this.config = config;
 		this.callback = callback;
 		this.transceiver = transceiver;
 		this.transceiver.setTxCallback(this);
 		this.fop = new Fop(transceiver);
 		this.farm = new Farm();
+		this.frameSublayer = frameSublayer;
+		this.frameSublayer.setSpduCallback(this);
 		t = new Thread(this, "mac-thread");
 	}
 
@@ -126,7 +128,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 				LOG.error("local comm is not configured");
 			}
 			if (commValueBuffer == null) {
-				callback.handle(createHailNotification(false));
+				callback.handle(createNotification("hail", false));
 				return;
 			}
 
@@ -141,7 +143,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
-			transceiver.send(commValueBuffer);
+			frameSublayer.sendControlFrame(commValueBuffer);
 			break;
 		case E6_OUTPUT_FIFO_EMPTY:
 			scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
@@ -158,7 +160,10 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 		case E8_2_SYMBOL_IN_LOCK:
 			symbolInLock = true;
 			if (config.getInteger("hail_response", 0) == HAIL_RESPONSE_SYMBOL_IN_LOCK) {
-				callback.handle(createHailNotification(true));
+				// FIXME better unlock transceiver user's queues
+				persistence = false;
+				waitTimerTask.cancel();
+				callback.handle(createNotification("hail", true));
 			}
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
@@ -169,7 +174,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			int maxAttempts = config.getInteger("hail_lifetime", 0);
 			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
 				currentHailAttempt = 0;
-				callback.handle(createHailNotification(false));
+				callback.handle(createNotification("hail", false));
 				return;
 			}
 			sendEvent(new Event(EventType.E2_CONNECTING_T));
@@ -349,13 +354,14 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	}
 
 	private void scheduleWait(EventType type, long duration) {
-		waitTimer.schedule(new TimerTask() {
+		waitTimerTask = new TimerTask() {
 
 			@Override
 			public void run() {
 				sendEvent(new Event(type));
 			}
-		}, duration);
+		};
+		waitTimer.schedule(waitTimerTask, duration);
 	}
 
 	private void configureTransceiverForHail() {
@@ -370,7 +376,7 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 		}
 	}
 
-	private byte[] encode(Spdu spdu) {
+	private Object encode(Spdu spdu) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (BitOutputStream bos = new BitOutputStream(baos)) {
 			SpduParser.encode(spdu, bos);
@@ -391,18 +397,10 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			header.setPortId(0); // not used in P frames
 			header.setPcid(config.getInteger("local_pcid", 0));
 			header.setFrameLength(payload.length);
-			header.setFrameSequenceNumber(expFsn++);
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
-			baos = new ByteArrayOutputStream();
-			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
-			} catch (IOException e1) {
-				LOG.error("can't serialize transferframe3", e1);
-				return null;
-			}
-			return baos.toByteArray();
+			return frame;
 		} else if (frameVersion.equals("4")) {
 			com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = new com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader();
 			header.setVersionNumber(0b1100); // version 4
@@ -416,18 +414,10 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 			header.setProtocolControl(PduTypeId.SPDU);
 			header.setOcf(false);
 			header.setVcfCountLength(0b100); // 4 bytes for vcf count
-			header.setVcfCount(expFsn++);
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
-			baos = new ByteArrayOutputStream();
-			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				com.leosatdata.ccsds7321b3.util.TransferFrameParser.encode(frame, bos);
-			} catch (IOException e1) {
-				LOG.error("can't serialize transferframe4", e1);
-				return null;
-			}
-			return baos.toByteArray();
+			return frame;
 		} else {
 			LOG.error("unsupported frame version: {}", frameVersion);
 			return null;
@@ -440,12 +430,6 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 	}
 
 	@Override
-	public void onRx(byte[] data) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public void onCarrierAcquired() {
 		sendEvent(new Event(EventType.E8_1_CARRIER_RECEIVED));
 	}
@@ -455,15 +439,19 @@ public class Mac implements Runnable, TxCallback, RxCallback {
 		sendEvent(new Event(EventType.E8_2_SYMBOL_IN_LOCK));
 	}
 
-	private ControllerEvent createHailNotification(boolean success) {
+	@Override
+	public void onSpdu(Object frame) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private ControllerEvent createNotification(String prefix, boolean success) {
 		PersistentActivity activity = new PersistentActivity();
-		activity.setType(PersistentActivityType.HAILING);
 		activity.setSuccess(success);
-		// not clear why OBC need these parameters
-		activity.setLifetime(config.getInteger("hail_lifetime", 0));
-		activity.setWaitingPeriod(config.getInteger("hail_wait_duration", 0));
-		activity.setNotification(config.getInteger("hail_notification", 0));
-		activity.setResponse(config.getInteger("hail_response", 0));
+		activity.setLifetime(config.getInteger(prefix + "_lifetime", 0));
+		activity.setWaitingPeriod(config.getInteger(prefix + "_wait_duration", 0));
+		activity.setNotification(config.getInteger(prefix + "_notification", 0));
+		activity.setResponse(config.getInteger(prefix + "_response", 0));
 		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}
 

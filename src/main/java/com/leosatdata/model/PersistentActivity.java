@@ -2,21 +2,11 @@ package com.leosatdata.model;
 
 public class PersistentActivity {
 
-	private PersistentActivityType type;
-	private int notification; // not clear
+	private int notification;
 	private int waitingPeriod;
 	private int lifetime;
 	private int response;
-
 	private boolean success;
-
-	public PersistentActivityType getType() {
-		return type;
-	}
-
-	public void setType(PersistentActivityType type) {
-		this.type = type;
-	}
 
 	public int getLifetime() {
 		return lifetime;

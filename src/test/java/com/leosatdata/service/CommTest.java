@@ -8,38 +8,19 @@ import java.util.Properties;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.leosatdata.model.ControllerEvent;
-import com.leosatdata.model.MacMode;
 import com.leosatdata.util.Configuration;
 
 public class CommTest {
 
 	private Configuration groundConfig;
-	private NullTransceiver groundTransceiver;
+	private Node ground;
 
 	private Configuration satelliteConfig;
-	private NullTransceiver satelliteTransceiver;
+	private Node satellite;
 
 	@Test
 	public void testSuccess() throws Exception {
-		Mac satellite = new Mac(satelliteConfig, satelliteTransceiver, new NodeCallback() {
-			@Override
-			public void handle(ControllerEvent event) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
-		satellite.setMode(MacMode.CONNECTING_L);
-
-		Mac ground = new Mac(groundConfig, groundTransceiver, new NodeCallback() {
-			@Override
-			public void handle(ControllerEvent event) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
-		ground.setMode(MacMode.CONNECTING_T);
-
+		// FIXME do some communication
 	}
 
 	@Before
@@ -56,11 +37,14 @@ public class CommTest {
 		props.putAll(load("src/test/resources/satellite.properties"));
 		satelliteConfig = new Configuration(props);
 
-		groundTransceiver = new NullTransceiver(groundConfig);
-		satelliteTransceiver = new NullTransceiver(satelliteConfig);
+		ground = new Node(groundConfig);
+		satellite = new Node(satelliteConfig);
 
-		groundTransceiver.setOtherSide(satelliteTransceiver);
-		satelliteTransceiver.setOtherSide(groundTransceiver);
+		ground.getTransceiver().setOtherSide(satellite.getTransceiver());
+		satellite.getTransceiver().setOtherSide(ground.getTransceiver());
+
+		ground.start();
+		satellite.start();
 	}
 
 	private static Properties load(String file) throws Exception {
