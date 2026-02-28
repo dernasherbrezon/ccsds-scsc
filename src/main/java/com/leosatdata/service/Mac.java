@@ -413,7 +413,6 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 			header.setSequenceControl(QualityOfService.EXPEDITED);
 			header.setProtocolControl(PduTypeId.SPDU);
 			header.setOcf(false);
-			header.setVcfCountLength(0b100); // 4 bytes for vcf count
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);

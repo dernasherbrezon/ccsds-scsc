@@ -13,6 +13,8 @@ import com.leosatdata.util.BitOutputStream;
 
 public class TransferFrameParser {
 
+	public static final int MAX_SEQUENCE_NUMBER = (int) Math.pow(2, 8);
+
 	public static TransferFrame decode(BitInputStream bis) throws IOException {
 		TransferFrameHeader header = new TransferFrameHeader();
 		header.setVersionNumber(bis.readUnsignedInt(2));

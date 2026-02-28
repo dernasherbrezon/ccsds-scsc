@@ -21,6 +21,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 	private final Thread t;
 	private final Transceiver transceiver;
 	private int expFsn = 0;
+	private int seqCtrlFsn = 0;
 	private SpduCallback spduCallback;
 	private UserDataCallback userDataCallback;
 
@@ -43,9 +44,11 @@ public class FrameSublayer implements Runnable, RxCallback {
 			if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 				com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
 				if (frame.getHeader().getQualityOfService().equals(QualityOfService.EXPEDITED)) {
+					if (expFsn > com.leosatdata.ccsds2110b6.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
+						expFsn = 0;
+					}
 					frame.getHeader().setFrameSequenceNumber(expFsn++);
 				}
-				// FIXME else
 				try (BitOutputStream bos = new BitOutputStream(baos)) {
 					com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
 				} catch (IOException e1) {
@@ -55,9 +58,12 @@ public class FrameSublayer implements Runnable, RxCallback {
 			} else if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 				com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
 				if (frame.getHeader().getSequenceControl().equals(QualityOfService.EXPEDITED)) {
+					frame.getHeader().setVcfCountLength(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VCF_COUNT_LENGTH);
+					if (expFsn > com.leosatdata.ccsds7321b3.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
+						expFsn = 0;
+					}
 					frame.getHeader().setVcfCount(expFsn++);
 				}
-				// FIXME else
 				try (BitOutputStream bos = new BitOutputStream(baos)) {
 					com.leosatdata.ccsds7321b3.util.TransferFrameParser.encode(frame, bos);
 				} catch (IOException e1) {
@@ -86,6 +92,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 	}
 
 	public void sendUserFrame(Object frame) {
+		// FIXME seq ctrl fsn is set before going into the queue
 		userQueue.add(frame);
 	}
 

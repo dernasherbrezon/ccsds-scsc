@@ -12,6 +12,10 @@ import com.leosatdata.util.BitOutputStream;
 
 public class TransferFrameParser {
 
+	// even if it dynamic, make it static and consistent with version 3 frame
+	public static final int VCF_COUNT_LENGTH = 0b011; // 3 bytes
+	public static final int MAX_SEQUENCE_NUMBER = (int) Math.pow(2, VCF_COUNT_LENGTH);
+
 	public static TransferFrame decode(BitInputStream bis) throws IOException {
 		TransferFramePrimaryHeader header = new TransferFramePrimaryHeader();
 		header.setVersionNumber(bis.readUnsignedInt(4));
