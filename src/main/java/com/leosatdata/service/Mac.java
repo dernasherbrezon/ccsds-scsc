@@ -388,7 +388,7 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 		String frameVersion = config.getProperty("frame_version");
 		if (frameVersion.equals("3")) {
 			com.leosatdata.ccsds2110b6.model.TransferFrameHeader header = new com.leosatdata.ccsds2110b6.model.TransferFrameHeader();
-			header.setVersionNumber(0b10); // version 3
+			header.setVersionNumber(com.leosatdata.ccsds2110b6.util.TransferFrameParser.VERSION_NUMBER);
 			header.setQualityOfService(QualityOfService.EXPEDITED);
 			header.setPduTypeId(PduTypeId.SPDU);
 			header.setDfcId(DfcId.PACKETS);
@@ -403,7 +403,7 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 			return frame;
 		} else if (frameVersion.equals("4")) {
 			com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = new com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader();
-			header.setVersionNumber(0b1100); // version 4
+			header.setVersionNumber(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VERSION_NUMBER);
 			header.setScid(config.getInteger("local_spacecraft_id", 0));
 			header.setSourceOrDestination(SourceDestination.SOURCE);
 			header.setVcid(0); // not clear

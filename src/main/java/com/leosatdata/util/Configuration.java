@@ -48,4 +48,12 @@ public class Configuration {
 		}
 		return Float.valueOf(UNDERSCORE.matcher(result).replaceAll(""));
 	}
+
+	public boolean getBoolean(String name) {
+		String result = config.getProperty(name);
+		if (result == null || result.trim().length() == 0) {
+			return false;
+		}
+		return Boolean.valueOf(result);
+	}
 }

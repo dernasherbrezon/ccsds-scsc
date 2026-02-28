@@ -3,7 +3,6 @@ package com.leosatdata.service;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.util.Configuration;
 
 public class Node {
@@ -14,16 +13,10 @@ public class Node {
 	private final InputStream is;
 	private final OutputStream os;
 
-	public Node(Configuration config) {
+	public Node(Configuration config, NodeCallback callback) {
 		transceiver = new NullTransceiver(config);
-		frameSublayer = new FrameSublayer(transceiver);
-		mac = new Mac(config, transceiver, frameSublayer, new NodeCallback() {
-			@Override
-			public void handle(ControllerEvent event) {
-				// TODO Auto-generated method stub
-
-			}
-		});
+		frameSublayer = new FrameSublayer(config, transceiver, callback);
+		mac = new Mac(config, transceiver, frameSublayer, callback);
 		is = new FrameInputStream();
 		frameSublayer.setUserDataCallback((FrameInputStream) is);
 		os = new FrameOutputStream(frameSublayer);

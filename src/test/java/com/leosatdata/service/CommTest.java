@@ -8,6 +8,7 @@ import java.util.Properties;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.util.Configuration;
 
 public class CommTest {
@@ -37,8 +38,22 @@ public class CommTest {
 		props.putAll(load("src/test/resources/satellite.properties"));
 		satelliteConfig = new Configuration(props);
 
-		ground = new Node(groundConfig);
-		satellite = new Node(satelliteConfig);
+		ground = new Node(groundConfig, new NodeCallback() {
+
+			@Override
+			public void handle(ControllerEvent event) {
+				// TODO Auto-generated method stub
+
+			}
+		});
+		satellite = new Node(satelliteConfig, new NodeCallback() {
+
+			@Override
+			public void handle(ControllerEvent event) {
+				// TODO Auto-generated method stub
+
+			}
+		});
 
 		ground.getTransceiver().setOtherSide(satellite.getTransceiver());
 		satellite.getTransceiver().setOtherSide(ground.getTransceiver());
