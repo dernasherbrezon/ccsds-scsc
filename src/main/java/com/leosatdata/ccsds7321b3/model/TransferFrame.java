@@ -4,11 +4,18 @@ package com.leosatdata.ccsds7321b3.model;
 public class TransferFrame {
 
 	private TransferFramePrimaryHeader header;
-//	private byte[] insertZone;
+	private byte[] insertZone;
 	private byte[] dataField;
-	// FIXME is it needed by ccsds235.1?
-//	private byte[] operationalControl;
-//	private byte[] frameErrorControl;
+	private byte[] operationalControl;
+	private byte[] frameErrorControl;
+
+	public byte[] getInsertZone() {
+		return insertZone;
+	}
+
+	public void setInsertZone(byte[] insertZone) {
+		this.insertZone = insertZone;
+	}
 
 	public TransferFramePrimaryHeader getHeader() {
 		return header;
@@ -24,6 +31,22 @@ public class TransferFrame {
 
 	public void setDataField(byte[] dataField) {
 		this.dataField = dataField;
+	}
+
+	public byte[] getOperationalControl() {
+		return operationalControl;
+	}
+
+	public void setOperationalControl(byte[] operationalControl) {
+		this.operationalControl = operationalControl;
+	}
+
+	public byte[] getFrameErrorControl() {
+		return frameErrorControl;
+	}
+
+	public void setFrameErrorControl(byte[] frameErrorControl) {
+		this.frameErrorControl = frameErrorControl;
 	}
 
 }

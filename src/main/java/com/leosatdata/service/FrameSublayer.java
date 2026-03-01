@@ -28,6 +28,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 	private final Transceiver transceiver;
 	private final NodeCallback nodeCallback;
 	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
+	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
 	private int expFsn = 0;
 	private int seqCtrlFsn = 0;
 	private SpduCallback spduCallback;
@@ -45,6 +46,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 		this.testSource = config.getBoolean("test_source");
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
+		this.framev4Parser = new com.leosatdata.ccsds7321b3.util.TransferFrameParser(config);
 	}
 
 	@Override
@@ -90,7 +92,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 					frame.getHeader().setVcfCount(expFsn++);
 				}
 				try (BitOutputStream bos = new BitOutputStream(baos)) {
-					com.leosatdata.ccsds7321b3.util.TransferFrameParser.encode(frame, bos);
+					framev4Parser.encode(frame, bos);
 				} catch (IOException e1) {
 					LOG.error("can't serialize transferframe4", e1);
 					continue;
@@ -132,7 +134,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 			}
 		} else if (com.leosatdata.ccsds7321b3.util.TransferFrameParser.accept(data)) {
 			try {
-				com.leosatdata.ccsds7321b3.model.TransferFrame framev4 = com.leosatdata.ccsds7321b3.util.TransferFrameParser.decode(new BitInputStream(data));
+				com.leosatdata.ccsds7321b3.model.TransferFrame framev4 = framev4Parser.decode(new BitInputStream(data));
 				type = framev4.getHeader().getProtocolControl();
 				sourceDestination = framev4.getHeader().getSourceOrDestination();
 				scid = framev4.getHeader().getScid();

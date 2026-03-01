@@ -12,15 +12,15 @@ public class TransferFrameParser {
 
 	public static final int VERSION_NUMBER = 0b01;
 
-	private final int frameInsertZone;
+	private final int insertZoneLength;
 	private final boolean frameErrorControl;
 	private final int dataFieldLength;
 
 	public TransferFrameParser(Configuration config) {
-		this.frameInsertZone = config.getInteger("aos.frameInsertZone", 0);
+		this.insertZoneLength = config.getInteger("aos.insertZoneLength", 0);
 		this.frameErrorControl = config.getBoolean("aos.frameErrorControl");
 		int headerLength = frameErrorControl ? 8 : 6;
-		this.dataFieldLength = config.getInteger("maximum_frame_length", 0) - this.frameInsertZone - headerLength;
+		this.dataFieldLength = config.getInteger("maximum_frame_length", 0) - this.insertZoneLength - headerLength;
 		if (dataFieldLength <= 0) {
 			throw new IllegalArgumentException("invalid configuration: maximum_frame_length - aos.frameInsertZone");
 		}
@@ -51,8 +51,8 @@ public class TransferFrameParser {
 
 		TransferFrame result = new TransferFrame();
 		result.setHeader(header);
-		if (frameInsertZone != 0) {
-			byte[] insertZone = new byte[frameInsertZone];
+		if (insertZoneLength != 0) {
+			byte[] insertZone = new byte[insertZoneLength];
 			bis.readFully(insertZone);
 			result.setInsertZone(insertZone);
 		}
@@ -81,10 +81,10 @@ public class TransferFrameParser {
 			}
 			bos.writeUnsignedInt(16, frameErrorControl);
 		}
-		if (frameInsertZone != 0) {
+		if (insertZoneLength != 0) {
 			byte[] insertZone = frame.getInsertZone();
 			if (insertZone == null) {
-				insertZone = new byte[frameInsertZone];
+				insertZone = new byte[insertZoneLength];
 			}
 			bos.writeFully(insertZone);
 		}

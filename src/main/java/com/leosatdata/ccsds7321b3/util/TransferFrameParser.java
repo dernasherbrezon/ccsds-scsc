@@ -9,6 +9,7 @@ import com.leosatdata.ccsds7321b3.model.TransferFrame;
 import com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
+import com.leosatdata.util.Configuration;
 
 public class TransferFrameParser {
 
@@ -17,6 +18,14 @@ public class TransferFrameParser {
 	public static final int VCF_COUNT_LENGTH = 0b011; // 3 bytes
 	public static final int MAX_SEQUENCE_NUMBER = (int) Math.pow(2, VCF_COUNT_LENGTH);
 
+	private final int insertZoneLength;
+	private final boolean frameErrorControl;
+
+	public TransferFrameParser(Configuration config) {
+		this.insertZoneLength = config.getInteger("framev4.insertZoneLength", 0);
+		this.frameErrorControl = config.getBoolean("framev4.frameErrorControl");
+	}
+
 	public static boolean accept(byte[] data) {
 		if (data.length == 0) {
 			return false;
@@ -24,7 +33,7 @@ public class TransferFrameParser {
 		return ((data[0] & 0b1111_0000) >> 4) == VERSION_NUMBER;
 	}
 
-	public static TransferFrame decode(BitInputStream bis) throws IOException {
+	public TransferFrame decode(BitInputStream bis) throws IOException {
 		TransferFramePrimaryHeader header = new TransferFramePrimaryHeader();
 		header.setVersionNumber(bis.readUnsignedInt(4));
 		header.setScid(bis.readUnsignedInt(16));
@@ -44,15 +53,34 @@ public class TransferFrameParser {
 			}
 		}
 
+		byte[] insertZone = null;
+		if (insertZoneLength != 0) {
+			insertZone = new byte[insertZoneLength];
+			bis.readFully(insertZone);
+		}
+
 		TransferFrame result = new TransferFrame();
 		result.setHeader(header);
+		result.setInsertZone(insertZone);
+		// 4.1.5.2 or the Insert Zone, if the TFDF is not present,
+		// FIXME how to calculate payload length? How come payload can be missing?
 		byte[] dataField = new byte[bis.available()];
 		bis.readFully(dataField);
 		result.setDataField(dataField);
+		if (header.isOcf()) {
+			byte[] ocf = new byte[4];
+			bis.readFully(ocf);
+			result.setOperationalControl(ocf);
+		}
+		if (frameErrorControl) {
+			byte[] fec = new byte[2];
+			bis.readFully(fec);
+			result.setFrameErrorControl(fec);
+		}
 		return result;
 	}
 
-	public static void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
+	public void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
 		TransferFramePrimaryHeader header = frame.getHeader();
 		bos.writeUnsignedInt(4, header.getVersionNumber());
 		bos.writeUnsignedInt(16, header.getScid());
@@ -70,6 +98,9 @@ public class TransferFrameParser {
 			if (header.getVcfCountLength() != 0b000) {
 				bos.writeUnsignedInt(header.getVcfCountLength() * 8, header.getVcfCount());
 			}
+		}
+		if (frame.getInsertZone() != null) {
+			bos.writeFully(frame.getInsertZone());
 		}
 		bos.writeFully(frame.getDataField());
 	}
