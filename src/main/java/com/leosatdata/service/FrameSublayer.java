@@ -27,6 +27,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 	private final Thread t;
 	private final Transceiver transceiver;
 	private final NodeCallback nodeCallback;
+	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
 	private int expFsn = 0;
 	private int seqCtrlFsn = 0;
 	private SpduCallback spduCallback;
@@ -43,6 +44,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.testSource = config.getBoolean("test_source");
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
+		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
 	}
 
 	@Override
@@ -55,7 +57,16 @@ public class FrameSublayer implements Runnable, RxCallback {
 				break;
 			}
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
+			if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
+				com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
+				// FIXME set sequence number
+				try (BitOutputStream bos = new BitOutputStream(baos)) {
+					framev2Parser.encode(frame, bos);
+				} catch (IOException e1) {
+					LOG.error("can't serialize transferframe2", e1);
+					continue;
+				}
+			} else if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 				com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
 				if (frame.getHeader().getQualityOfService().equals(QualityOfService.EXPEDITED)) {
 					if (expFsn > com.leosatdata.ccsds2110b6.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
@@ -93,12 +104,22 @@ public class FrameSublayer implements Runnable, RxCallback {
 
 	@Override
 	public void onRx(byte[] data) {
-		// FIXME support version-2 AOS frames
 		Object frame = null;
 		PduTypeId type = null;
 		SourceDestination sourceDestination = null;
 		int scid = 0;
-		if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data)) {
+		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data)) {
+			try {
+				com.leosatdata.ccsds7320b4.model.TransferFrame framev2 = framev2Parser.decode(new BitInputStream(data));
+				type = PduTypeId.USER_DATA; // only u-frames
+				sourceDestination = SourceDestination.UNKNOWN; // ignore scid validation as per spec
+				scid = framev2.getHeader().getScid();
+				frame = framev2;
+			} catch (IOException e) {
+				LOG.error("unable to read transferframe2", e);
+				return;
+			}
+		} else if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data)) {
 			try {
 				com.leosatdata.ccsds2110b6.model.TransferFrame framev3 = com.leosatdata.ccsds2110b6.util.TransferFrameParser.decode(new BitInputStream(data));
 				type = framev3.getHeader().getPduTypeId();
@@ -130,7 +151,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 			LOG.debug("discard frame to {}", scid);
 			return;
 		}
-		
+
 		boolean invalidSource = sourceDestination.equals(SourceDestination.SOURCE) && testSource && remoteScid != -1 && remoteScid != scid;
 		if (invalidSource) {
 			nodeCallback.handle(new ControllerEvent(ControllerEventType.INVALID_FRAME_SOURCE, scid));
