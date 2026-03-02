@@ -25,6 +25,8 @@ import com.leosatdata.model.MacMode;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Spdu;
+import com.leosatdata.model.TransceiverEvent;
+import com.leosatdata.model.TransceiverEventType;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
@@ -56,7 +58,6 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 
 	private MacMode mode = MacMode.INACTIVE;
 	private boolean transmit = false;
-	private boolean persistence = false;
 	private boolean hailCarrierReceived = false;
 	private boolean symbolInLock = false;
 	private MacDuplex duplex = MacDuplex.FULL; // FIXME check defaults
@@ -132,26 +133,24 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 				return;
 			}
 
-			persistence = true;
 			mode = MacMode.CONNECTING_T;
-			configureTransceiverForHail();
-			transceiver.startCarrier();
+			frameSublayer.sendUserFrame(new TransceiverEvent(TransceiverEventType.START_CARRIER, TransceiverUtil.createHailTxRx(config)));
 			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
 		case E4_CARRIER_ONLY_TIMEOUT:
-			transceiver.startIdle();
+			frameSublayer.sendControlFrame(new TransceiverEvent(TransceiverEventType.START_IDLE));
 			scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
 			frameSublayer.sendControlFrame(commValueBuffer);
 			break;
 		case E6_OUTPUT_FIFO_EMPTY:
+			// FIXME fifo empty
 			scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
-			transceiver.stopIdle();
 			hailCarrierReceived = false;
-			transceiver.startRx();
+			frameSublayer.sendControlFrame(new TransceiverEvent(TransceiverEventType.START_RX));
 			scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
 		case E8_1_CARRIER_RECEIVED:
@@ -160,8 +159,7 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 		case E8_2_SYMBOL_IN_LOCK:
 			symbolInLock = true;
 			if (config.getInteger("hail_response", 0) == HAIL_RESPONSE_SYMBOL_IN_LOCK) {
-				// FIXME better unlock transceiver user's queues
-				persistence = false;
+				frameSublayer.sendControlFrame(new TransceiverEvent(TransceiverEventType.SWITCH_TO_USER));
 				waitTimerTask.cancel();
 				callback.handle(createNotification("hail", true));
 			}
@@ -177,6 +175,9 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 				callback.handle(createNotification("hail", false));
 				return;
 			}
+			// switch to user queue. otherwise sendUserFrame won't work
+			// FIXME somehow block user's frame until hail completes
+			frameSublayer.sendControlFrame(new TransceiverEvent(TransceiverEventType.SWITCH_TO_USER));
 			sendEvent(new Event(EventType.E2_CONNECTING_T));
 			break;
 		case E12_LOCAL_COMM_CHANGE:
@@ -362,18 +363,6 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 			}
 		};
 		waitTimer.schedule(waitTimerTask, duration);
-	}
-
-	private void configureTransceiverForHail() {
-		// frame verion is the closest parameter to control hailing parameters
-		String frameVersion = config.getProperty("frame_version");
-		if (frameVersion.equals("3")) {
-			TransceiverUtil.applyParameters(TransceiverUtil.createDefaultProximityHail(config), config, transceiver);
-		} else if (frameVersion.equals("4")) {
-			TransceiverUtil.applyParameters(TransceiverUtil.createDefaultUslp(config), transceiver);
-		} else {
-			throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
-		}
 	}
 
 	private Object encode(Spdu spdu) {

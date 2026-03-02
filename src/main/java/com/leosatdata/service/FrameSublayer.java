@@ -13,9 +13,13 @@ import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
+import com.leosatdata.model.TransceiverEvent;
+import com.leosatdata.model.Type1Directive;
+import com.leosatdata.model.Type5Directive;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.TransceiverUtil;
 
 public class FrameSublayer implements Runnable, RxCallback {
 
@@ -23,12 +27,14 @@ public class FrameSublayer implements Runnable, RxCallback {
 
 	private BlockingQueue<Object> userQueue = new ArrayBlockingQueue<>(100);
 	private BlockingQueue<Object> controlQueue = new ArrayBlockingQueue<>(100);
+	private BlockingQueue<Object> currentQueue = userQueue;
 
 	private final Thread t;
 	private final Transceiver transceiver;
 	private final NodeCallback nodeCallback;
 	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
 	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
+	private final Configuration config;
 	private int expFsn = 0;
 	private int seqCtrlFsn = 0;
 	private SpduCallback spduCallback;
@@ -38,6 +44,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 	private int remoteScid;
 
 	public FrameSublayer(Configuration config, Transceiver transceiver, NodeCallback nodeCallback) {
+		this.config = config;
 		this.t = new Thread(this, "frame-sublayer");
 		this.transceiver = transceiver;
 		this.transceiver.setRxCallback(this);
@@ -54,9 +61,13 @@ public class FrameSublayer implements Runnable, RxCallback {
 		while (!Thread.currentThread().isInterrupted()) {
 			Object obj;
 			try {
-				obj = userQueue.take();
+				obj = currentQueue.take();
 			} catch (InterruptedException e) {
 				break;
+			}
+			if (obj instanceof TransceiverEvent) {
+				handle((TransceiverEvent) obj);
+				continue;
 			}
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
@@ -168,6 +179,36 @@ public class FrameSublayer implements Runnable, RxCallback {
 			spduCallback.onSpdu(frame);
 		} else {
 			userDataCallback.onUserData(frame);
+		}
+	}
+
+	private void handle(TransceiverEvent event) {
+		switch (event.getType()) {
+		case START_CARRIER:
+			// equal to persistence=true, i.e. start persistence process
+			currentQueue = controlQueue;
+			String frameVersion = config.getProperty("frame_version");
+			if (frameVersion.equals("3")) {
+				TransceiverUtil.applyParameters((Type1Directive) event.getObj(), config, transceiver);
+			} else if (frameVersion.equals("4")) {
+				TransceiverUtil.applyParameters((Type5Directive) event.getObj(), transceiver);
+			} else {
+				throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
+			}
+			transceiver.startCarrier();
+			break;
+		case START_IDLE:
+			transceiver.startIdle();
+			break;
+		case START_RX:
+			transceiver.stopIdle();
+			transceiver.startRx();
+			break;
+		case SWITCH_TO_USER:
+			currentQueue = userQueue;
+			break;
+		default:
+			LOG.error("unsupported event type: {}", event.getType());
 		}
 	}
 

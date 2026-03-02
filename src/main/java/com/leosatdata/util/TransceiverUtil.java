@@ -27,16 +27,27 @@ import com.leosatdata.service.Transceiver;
 
 public class TransceiverUtil {
 
-	public static Type1Directive createDefaultProximityHail(Configuration config) {
+	public static Object createHailTxRx(Configuration config) {
+		String frameVersion = config.getProperty("frame_version");
+		if (frameVersion.equals("3")) {
+			return TransceiverUtil.createHailProximityTxRx(config);
+		} else if (frameVersion.equals("4")) {
+			return TransceiverUtil.createHailUslpTxRx(config);
+		} else {
+			throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
+		}
+	}
+
+	public static Type1Directive createHailProximityTxRx(Configuration config) {
 		Type1Directive result = new Type1Directive();
-		result.setTxParams(createDefaultTxRx(config));
-		result.setTxPlExtensions(createDefaultPlExtensions(Direction.TRANSMITTER));
-		result.setRxParams(createDefaultTxRx(config));
-		result.setRxPlExtensions(createDefaultPlExtensions(Direction.RECEIVER));
+		result.setTxParams(createProximityTxRx(config));
+		result.setTxPlExtensions(createProximityPlExtensions(Direction.TRANSMITTER));
+		result.setRxParams(createProximityTxRx(config));
+		result.setRxPlExtensions(createProximityPlExtensions(Direction.RECEIVER));
 		return result;
 	}
 
-	private static TxRxParameters createDefaultTxRx(Configuration config) {
+	private static TxRxParameters createProximityTxRx(Configuration config) {
 		// TODO not clear why hailing_data_rate exist
 		int symbolRate = config.getInteger("hailing_symbol_rate", -1);
 		int channel = config.getInteger("hailing_channel", -1);
@@ -57,7 +68,7 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	private static PlExtensions createDefaultPlExtensions(Direction direction) {
+	private static PlExtensions createProximityPlExtensions(Direction direction) {
 		PlExtensions result = new PlExtensions();
 		result.setCarrierModulation(CarrierModulation.PSK);
 		result.setDataModulation(DataModulation.MANCHESTER);
@@ -102,14 +113,14 @@ public class TransceiverUtil {
 	}
 
 	// from the initial hail channel type4 or type5 doesn't matter much
-	public static Type5Directive createDefaultUslp(Configuration config) {
+	public static Type5Directive createHailUslpTxRx(Configuration config) {
 		Type5Directive result = new Type5Directive();
-		result.setRxLink(createDefaultHailLink(LinkDirection.RETURN, config));
-		result.setTxLink(createDefaultHailLink(LinkDirection.FORWARD, config));
+		result.setRxLink(createUslpTxRx(LinkDirection.RETURN, config));
+		result.setTxLink(createUslpTxRx(LinkDirection.FORWARD, config));
 		return result;
 	}
 
-	private static Link2Establishment createDefaultHailLink(LinkDirection direction, Configuration config) {
+	private static Link2Establishment createUslpTxRx(LinkDirection direction, Configuration config) {
 		Link2Establishment result = new Link2Establishment();
 		float symbolRate = config.getFloat("hailing_symbol_rate", -1);
 		if (symbolRate != -1) {
