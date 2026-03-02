@@ -72,7 +72,17 @@ public class FrameSublayer implements Runnable, RxCallback {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
 				com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
-				// FIXME set sequence number
+				if (expFsn > com.leosatdata.ccsds7320b4.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
+					expFsn = 0;
+					if (frame.getHeader().isVcFrameCountCycleUsed()) {
+						int frameCountCycle = frame.getHeader().getVcFrameCount() + 1;
+						if (frameCountCycle > com.leosatdata.ccsds7320b4.util.TransferFrameParser.MAX_CYCLE_COUNT) {
+							frameCountCycle = 0;
+						}
+						frame.getHeader().setVcFrameCountCycle(frameCountCycle);
+					}
+				}
+				frame.getHeader().setVcFrameCount(expFsn++);
 				try (BitOutputStream bos = new BitOutputStream(baos)) {
 					framev2Parser.encode(frame, bos);
 				} catch (IOException e1) {

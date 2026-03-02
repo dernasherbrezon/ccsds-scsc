@@ -11,6 +11,8 @@ import com.leosatdata.util.Configuration;
 public class TransferFrameParser {
 
 	public static final int VERSION_NUMBER = 0b01;
+	public static final int MAX_SEQUENCE_NUMBER = (int) Math.pow(2, 24);
+	public static final int MAX_CYCLE_COUNT = (int) Math.pow(2, 4);
 
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
