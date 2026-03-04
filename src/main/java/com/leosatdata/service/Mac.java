@@ -41,6 +41,7 @@ import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.SpduParserCallback;
 import com.leosatdata.util.TransceiverUtil;
 
+@Deprecated
 public class Mac implements Runnable, SymbolInLockCallback, CarrierCallback, SpduCallback, SpduParserCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);

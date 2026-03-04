@@ -82,7 +82,15 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	public static void applyParameters(Type1Directive params, Configuration config, Transceiver transceiver) {
+	public static void applyParameters(Object params, Configuration config, Transceiver transceiver) {
+		if (params instanceof Type1Directive) {
+			applyProximityParameters((Type1Directive) params, config, transceiver);
+		} else if (params instanceof Type5Directive) {
+			applyUslpParameters((Type5Directive) params, transceiver);
+		}
+	}
+
+	public static void applyProximityParameters(Type1Directive params, Configuration config, Transceiver transceiver) {
 		int symbolRate = params.getRxParams().getDataRate().getRate();
 		if (params.getRxPlExtensions().isUseExtendedDataRate()) {
 			symbolRate = params.getRxParams().getDataRate().getExtendedRate();
@@ -148,7 +156,7 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	public static void applyParameters(Type5Directive directive, Transceiver transceiver) {
+	public static void applyUslpParameters(Type5Directive directive, Transceiver transceiver) {
 		Link2Establishment params = directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {

@@ -209,9 +209,9 @@ public class FrameSublayer implements Runnable, RxCallback {
 			currentQueue = controlQueue;
 			String frameVersion = config.getProperty("frame_version");
 			if (frameVersion.equals("3")) {
-				TransceiverUtil.applyParameters((Type1Directive) event.getObj(), config, transceiver);
+				TransceiverUtil.applyProximityParameters((Type1Directive) event.getObj(), config, transceiver);
 			} else if (frameVersion.equals("4")) {
-				TransceiverUtil.applyParameters((Type5Directive) event.getObj(), transceiver);
+				TransceiverUtil.applyUslpParameters((Type5Directive) event.getObj(), transceiver);
 			} else {
 				throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
 			}
