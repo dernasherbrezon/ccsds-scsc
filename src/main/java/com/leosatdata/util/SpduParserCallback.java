@@ -7,7 +7,7 @@ import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
 
-public interface SpduCallback {
+public interface SpduParserCallback {
 
 	void onPlsw(Plcw message);
 

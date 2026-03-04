@@ -23,9 +23,9 @@ public class SpduParser {
 	private final static int TYPE4_DIRECTIVE = 0b011;
 	private final static int TYPE5_DIRECTIVE = 0b100;
 
-	private final SpduCallback callback;
+	private final SpduParserCallback callback;
 
-	public SpduParser(SpduCallback callback) {
+	public SpduParser(SpduParserCallback callback) {
 		this.callback = callback;
 	}
 

@@ -12,9 +12,9 @@ public class FrameInputStream extends InputStream implements UserDataCallback {
 	}
 
 	@Override
-	public void onUserData(Object frame) {
+	public void onUserData(byte[] payload) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

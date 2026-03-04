@@ -35,7 +35,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
 	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
 	private final Configuration config;
-	private int expFsn = 0;
+	private int expFsn = 0; // VE(S)sequence number of the next Expedited frame to be sent
 	private int seqCtrlFsn = 0;
 	private SpduCallback spduCallback;
 	private UserDataCallback userDataCallback;
@@ -69,6 +69,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 				handle((TransceiverEvent) obj);
 				continue;
 			}
+			PduTypeId type;
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
 				com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
@@ -82,6 +83,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 						frame.getHeader().setVcFrameCountCycle(frameCountCycle);
 					}
 				}
+				type = PduTypeId.USER_DATA;
 				frame.getHeader().setVcFrameCount(expFsn++);
 				try (BitOutputStream bos = new BitOutputStream(baos)) {
 					framev2Parser.encode(frame, bos);
@@ -97,6 +99,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 					}
 					frame.getHeader().setFrameSequenceNumber(expFsn++);
 				}
+				type = frame.getHeader().getPduTypeId();
 				try (BitOutputStream bos = new BitOutputStream(baos)) {
 					com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
 				} catch (IOException e1) {
@@ -112,22 +115,28 @@ public class FrameSublayer implements Runnable, RxCallback {
 					}
 					frame.getHeader().setVcfCount(expFsn++);
 				}
+				type = frame.getHeader().getProtocolControl();
 				try (BitOutputStream bos = new BitOutputStream(baos)) {
 					framev4Parser.encode(frame, bos);
 				} catch (IOException e1) {
 					LOG.error("can't serialize transferframe4", e1);
 					continue;
 				}
+			} else {
+				LOG.info("unknown frame type: {}", obj);
+				continue;
 			}
 			transceiver.send(baos.toByteArray());
 			// FIXME wait until message actually sent
+			if (type.equals(PduTypeId.SPDU)) {
+				spduCallback.onSpduTx();
+			}
 		}
-		// FIXME wait for queue
 	}
 
 	@Override
 	public void onRx(byte[] data) {
-		Object frame = null;
+		byte[] payload = null;
 		PduTypeId type = null;
 		SourceDestination sourceDestination = null;
 		int scid = 0;
@@ -137,7 +146,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 				type = PduTypeId.USER_DATA; // only u-frames
 				sourceDestination = SourceDestination.UNKNOWN; // ignore scid validation as per spec
 				scid = framev2.getHeader().getScid();
-				frame = framev2;
+				payload = framev2.getDataField();
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe2", e);
 				return;
@@ -148,7 +157,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 				type = framev3.getHeader().getPduTypeId();
 				sourceDestination = framev3.getHeader().getSourceOrDestination();
 				scid = framev3.getHeader().getScid();
-				frame = framev3;
+				payload = framev3.getDataField();
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe3", e);
 				return;
@@ -159,6 +168,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 				type = framev4.getHeader().getProtocolControl();
 				sourceDestination = framev4.getHeader().getSourceOrDestination();
 				scid = framev4.getHeader().getScid();
+				payload = framev4.getDataField();
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe4", e);
 				return;
@@ -186,9 +196,9 @@ public class FrameSublayer implements Runnable, RxCallback {
 		}
 
 		if (type.equals(PduTypeId.SPDU)) {
-			spduCallback.onSpdu(frame);
+			spduCallback.onSpdu(payload);
 		} else {
-			userDataCallback.onUserData(frame);
+			userDataCallback.onUserData(payload);
 		}
 	}
 
@@ -215,6 +225,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 			transceiver.startRx();
 			break;
 		case SWITCH_TO_USER:
+			// equal to persistence=false
 			currentQueue = userQueue;
 			break;
 		default:

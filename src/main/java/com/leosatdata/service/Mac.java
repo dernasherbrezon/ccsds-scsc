@@ -24,19 +24,24 @@ import com.leosatdata.model.MacDuplex;
 import com.leosatdata.model.MacMode;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PlExtensions;
+import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
+import com.leosatdata.model.StatusReport;
+import com.leosatdata.model.TimeDistribution;
 import com.leosatdata.model.TransceiverEvent;
 import com.leosatdata.model.TransceiverEventType;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
+import com.leosatdata.util.SpduParserCallback;
 import com.leosatdata.util.TransceiverUtil;
 
-public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierCallback, SpduCallback {
+public class Mac implements Runnable, SymbolInLockCallback, CarrierCallback, SpduCallback, SpduParserCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);
 	private final static int HAIL_RESPONSE_FRAME = 0;
@@ -44,17 +49,15 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 
 	private final Fop fop;
 	private final Farm farm;
-	private final Transceiver transceiver;
 	private final Configuration config;
 	private final NodeCallback callback;
+	private final SpduParser spduParser;
 
 	private final LinkedBlockingQueue<Event> queue = new LinkedBlockingQueue<>();
 	private Timer waitTimer;
 	private TimerTask waitTimerTask;
 
-	private Type1Directive currentType1;
-	private Type4Directive currentType4;
-	private Type5Directive currentType5;
+	private Spdu currentType;
 
 	private MacMode mode = MacMode.INACTIVE;
 	private boolean transmit = false;
@@ -74,12 +77,11 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 	public Mac(Configuration config, Transceiver transceiver, FrameSublayer frameSublayer, NodeCallback callback) {
 		this.config = config;
 		this.callback = callback;
-		this.transceiver = transceiver;
-		this.transceiver.setTxCallback(this);
 		this.fop = new Fop(transceiver);
 		this.farm = new Farm();
 		this.frameSublayer = frameSublayer;
 		this.frameSublayer.setSpduCallback(this);
+		this.spduParser = new SpduParser(this);
 		t = new Thread(this, "mac-thread");
 	}
 
@@ -119,12 +121,8 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 		case E2_CONNECTING_T:
 			LOG.info("attempting hail: {} of {}", currentHailAttempt, config.getInteger("hail_lifetime", 0));
 			commValueBuffer = null;
-			if (currentType1 != null) {
-				commValueBuffer = encode(currentType1);
-			} else if (currentType4 != null) {
-				commValueBuffer = encode(currentType4);
-			} else if (currentType5 != null) {
-				commValueBuffer = encode(currentType5);
+			if (currentType != null) {
+				commValueBuffer = encode(currentType);
 			} else {
 				LOG.error("local comm is not configured");
 			}
@@ -158,11 +156,25 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 			break;
 		case E8_2_SYMBOL_IN_LOCK:
 			symbolInLock = true;
-			if (config.getInteger("hail_response", 0) == HAIL_RESPONSE_SYMBOL_IN_LOCK) {
-				frameSublayer.sendControlFrame(new TransceiverEvent(TransceiverEventType.SWITCH_TO_USER));
-				waitTimerTask.cancel();
-				callback.handle(createNotification("hail", true));
+			if (config.getInteger("hail_response", 0) != HAIL_RESPONSE_SYMBOL_IN_LOCK) {
+				break;
 			}
+			// no break clause here because should proceed as valid frame
+		case E9_VALID_FRAME_RECEIVED:
+			frameSublayer.sendControlFrame(new TransceiverEvent(TransceiverEventType.SWITCH_TO_USER));
+			waitTimerTask.cancel();
+			callback.handle(createNotification("hail", true));
+			currentHailAttempt = 0;
+			// switch over to the agreed
+			frameSublayer.sendUserFrame(new TransceiverEvent(TransceiverEventType.START_CARRIER, currentType));
+			scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+			break;
+		case E10_CARRIER_ONLY_TIMEOUT:
+			frameSublayer.sendControlFrame(new TransceiverEvent(TransceiverEventType.START_IDLE));
+			scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
+			break;
+		case E11_ACQUISITION_IDLE_TIMEOUT:
+			// FIXME enable U-frames coming
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {
@@ -180,6 +192,7 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 			frameSublayer.sendControlFrame(new TransceiverEvent(TransceiverEventType.SWITCH_TO_USER));
 			sendEvent(new Event(EventType.E2_CONNECTING_T));
 			break;
+
 		case E12_LOCAL_COMM_CHANGE:
 			if (e.getArg() == null) {
 				LOG.error("received comm change without payload");
@@ -187,24 +200,24 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 			}
 			if (e.getArg() instanceof Type1Directive) {
 				Type1Directive obj = (Type1Directive) e.getArg();
-				if (currentType1 == null) {
-					currentType1 = obj;
+				if (currentType == null) {
+					currentType = obj;
 				} else {
-					currentType1.merge(obj);
+					((Type1Directive) currentType).merge(obj);
 				}
 			} else if (e.getArg() instanceof Type4Directive) {
 				Type4Directive obj = (Type4Directive) e.getArg();
-				if (currentType4 == null) {
-					currentType4 = obj;
+				if (currentType == null) {
+					currentType = obj;
 				} else {
-					currentType4.merge(obj);
+					((Type4Directive) currentType).merge(obj);
 				}
 			} else if (e.getArg() instanceof Type5Directive) {
 				Type5Directive obj = (Type5Directive) e.getArg();
-				if (currentType5 == null) {
-					currentType5 = obj;
+				if (currentType == null) {
+					currentType = obj;
 				} else {
-					currentType5.merge(obj);
+					((Type5Directive) currentType).merge(obj);
 				}
 			} else {
 				LOG.error("unknown arg type: {}", e.getArg());
@@ -218,20 +231,6 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 			LOG.error("unknown event type: {}", e.getType());
 		}
 	}
-
-//
-//	public void send(TransferFrame frame) {
-//		if (frame == null || frame.getHeader() == null) {
-//			return;
-//		}
-//		// accept only user data from users
-//		if (frame.getHeader().getPduTypeId().equals(PduTypeId.SPDU)) {
-//			// FIXME some error reporting?
-//			return;
-//		}
-//		fop.send(frame);
-//	}
-//
 
 	// SET MODE directive
 	public void setMode(MacMode mode) {
@@ -413,11 +412,6 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 	}
 
 	@Override
-	public void onTx() {
-		sendEvent(new Event(EventType.E6_OUTPUT_FIFO_EMPTY));
-	}
-
-	@Override
 	public void onCarrierAcquired() {
 		sendEvent(new Event(EventType.E8_1_CARRIER_RECEIVED));
 	}
@@ -428,9 +422,18 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 	}
 
 	@Override
-	public void onSpdu(Object frame) {
-		// TODO Auto-generated method stub
+	public void onSpdu(byte[] spdu) {
+		try {
+			spduParser.decode(new BitInputStream(spdu));
+		} catch (IOException e) {
+			LOG.error("unable to parse spdu", e);
+		}
+	}
 
+	@Override
+	public void onSpduTx() {
+		// FIXME not only hail-based directives here / can be plcw tx callback
+		sendEvent(new Event(EventType.E6_OUTPUT_FIFO_EMPTY));
 	}
 
 	private ControllerEvent createNotification(String prefix, boolean success) {
@@ -441,6 +444,42 @@ public class Mac implements Runnable, TxCallback, SymbolInLockCallback, CarrierC
 		activity.setNotification(config.getInteger(prefix + "_notification", 0));
 		activity.setResponse(config.getInteger(prefix + "_response", 0));
 		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
+	}
+
+	@Override
+	public void onPlsw(Plcw message) {
+		// FIXME not sure if Plcw is expected or status report
+		sendEvent(new Event(EventType.E9_VALID_FRAME_RECEIVED));
+	}
+
+	@Override
+	public void onTimeDistribution(TimeDistribution timeDistribution) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onType1Directive(Type1Directive decode) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onType4Directive(Type4Directive decode) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onType5Directive(Type5Directive decode) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onStatusReport(StatusReport decode) {
+		// TODO Auto-generated method stub
+
 	}
 
 }
