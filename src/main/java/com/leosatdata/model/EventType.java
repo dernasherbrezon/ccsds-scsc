@@ -19,7 +19,8 @@ public enum EventType {
 	E12_LOCAL_COMM_CHANGE,
 	
 	SPDU,
-	TX_COMPLETE
+	TX_COMPLETE,
+	STOP
 	// @formatter:on
 	
 }

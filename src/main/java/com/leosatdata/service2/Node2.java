@@ -12,7 +12,6 @@ import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkEstablishment;
-import com.leosatdata.model.MacMode;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.State;
 import com.leosatdata.model.TxRxParameters;
@@ -28,9 +27,9 @@ import com.leosatdata.service.TxCallback;
 import com.leosatdata.service.UserDataCallback;
 import com.leosatdata.util.Configuration;
 
-public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallback, CarrierCallback {
+public class Node2 implements Runnable, RxCallback, TxCallback, SymbolInLockCallback, CarrierCallback {
 
-	private final static Logger LOG = LoggerFactory.getLogger(Node.class);
+	private final static Logger LOG = LoggerFactory.getLogger(Node2.class);
 
 	private final Configuration config;
 	private final Transceiver transceiver;
@@ -45,7 +44,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	private final boolean testSource;
 	private int remoteScid;
 
-	public Node(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
+	public Node2(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
 		this.config = config;
 		this.transceiver = transceiver;
 		this.transceiver.setRxCallback(this);
@@ -59,11 +58,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		this.mac = new Mac2(state, config, transceiver, callback);
 		this.frameSublayer = new FrameSublayer2(state, config, transceiver);
 		t = new Thread(this, "node-thread");
-	}
-
-	public void start() {
-		mac.start();
-		t.start();
+		t.setDaemon(true);
 	}
 
 	private void handle(Event e) {
@@ -75,22 +70,23 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	public void run() {
 		while (!Thread.currentThread().isInterrupted()) {
 			try {
-				handle(state.getQueue().take());
+				Event event = state.getQueue().take();
+				if (event.getType().equals(EventType.STOP)) {
+					break;
+				}
+				handle(event);
 			} catch (InterruptedException e) {
 				break;
 			}
 		}
 	}
 
-	public void setMode(MacMode mode) {
-		switch (mode) {
-		case CONNECTING_T:
-			sendEvent(new Event(EventType.E2_CONNECTING_T));
-			break;
+	public void startSession() {
+		sendEvent(new Event(EventType.E2_CONNECTING_T));
+	}
 
-		default:
-			break;
-		}
+	public void waitForSession() {
+		sendEvent(new Event(EventType.E1_CONNECTING_L));
 	}
 
 	public void setLocalCommChange(TxRxParameters tx, TxRxParameters rx, PlExtensions txExt, PlExtensions rxExt) {
@@ -187,6 +183,21 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	@Override
 	public void onSymbolInLock() {
 		sendEvent(new Event(EventType.E8_2_SYMBOL_IN_LOCK));
+	}
+	
+	public void start() {
+		mac.start();
+		t.start();
+	}
+
+	public void stop() {
+		t.interrupt();
+		sendEvent(new Event(EventType.STOP));
+		try {
+			t.join(config.getDuration("shutdown_duration"));
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	private void sendEvent(Event e) {

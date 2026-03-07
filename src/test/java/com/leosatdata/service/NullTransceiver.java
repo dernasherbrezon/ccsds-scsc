@@ -4,14 +4,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.leosatdata.model.Coding;
-import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
 
 public class NullTransceiver implements Transceiver {
+
+	private final static Logger LOG = LoggerFactory.getLogger(NullTransceiver.class);
 
 	private final Configuration config;
 	private TxCallback sendCallback;
@@ -115,17 +119,17 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void startCarrier() {
-		// do nothing
+		LOG.info("start carrier");
 	}
 
 	@Override
 	public void startIdle() {
-		// do nothing
+		LOG.info("start idle");
 	}
-	
+
 	@Override
 	public void stopIdle() {
-		// do nothing
+		LOG.info("stop idle");
 	}
 
 //	@Override
@@ -190,37 +194,37 @@ public class NullTransceiver implements Transceiver {
 	@Override
 	public void setTxSymbolRate(float baud) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void setTxDataModulation(DataModulation modulation) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void setTxFrequency(float frequency) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void setTxDataEncoding(Coding encoding) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void setTxPolarization(Polarization polarization) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void setTxModulation(Modulation modulation) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }
