@@ -77,6 +77,9 @@ public class Node2 implements Runnable, RxCallback, TxCallback, SymbolInLockCall
 				handle(event);
 			} catch (InterruptedException e) {
 				break;
+			} catch (Exception e) {
+				LOG.error("unable to handle", e);
+				continue;
 			}
 		}
 	}
@@ -184,7 +187,7 @@ public class Node2 implements Runnable, RxCallback, TxCallback, SymbolInLockCall
 	public void onSymbolInLock() {
 		sendEvent(new Event(EventType.E8_2_SYMBOL_IN_LOCK));
 	}
-	
+
 	public void start() {
 		mac.start();
 		t.start();
