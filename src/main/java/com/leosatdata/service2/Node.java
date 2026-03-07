@@ -1,6 +1,5 @@
 package com.leosatdata.service2;
 
-import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -30,7 +29,6 @@ import com.leosatdata.service.SymbolInLockCallback;
 import com.leosatdata.service.Transceiver;
 import com.leosatdata.service.TxCallback;
 import com.leosatdata.service.UserDataCallback;
-import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.Configuration;
 
 public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallback, CarrierCallback {
@@ -44,10 +42,9 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	private final Transceiver transceiver;
 	private final NodeCallback callback;
 	private final UserDataCallback rxCallback;
-	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
-	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
 	private final State state;
 	private final Mac2 mac;
+	private final FrameSublayer2 frameSublayer;
 
 	private final Thread t;
 	private final int localScid;
@@ -64,13 +61,11 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.testSource = config.getBoolean("test_source");
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
-		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
-		this.framev4Parser = new com.leosatdata.ccsds7321b3.util.TransferFrameParser(config);
 		this.seqQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10));
 		this.expQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10)); // use the same parameter for expedited and sequenced
-
 		this.state = new State();
 		this.mac = new Mac2(state, config, transceiver, callback);
+		this.frameSublayer = new FrameSublayer2(state, config, transceiver);
 		t = new Thread(this, "node-thread");
 	}
 
@@ -81,6 +76,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 
 	private void handle(Event e) {
 		mac.handle(e);
+		frameSublayer.handle(e);
 	}
 
 	@Override
@@ -150,46 +146,16 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 
 	@Override
 	public void onRx(byte[] data) {
-		byte[] payload = null;
-		PduTypeId type = null;
-		SourceDestination sourceDestination = null;
-		int scid = 0;
-		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data)) {
-			try {
-				com.leosatdata.ccsds7320b4.model.TransferFrame framev2 = framev2Parser.decode(new BitInputStream(data));
-				type = PduTypeId.USER_DATA; // only u-frames
-				sourceDestination = SourceDestination.UNKNOWN; // ignore scid validation as per spec
-				scid = framev2.getHeader().getScid();
-				payload = framev2.getDataField();
-			} catch (IOException e) {
-				LOG.error("unable to read transferframe2", e);
-				return;
-			}
-		} else if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data)) {
-			try {
-				com.leosatdata.ccsds2110b6.model.TransferFrame framev3 = com.leosatdata.ccsds2110b6.util.TransferFrameParser.decode(new BitInputStream(data));
-				type = framev3.getHeader().getPduTypeId();
-				sourceDestination = framev3.getHeader().getSourceOrDestination();
-				scid = framev3.getHeader().getScid();
-				payload = framev3.getDataField();
-			} catch (IOException e) {
-				LOG.error("unable to read transferframe3", e);
-				return;
-			}
-		} else if (com.leosatdata.ccsds7321b3.util.TransferFrameParser.accept(data)) {
-			try {
-				com.leosatdata.ccsds7321b3.model.TransferFrame framev4 = framev4Parser.decode(new BitInputStream(data));
-				type = framev4.getHeader().getProtocolControl();
-				sourceDestination = framev4.getHeader().getSourceOrDestination();
-				scid = framev4.getHeader().getScid();
-				payload = framev4.getDataField();
-			} catch (IOException e) {
-				LOG.error("unable to read transferframe4", e);
-				return;
-			}
-		} else {
-			// data is somehow corrupted and completely unsupported
-			LOG.debug("invalid frame received");
+		Object frame = frameSublayer.decode(data);
+		if (frame == null) {
+			return;
+		}
+
+		PduTypeId type = FrameSublayer2.getPduTypeId(frame);
+		SourceDestination sourceDestination = FrameSublayer2.getSourceDestination(frame);
+		int scid = FrameSublayer2.getScid(frame);
+		byte[] payload = FrameSublayer2.getPayload(frame);
+		if (type == null || sourceDestination == null || scid < 0 || payload == null) {
 			return;
 		}
 
@@ -207,6 +173,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 
 		if (sourceDestination.equals(SourceDestination.SOURCE) && testSource && remoteScid == -1) {
 			remoteScid = scid;
+			LOG.info("test source validation started for {}", remoteScid);
 		}
 
 		if (type.equals(PduTypeId.SPDU)) {

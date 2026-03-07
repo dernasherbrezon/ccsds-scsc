@@ -71,13 +71,12 @@ public class Mac2 {
 			scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
-			// FIXME most likely need an event to trigger queue check
-//			state.getMacQueue().add(state.getCurrentLink());
+			state.getMacQueue().add(state.getCurrentLink());
 			break;
 		case TX_COMPLETE:
-			// FIXME check current state. if hail, then schedule timeout, if normal/active
-			// then take next from the queue
-//			scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+			if (state.isPersistence()) {
+				scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
 			hailCarrierReceived = false;
@@ -94,6 +93,9 @@ public class Mac2 {
 			}
 			// no break clause here because should proceed as valid frame
 		case SPDU:
+			if (!state.isPersistence()) {
+				break;
+			}
 			waitTimerTask.cancel();
 			callback.handle(createNotification("hail", true));
 			currentHailAttempt = 0;
@@ -108,6 +110,7 @@ public class Mac2 {
 			break;
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			state.setPersistence(false);
+			state.setMode(MacMode.ACTIVE);
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {
@@ -118,11 +121,10 @@ public class Mac2 {
 			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
 				currentHailAttempt = 0;
 				callback.handle(createNotification("hail", false));
-				return;
+			} else {
+				sendEvent(new Event(EventType.E2_CONNECTING_T));
 			}
-			sendEvent(new Event(EventType.E2_CONNECTING_T));
 			break;
-
 		case E12_LOCAL_COMM_CHANGE:
 			if (e.getArg() == null) {
 				LOG.error("received comm change without payload");
