@@ -1,8 +1,5 @@
 package com.leosatdata.service2;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +32,6 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 
 	private final static Logger LOG = LoggerFactory.getLogger(Node.class);
 
-	private final BlockingQueue<Object> seqQueue;
-	private final BlockingQueue<Object> expQueue;
-
 	private final Configuration config;
 	private final Transceiver transceiver;
 	private final NodeCallback callback;
@@ -61,9 +55,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.testSource = config.getBoolean("test_source");
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
-		this.seqQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10));
-		this.expQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10)); // use the same parameter for expedited and sequenced
-		this.state = new State();
+		this.state = new State(config);
 		this.mac = new Mac2(state, config, transceiver, callback);
 		this.frameSublayer = new FrameSublayer2(state, config, transceiver);
 		t = new Thread(this, "node-thread");
@@ -135,12 +127,11 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	}
 
 	public void send(byte[] data, QualityOfService qos) {
-		// FIXME create U-frame put into the queue
 		// will lock if no free space available in queues
 		if (qos.equals(QualityOfService.EXPEDITED)) {
-			expQueue.add(data);
+			state.getExpQueue().add(data);
 		} else {
-			seqQueue.add(data);
+			state.getSeqQueue().add(data);
 		}
 	}
 

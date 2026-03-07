@@ -47,7 +47,7 @@ public class FrameSublayer2 {
 	}
 
 	public void handle(Event e) {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte[] payload;
 		QualityOfService qos;
 		PduTypeId type;
 		if (state.isPersistence()) {
@@ -55,6 +55,7 @@ public class FrameSublayer2 {
 			if (spdu == null) {
 				return;
 			}
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				SpduParser.encode(spdu, bos);
 				qos = QualityOfService.EXPEDITED;
@@ -63,16 +64,23 @@ public class FrameSublayer2 {
 				LOG.error("cannot encode spdu", e);
 				return;
 			}
+			payload = baos.toByteArray();
 		} else {
-			// FIXME proper algorithm with priorities
+			payload = state.getExpQueue().poll();
+			if (payload != null) {
+				qos = QualityOfService.EXPEDITED;
+				type = PduTypeId.USER_DATA;
+			} else {
+				// FIXME proper algorithm with priorities
+				return;
+			}
+		}
+
+		if (payload == null) {
 			return;
 		}
 
-		if (baos.size() == 0) {
-			return;
-		}
-
-		byte[] frame = encode(baos.toByteArray(), qos, type);
+		byte[] frame = encode(payload, qos, type);
 		if (frame == null) {
 			return;
 		}
