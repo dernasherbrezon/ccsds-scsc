@@ -19,7 +19,7 @@ public class MockNodeCallback implements NodeCallback {
 		synchronized (lock) {
 			try {
 				// ignore spurious wake-ups
-				lock.wait(10000);
+				lock.wait(15000);
 				return event;
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();

@@ -28,6 +28,7 @@ import com.leosatdata.service.Transceiver;
 public class TransceiverUtil {
 
 	public static Object createHailTxRx(Configuration config) {
+		// FIXME check different parameter
 		String frameVersion = config.getProperty("frame_version");
 		if (frameVersion.equals("3")) {
 			return TransceiverUtil.createHailProximityTxRx(config);
