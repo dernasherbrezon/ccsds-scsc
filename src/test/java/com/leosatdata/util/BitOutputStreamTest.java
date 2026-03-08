@@ -1,6 +1,7 @@
 package com.leosatdata.util;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,6 +21,20 @@ public class BitOutputStreamTest {
 		bos.writeUnsignedInt(17, 0b0_0011_0001_0100_1000);
 		bos.close();
 		assertArrayEquals(data, baos.toByteArray());
+	}
+
+	@Test
+	public void testFlush() throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		BitOutputStream bos = new BitOutputStream(baos);
+		bos.writeUnsignedInt(4, 0);
+		bos.writeUnsignedInt(4, 1);
+		bos.writeFully(new byte[] { 2, 3 });
+		bos.close();
+		byte[] actual = baos.toByteArray();
+		assertEquals(1, actual[0]);
+		assertEquals(2, actual[1]);
+		assertEquals(3, actual[2]);
 	}
 
 }

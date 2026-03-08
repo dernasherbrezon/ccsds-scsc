@@ -19,14 +19,14 @@ public class SpduParser {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SpduParser.class);
 
-	private final static int FIXED_SPDU = 1;
-	private final static int VARIABLE_SPDU = 0;
+	public final static int FIXED_SPDU = 1;
+	public final static int VARIABLE_SPDU = 0;
 
-	private final static int TYPE1_DIRECTIVE = 0b000;
-	private final static int TYPE2_DIRECTIVE = 0b001;
-	private final static int TYPE3_DIRECTIVE = 0b010;
-	private final static int TYPE4_DIRECTIVE = 0b011;
-	private final static int TYPE5_DIRECTIVE = 0b100;
+	public final static int TYPE1_DIRECTIVE = 0b000;
+	public final static int TYPE2_DIRECTIVE = 0b001;
+	public final static int TYPE3_DIRECTIVE = 0b010;
+	public final static int TYPE4_DIRECTIVE = 0b011;
+	public final static int TYPE5_DIRECTIVE = 0b100;
 
 	private final int spduVersion;
 

@@ -1,8 +1,8 @@
 package com.leosatdata.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -19,7 +19,6 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.DataRate;
-import com.leosatdata.model.Direction;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
@@ -45,16 +44,14 @@ public class CommTest {
 	private Node satellite;
 
 	@Test
-	public void testSuccess() throws Exception {
-		satellite.waitForSession();
+	public void testNoConnection() throws Exception {
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
 		ControllerEvent hail = groundCallback.waitForEvent();
 		assertNotNull(hail);
 		assertEquals(ControllerEventType.PERSISTENT_ACTIVITY, hail.getType());
 		PersistentActivity event = (PersistentActivity) hail.getObj();
-		assertTrue(event.isSuccess());
-		// FIXME do some communication
+		assertFalse(event.isSuccess());
 	}
 
 	@Before

@@ -1,11 +1,12 @@
 package com.leosatdata.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 
-public class BitInputStream {
+public class BitInputStream implements Closeable {
 
 	public static final int MAX_UNSIGNED_LONG = 63;
 
@@ -126,6 +127,11 @@ public class BitInputStream {
 		if ((ch1 | ch2 | ch3 | ch4 | ch5 | ch6 | ch7 | ch8) < 0)
 			throw new EOFException();
 		return ((ch1 << 56) | (ch2 << 48) | (ch3 << 32) | (ch4 << 24) | (ch5 << 24) | (ch6 << 16) | (ch7 << 8) | ch8) & 0xFFFFFFFFL;
+	}
+
+	@Override
+	public void close() throws IOException {
+		dis.close();
 	}
 
 }
