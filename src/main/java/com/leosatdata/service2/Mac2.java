@@ -31,6 +31,7 @@ public class Mac2 {
 	private final Configuration config;
 	private final Transceiver transceiver;
 	private final NodeCallback callback;
+	private final int spduVersion;
 
 	private Timer waitTimer;
 	private TimerTask waitTimerTask;
@@ -43,6 +44,7 @@ public class Mac2 {
 		this.config = config;
 		this.transceiver = transceiver;
 		this.callback = callback;
+		this.spduVersion = config.getInteger("spdu_version", 1);
 	}
 
 	public void start() {
@@ -52,8 +54,18 @@ public class Mac2 {
 	public void handle(Event e) {
 		switch (e.getType()) {
 		case E2_CONNECTING_T:
+			if (state.getCommParameters() == null) {
+				LOG.error("comm parameters not configured");
+				callback.handle(createNotification("hail", false));
+				return;
+			}
+			if (!validateSpdu(state.getCommParameters())) {
+				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
+				callback.handle(createNotification("hail", false));
+				return;
+			}
 			state.setPersistence(true);
-			LOG.info("attempting hail: {} of {}", currentHailAttempt, config.getInteger("hail_lifetime", 0));
+			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
 			state.setMode(MacMode.CONNECTING_T);
 			String frameVersion = config.getProperty("frame_version");
 			if (frameVersion.equals("3")) {
@@ -63,16 +75,15 @@ public class Mac2 {
 			} else {
 				throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
 			}
-			transceiver.startCarrier();
+			transceiver.startTx();
 			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
 		case E4_CARRIER_ONLY_TIMEOUT:
-			LOG.info("sending idle");
 			transceiver.startIdle();
 			scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
-			state.getMacQueue().add(state.getCurrentLink());
+			state.getMacQueue().add(state.getCommParameters());
 			break;
 		case TX_COMPLETE:
 			if (state.isPersistence()) {
@@ -101,8 +112,8 @@ public class Mac2 {
 			callback.handle(createNotification("hail", true));
 			currentHailAttempt = 0;
 			// switch over to the agreed link
-			TransceiverUtil.applyParameters(state.getCurrentLink(), config, transceiver);
-			transceiver.startCarrier();
+			TransceiverUtil.applyParameters(state.getCommParameters(), config, transceiver);
+			transceiver.startTx();
 			scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
@@ -133,24 +144,24 @@ public class Mac2 {
 			}
 			if (e.getArg() instanceof Type1Directive) {
 				Type1Directive obj = (Type1Directive) e.getArg();
-				if (state.getCurrentLink() == null) {
-					state.setCurrentLink(obj);
+				if (state.getCommParameters() == null) {
+					state.setCommParameters(obj);
 				} else {
-					((Type1Directive) state.getCurrentLink()).merge(obj);
+					((Type1Directive) state.getCommParameters()).merge(obj);
 				}
 			} else if (e.getArg() instanceof Type4Directive) {
 				Type4Directive obj = (Type4Directive) e.getArg();
-				if (state.getCurrentLink() == null) {
-					state.setCurrentLink(obj);
+				if (state.getCommParameters() == null) {
+					state.setCommParameters(obj);
 				} else {
-					((Type4Directive) state.getCurrentLink()).merge(obj);
+					((Type4Directive) state.getCommParameters()).merge(obj);
 				}
 			} else if (e.getArg() instanceof Type5Directive) {
 				Type5Directive obj = (Type5Directive) e.getArg();
-				if (state.getCurrentLink() == null) {
-					state.setCurrentLink(obj);
+				if (state.getCommParameters() == null) {
+					state.setCommParameters(obj);
 				} else {
-					((Type5Directive) state.getCurrentLink()).merge(obj);
+					((Type5Directive) state.getCommParameters()).merge(obj);
 				}
 			} else {
 				LOG.error("unknown arg type: {}", e.getArg());
@@ -160,6 +171,18 @@ public class Mac2 {
 				// FIXME send remote change
 			}
 			break;
+		}
+	}
+
+	private boolean validateSpdu(Object obj) {
+		if (obj instanceof Type1Directive) {
+			return spduVersion == Type1Directive.SPDU_VERSION;
+		} else if (obj instanceof Type4Directive) {
+			return spduVersion == Type4Directive.SPDU_VERSION;
+		} else if (obj instanceof Type5Directive) {
+			return spduVersion == Type5Directive.SPDU_VERSION;
+		} else {
+			return false;
 		}
 	}
 
@@ -181,6 +204,7 @@ public class Mac2 {
 				sendEvent(new Event(type));
 			}
 		};
+		LOG.info("waiting: {} for {} ms", type, duration);
 		waitTimer.schedule(waitTimerTask, duration);
 	}
 

@@ -24,33 +24,43 @@ public class SpduParser {
 	private final static int TYPE5_DIRECTIVE = 0b100;
 
 	private final SpduParserCallback callback;
+	private final int spduVersion;
 
-	public SpduParser(SpduParserCallback callback) {
+	public SpduParser(Configuration config, SpduParserCallback callback) {
 		this.callback = callback;
+		this.spduVersion = config.getInteger("spdu_version", 1);
 	}
 
-	public static void encode(Spdu message, BitOutputStream bos) throws IOException {
+	public void encode(Spdu message, BitOutputStream bos) throws IOException {
 		if (message instanceof Plcw) {
 			bos.writeUnsignedInt(1, FIXED_SPDU);
-			bos.writeUnsignedInt(1, message.getHeader().getType());
-			PlcwParser.encode((Plcw) message, bos);
+			if (spduVersion == Type1Directive.SPDU_VERSION) {
+				bos.writeUnsignedInt(1, Plcw.SHORT_PLCW);
+			} else {
+				bos.writeUnsignedInt(1, Plcw.LONG_PLCW);
+			}
+			PlcwParser.encode((Plcw) message, spduVersion, bos);
 			return;
 		}
 
 		bos.writeUnsignedInt(1, VARIABLE_SPDU);
-		bos.writeUnsignedInt(3, message.getHeader().getType());
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (BitOutputStream payload = new BitOutputStream(baos)) {
 			if (message instanceof Type1Directive) {
+				bos.writeUnsignedInt(3, TYPE1_DIRECTIVE);
 				Type1DirectiveParser.encode((Type1Directive) message, payload);
 			} else if (message instanceof TimeDistribution) {
+				bos.writeUnsignedInt(3, TYPE2_DIRECTIVE);
 				TimeDistributionParser.encode((TimeDistribution) message, payload);
 			} else if (message instanceof StatusReport) {
+				bos.writeUnsignedInt(3, TYPE3_DIRECTIVE);
 				StatusReportParser.encode((StatusReport) message, payload);
 			} else if (message instanceof Type4Directive) {
+				bos.writeUnsignedInt(3, TYPE4_DIRECTIVE);
 				Type4DirectiveParser.encode((Type4Directive) message, payload);
 			} else if (message instanceof Type5Directive) {
+				bos.writeUnsignedInt(3, TYPE5_DIRECTIVE);
 				Type5DirectiveParser.encode((Type5Directive) message, payload);
 			} else {
 				throw new IOException("unknown message type: " + message);

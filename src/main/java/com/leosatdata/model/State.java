@@ -14,7 +14,7 @@ public class State {
 	private final BlockingQueue<byte[]> seqQueue;
 	private final BlockingQueue<byte[]> expQueue;
 
-	private Spdu currentLink;
+	private Spdu commParameters;
 	private MacMode mode = MacMode.INACTIVE;
 	private int expFsn = 0; // VE(S)sequence number of the next Expedited frame to be sent
 	private int seqCtrlFsn = 0;
@@ -60,12 +60,12 @@ public class State {
 		this.mode = mode;
 	}
 
-	public Spdu getCurrentLink() {
-		return currentLink;
+	public Spdu getCommParameters() {
+		return commParameters;
 	}
-
-	public void setCurrentLink(Spdu currentLink) {
-		this.currentLink = currentLink;
+	
+	public void setCommParameters(Spdu commParameters) {
+		this.commParameters = commParameters;
 	}
 
 	public LinkedBlockingQueue<Event> getQueue() {

@@ -131,9 +131,11 @@ public class Type1DirectiveParser {
 			bos.writeUnsignedInt(3, REPORT_REQUEST);
 		}
 		if (message.getRxPlExtensions() != null) {
+			message.getRxPlExtensions().setDirection(Direction.RECEIVER);
 			encodePlExtensions(message.getRxPlExtensions(), bos);
 		}
 		if (message.getTxPlExtensions() != null) {
+			message.getTxPlExtensions().setDirection(Direction.TRANSMITTER);
 			encodePlExtensions(message.getTxPlExtensions(), bos);
 		}
 		if (message.getSourceSpacecraftId() != null) {

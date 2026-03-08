@@ -215,7 +215,7 @@ public class FrameSublayer implements Runnable, RxCallback {
 			} else {
 				throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
 			}
-			transceiver.startCarrier();
+			transceiver.startTx();
 			break;
 		case START_IDLE:
 			transceiver.startIdle();

@@ -10,14 +10,7 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
-import com.leosatdata.model.Link2Establishment;
-import com.leosatdata.model.LinkEstablishment;
-import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.State;
-import com.leosatdata.model.TxRxParameters;
-import com.leosatdata.model.Type1Directive;
-import com.leosatdata.model.Type4Directive;
-import com.leosatdata.model.Type5Directive;
 import com.leosatdata.service.CarrierCallback;
 import com.leosatdata.service.NodeCallback;
 import com.leosatdata.service.RxCallback;
@@ -92,37 +85,8 @@ public class Node2 implements Runnable, RxCallback, TxCallback, SymbolInLockCall
 		sendEvent(new Event(EventType.E1_CONNECTING_L));
 	}
 
-	public void setLocalCommChange(TxRxParameters tx, TxRxParameters rx, PlExtensions txExt, PlExtensions rxExt) {
-		if (!config.getProperty("frame_version").equals("3")) {
-			throw new IllegalArgumentException("expected proximity-1");
-		}
-		Type1Directive obj = new Type1Directive();
-		obj.setRxPlExtensions(rxExt);
-		obj.setTxPlExtensions(txExt);
-		obj.setRxParams(rx);
-		obj.setTxParams(tx);
-		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, obj));
-	}
-
-	public void setLocalCommChange(LinkEstablishment rxLink, LinkEstablishment txLink) {
-		// FIXME when to send type4 vs type5?
-		if (!config.getProperty("frame_version").equals("4")) {
-			throw new IllegalArgumentException("expected USLP");
-		}
-		Type4Directive obj = new Type4Directive();
-		obj.setRxLink(rxLink);
-		obj.setTxLink(txLink);
-		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, obj));
-	}
-
-	public void setLocalCommChange(Link2Establishment rxLink, Link2Establishment txLink) {
-		if (!config.getProperty("frame_version").equals("4")) {
-			throw new IllegalArgumentException("expected USLP");
-		}
-		Type5Directive obj = new Type5Directive();
-		obj.setRxLink(rxLink);
-		obj.setTxLink(txLink);
-		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, obj));
+	public void setCommParameters(Object directive) {
+		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
 	}
 
 	public void send(byte[] data, QualityOfService qos) {

@@ -82,7 +82,7 @@ public class Mac implements Runnable, SymbolInLockCallback, CarrierCallback, Spd
 		this.farm = new Farm();
 		this.frameSublayer = frameSublayer;
 		this.frameSublayer.setSpduCallback(this);
-		this.spduParser = new SpduParser(this);
+		this.spduParser = new SpduParser(null, this);
 		t = new Thread(this, "mac-thread");
 	}
 
@@ -368,7 +368,7 @@ public class Mac implements Runnable, SymbolInLockCallback, CarrierCallback, Spd
 	private Object encode(Spdu spdu) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (BitOutputStream bos = new BitOutputStream(baos)) {
-			SpduParser.encode(spdu, bos);
+//			SpduParser.encode(spdu, bos);
 		} catch (IOException e1) {
 			LOG.error("can't serialize spdu", e1);
 			return null;

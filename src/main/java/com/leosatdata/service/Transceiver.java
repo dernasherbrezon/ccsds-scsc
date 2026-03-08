@@ -9,33 +9,7 @@ public interface Transceiver {
 
 	void send(byte[] data);
 
-	void setTxCallback(TxCallback callback);
-
-	TxCallback getTxCallback();
-
-	void setRxCallback(RxCallback callback);
-
-	RxCallback getRxCallback();
-
 	// FIXME status codes?
-	void startRx();
-
-	void stopRx();
-
-	void startCarrier();
-
-	void stopTx();
-
-	// When MODULATION=on, the coded symbols are modulated onto the radiated
-	// carrier; when MODULATION=off, the radiated output is not modulated (i.e.,
-	// carrier only).
-	void setModulation(boolean modulation);
-
-	boolean getModulation();
-
-	void startIdle();
-
-	void stopIdle();
 
 	// RX parameters
 	void setRxSymbolRate(float baud);
@@ -45,6 +19,12 @@ public interface Transceiver {
 	void setRxPolarization(Polarization polarization);
 	void setRxModulation(Modulation modulation);
 
+	void setRxCallback(RxCallback callback);
+	RxCallback getRxCallback();
+
+	void startRx();
+	void stopRx();
+
 	// TX parameters
 	void setTxSymbolRate(float baud);
 	void setTxDataModulation(DataModulation modulation);
@@ -53,5 +33,12 @@ public interface Transceiver {
 	void setTxPolarization(Polarization polarization);
 	void setTxModulation(Modulation modulation);	
 	
+	void setTxCallback(TxCallback callback);
+	TxCallback getTxCallback();
+
+	void startTx();
+	void startIdle();
+	void stopIdle();
+	void stopTx();
 
 }

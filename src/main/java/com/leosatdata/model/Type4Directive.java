@@ -2,6 +2,8 @@ package com.leosatdata.model;
 
 public class Type4Directive implements Spdu {
 
+	public static final int SPDU_VERSION = 2;
+	
 	private SpduHeader header;
 	private LinkEstablishment rxLink;
 	private LinkEstablishment txLink;

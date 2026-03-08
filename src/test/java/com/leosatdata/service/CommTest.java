@@ -13,9 +13,23 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
+import com.leosatdata.model.DataEncoding;
+import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.DataRate;
+import com.leosatdata.model.Direction;
+import com.leosatdata.model.Frequency;
+import com.leosatdata.model.Mode;
+import com.leosatdata.model.ModeSelect;
+import com.leosatdata.model.Modulation;
 import com.leosatdata.model.PersistentActivity;
+import com.leosatdata.model.PlExtensions;
+import com.leosatdata.model.RsCodeType;
+import com.leosatdata.model.ScramblerType;
+import com.leosatdata.model.TxRxParameters;
+import com.leosatdata.model.Type1Directive;
 import com.leosatdata.service2.Node2;
 import com.leosatdata.util.Configuration;
 
@@ -34,6 +48,7 @@ public class CommTest {
 	@Test
 	public void testSuccess() throws Exception {
 		satellite.waitForSession();
+		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
 		ControllerEvent hail = groundCallback.waitForEvent();
 		assertNotNull(hail);
@@ -48,6 +63,7 @@ public class CommTest {
 		Properties props = new Properties();
 		props.putAll(load("src/main/resources/mib.properties"));
 		props.putAll(load("src/main/resources/transceiver.properties"));
+		props.putAll(load("src/main/resources/custom.properties"));
 		props.putAll(load("src/test/resources/ground.properties"));
 		groundConfig = new Configuration(props);
 		groundTransceiver = new NullTransceiver(groundConfig);
@@ -64,6 +80,7 @@ public class CommTest {
 		props = new Properties();
 		props.putAll(load("src/main/resources/mib.properties"));
 		props.putAll(load("src/main/resources/transceiver.properties"));
+		props.putAll(load("src/main/resources/custom.properties"));
 		props.putAll(load("src/test/resources/satellite.properties"));
 		satelliteConfig = new Configuration(props);
 		satelliteTransceiver = new NullTransceiver(satelliteConfig);
@@ -95,6 +112,49 @@ public class CommTest {
 		try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
 			result.load(is);
 		}
+		return result;
+	}
+
+	private static Type1Directive createType1CommParameters() {
+		TxRxParameters tx = new TxRxParameters();
+		tx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
+		tx.setDataRate(DataRate.R8C);
+		tx.setFrequency(Frequency.CH3);
+		tx.setMode(Mode.PROXIMITY1);
+		tx.setModulation(Modulation.COHERENT_PSK);
+
+		PlExtensions txExt = new PlExtensions();
+		txExt.setCarrierModulation(CarrierModulation.PSK);
+		txExt.setDataModulation(DataModulation.NRZ_L);
+		txExt.setDifferentialEncoding(false);
+		txExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
+		txExt.setRsCode(RsCodeType.RS255_239);
+		txExt.setScrambler(ScramblerType.CCITT);
+		txExt.setUseExtendedDataRate(false);
+		txExt.setUseExtendedFreqSet(false);
+
+		TxRxParameters rx = new TxRxParameters();
+		rx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
+		rx.setDataRate(DataRate.R8C);
+		rx.setFrequency(Frequency.CH3);
+		rx.setMode(Mode.PROXIMITY1);
+		rx.setModulation(Modulation.COHERENT_PSK);
+
+		PlExtensions rxExt = new PlExtensions();
+		rxExt.setCarrierModulation(CarrierModulation.PSK);
+		rxExt.setDataModulation(DataModulation.NRZ_L);
+		rxExt.setDifferentialEncoding(false);
+		rxExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
+		rxExt.setRsCode(RsCodeType.RS255_239);
+		rxExt.setScrambler(ScramblerType.CCITT);
+		rxExt.setUseExtendedDataRate(false);
+		rxExt.setUseExtendedFreqSet(false);
+
+		Type1Directive result = new Type1Directive();
+		result.setTxParams(tx);
+		result.setTxPlExtensions(txExt);
+		result.setRxParams(rx);
+		result.setRxPlExtensions(rxExt);
 		return result;
 	}
 

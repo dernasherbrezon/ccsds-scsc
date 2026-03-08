@@ -24,7 +24,6 @@ public class NullTransceiver implements Transceiver {
 	private ScheduledExecutorService executor;
 	private boolean rx = false;
 	private boolean tx = false;
-	private boolean modulationEnabled = false;
 
 	private float symbolRate;
 	private DataModulation dataModulation;
@@ -66,8 +65,9 @@ public class NullTransceiver implements Transceiver {
 		}
 		getTxCallback().onTx();
 		// FIXME expected channel timeout
-		assert (otherSide.rx == true);
-		executor.schedule(new DelayedTask(otherSide.getRxCallback(), data), 10000, TimeUnit.MILLISECONDS);
+		if (otherSide.rx) {
+			executor.schedule(new DelayedTask(otherSide.getRxCallback(), data), 10000, TimeUnit.MILLISECONDS);
+		}
 	}
 
 	@Override
@@ -109,17 +109,20 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void startRx() {
+		LOG.info("start rx");
 		rx = true;
 	}
 
 	@Override
 	public void stopRx() {
+		LOG.info("stop rx");
 		rx = false;
 	}
 
 	@Override
-	public void startCarrier() {
+	public void startTx() {
 		LOG.info("start carrier");
+		tx = true;
 	}
 
 	@Override
@@ -149,16 +152,6 @@ public class NullTransceiver implements Transceiver {
 	@Override
 	public void stopTx() {
 		tx = false;
-	}
-
-	@Override
-	public void setModulation(boolean modulation) {
-		this.modulationEnabled = modulation;
-	}
-
-	@Override
-	public boolean getModulation() {
-		return modulationEnabled;
 	}
 
 	@Override

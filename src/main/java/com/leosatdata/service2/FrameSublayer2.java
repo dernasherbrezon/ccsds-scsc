@@ -33,6 +33,7 @@ public class FrameSublayer2 {
 
 	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
 	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
+	private final SpduParser spduParser;
 
 	public FrameSublayer2(State state, Configuration config, Transceiver transceiver) {
 		this.state = state;
@@ -44,6 +45,8 @@ public class FrameSublayer2 {
 		this.localPcid = config.getInteger("local_pcid", 0);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
 		this.framev4Parser = new com.leosatdata.ccsds7321b3.util.TransferFrameParser(config);
+		// FIXME callback?
+		this.spduParser = new SpduParser(config, null);
 	}
 
 	public void handle(Event e) {
@@ -57,7 +60,7 @@ public class FrameSublayer2 {
 			}
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				SpduParser.encode(spdu, bos);
+				spduParser.encode(spdu, bos);
 				qos = QualityOfService.EXPEDITED;
 				type = PduTypeId.SPDU;
 			} catch (IOException e1) {

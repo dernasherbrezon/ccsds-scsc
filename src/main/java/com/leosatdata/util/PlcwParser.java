@@ -26,8 +26,8 @@ public class PlcwParser {
 		return message;
 	}
 
-	public static void encode(Plcw message, BitOutputStream bos) throws IOException {
-		if (message.getHeader().getType() == Plcw.SHORT_PLCW) {
+	public static void encode(Plcw message, int type, BitOutputStream bos) throws IOException {
+		if (type == Plcw.SHORT_PLCW) {
 			bos.writeBoolean(message.isRetransmit());
 			bos.writeUnsignedInt(1, message.getPcid());
 			bos.writeUnsignedInt(1, 0); // unused
