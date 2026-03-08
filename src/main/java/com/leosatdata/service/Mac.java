@@ -1,4 +1,4 @@
-package com.leosatdata.service2;
+package com.leosatdata.service;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -16,14 +16,12 @@ import com.leosatdata.model.State;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
-import com.leosatdata.service.NodeCallback;
-import com.leosatdata.service.Transceiver;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.TransceiverUtil;
 
-public class Mac2 {
+public class Mac {
 
-	private final static Logger LOG = LoggerFactory.getLogger(Mac2.class);
+	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);
 	private final static int HAIL_RESPONSE_FRAME = 0;
 	private final static int HAIL_RESPONSE_SYMBOL_IN_LOCK = 1;
 
@@ -39,7 +37,7 @@ public class Mac2 {
 	private boolean hailCarrierReceived;
 	private boolean symbolInLock;
 
-	public Mac2(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
+	public Mac(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.state = state;
 		this.config = config;
 		this.transceiver = transceiver;

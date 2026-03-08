@@ -30,7 +30,6 @@ import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
-import com.leosatdata.service2.Node2;
 import com.leosatdata.util.Configuration;
 
 public class CommTest {
@@ -38,12 +37,12 @@ public class CommTest {
 	private Configuration groundConfig;
 	private NullTransceiver groundTransceiver;
 	private MockNodeCallback groundCallback;
-	private Node2 ground;
+	private Node ground;
 
 	private Configuration satelliteConfig;
 	private NullTransceiver satelliteTransceiver;
 	private MockNodeCallback satelliteCallback;
-	private Node2 satellite;
+	private Node satellite;
 
 	@Test
 	public void testSuccess() throws Exception {
@@ -68,7 +67,7 @@ public class CommTest {
 		groundConfig = new Configuration(props);
 		groundTransceiver = new NullTransceiver(groundConfig);
 		groundCallback = new MockNodeCallback();
-		ground = new Node2(groundConfig, groundTransceiver, groundCallback, new UserDataCallback() {
+		ground = new Node(groundConfig, groundTransceiver, groundCallback, new UserDataCallback() {
 
 			@Override
 			public void onUserData(byte[] payload) {
@@ -85,7 +84,7 @@ public class CommTest {
 		satelliteConfig = new Configuration(props);
 		satelliteTransceiver = new NullTransceiver(satelliteConfig);
 		satelliteCallback = new MockNodeCallback();
-		satellite = new Node2(satelliteConfig, satelliteTransceiver, satelliteCallback, new UserDataCallback() {
+		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, new UserDataCallback() {
 
 			@Override
 			public void onUserData(byte[] payload) {

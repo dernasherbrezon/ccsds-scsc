@@ -3,13 +3,11 @@ package com.leosatdata.service;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import com.leosatdata.service2.FrameSublayer2;
-
 public class FrameOutputStream extends OutputStream {
 
-	private final FrameSublayer2 frameSublayer;
+	private final FrameSublayer frameSublayer;
 
-	public FrameOutputStream(FrameSublayer2 frameSublayer) {
+	public FrameOutputStream(FrameSublayer frameSublayer) {
 		this.frameSublayer = frameSublayer;
 	}
 

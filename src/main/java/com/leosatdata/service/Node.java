@@ -1,4 +1,4 @@
-package com.leosatdata.service2;
+package com.leosatdata.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,33 +11,26 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.State;
-import com.leosatdata.service.CarrierCallback;
-import com.leosatdata.service.NodeCallback;
-import com.leosatdata.service.RxCallback;
-import com.leosatdata.service.SymbolInLockCallback;
-import com.leosatdata.service.Transceiver;
-import com.leosatdata.service.TxCallback;
-import com.leosatdata.service.UserDataCallback;
 import com.leosatdata.util.Configuration;
 
-public class Node2 implements Runnable, RxCallback, TxCallback, SymbolInLockCallback, CarrierCallback {
+public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallback, CarrierCallback {
 
-	private final static Logger LOG = LoggerFactory.getLogger(Node2.class);
+	private final static Logger LOG = LoggerFactory.getLogger(Node.class);
 
 	private final Configuration config;
 	private final Transceiver transceiver;
 	private final NodeCallback callback;
 	private final UserDataCallback rxCallback;
 	private final State state;
-	private final Mac2 mac;
-	private final FrameSublayer2 frameSublayer;
+	private final Mac mac;
+	private final FrameSublayer frameSublayer;
 
 	private final Thread t;
 	private final int localScid;
 	private final boolean testSource;
 	private int remoteScid;
 
-	public Node2(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
+	public Node(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
 		this.config = config;
 		this.transceiver = transceiver;
 		this.transceiver.setRxCallback(this);
@@ -48,8 +41,8 @@ public class Node2 implements Runnable, RxCallback, TxCallback, SymbolInLockCall
 		this.testSource = config.getBoolean("test_source");
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
 		this.state = new State(config);
-		this.mac = new Mac2(state, config, transceiver, callback);
-		this.frameSublayer = new FrameSublayer2(state, config, transceiver);
+		this.mac = new Mac(state, config, transceiver, callback);
+		this.frameSublayer = new FrameSublayer(state, config, transceiver);
 		t = new Thread(this, "node-thread");
 		t.setDaemon(true);
 	}
@@ -105,10 +98,10 @@ public class Node2 implements Runnable, RxCallback, TxCallback, SymbolInLockCall
 			return;
 		}
 
-		PduTypeId type = FrameSublayer2.getPduTypeId(frame);
-		SourceDestination sourceDestination = FrameSublayer2.getSourceDestination(frame);
-		int scid = FrameSublayer2.getScid(frame);
-		byte[] payload = FrameSublayer2.getPayload(frame);
+		PduTypeId type = FrameSublayer.getPduTypeId(frame);
+		SourceDestination sourceDestination = FrameSublayer.getSourceDestination(frame);
+		int scid = FrameSublayer.getScid(frame);
+		byte[] payload = FrameSublayer.getPayload(frame);
 		if (type == null || sourceDestination == null || scid < 0 || payload == null) {
 			return;
 		}

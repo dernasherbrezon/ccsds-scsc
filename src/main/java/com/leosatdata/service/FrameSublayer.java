@@ -1,4 +1,4 @@
-package com.leosatdata.service2;
+package com.leosatdata.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,15 +13,14 @@ import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
-import com.leosatdata.service.Transceiver;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
 
-public class FrameSublayer2 {
+public class FrameSublayer {
 
-	private final static Logger LOG = LoggerFactory.getLogger(FrameSublayer2.class);
+	private final static Logger LOG = LoggerFactory.getLogger(FrameSublayer.class);
 
 	private final State state;
 	private final Configuration config;
@@ -35,7 +34,7 @@ public class FrameSublayer2 {
 	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
 	private final SpduParser spduParser;
 
-	public FrameSublayer2(State state, Configuration config, Transceiver transceiver) {
+	public FrameSublayer(State state, Configuration config, Transceiver transceiver) {
 		this.state = state;
 		this.config = config;
 		this.transceiver = transceiver;
