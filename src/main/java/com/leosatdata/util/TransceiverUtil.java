@@ -1,5 +1,8 @@
 package com.leosatdata.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.DataEncoding;
@@ -9,11 +12,13 @@ import com.leosatdata.model.Direction;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
+import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.LinkModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.ModulationIndex;
+import com.leosatdata.model.NegotiationType;
 import com.leosatdata.model.NegotiationType2;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Polarization;
@@ -22,36 +27,51 @@ import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
+import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
 import com.leosatdata.service.Transceiver;
 
 public class TransceiverUtil {
 
-	public static Object createHailTxRx(Configuration config) {
-		// FIXME check different parameter
-		String frameVersion = config.getProperty("frame_version");
-		if (frameVersion.equals("3")) {
-			return TransceiverUtil.createHailProximityTxRx(config);
-		} else if (frameVersion.equals("4")) {
-			return TransceiverUtil.createHailUslpTxRx(config);
+	private static final Logger LOG = LoggerFactory.getLogger(TransceiverUtil.class);
+	private final Transceiver transceiver;
+	private final Configuration config;
+	private final int spduVersion;
+	private final int symbolRate;
+	private final int channel;
+
+	public TransceiverUtil(Configuration config, Transceiver transceiver) {
+		this.config = config;
+		this.transceiver = transceiver;
+		this.spduVersion = config.getInteger("spdu_version", 1);
+		this.symbolRate = config.getInteger("hailing_symbol_rate", -1);
+		this.channel = config.getInteger("hailing_channel", -1);
+	}
+
+	public Object createHailTxRx() {
+		if (spduVersion == Type1Directive.SPDU_VERSION) {
+			return createHailType1();
+		} else if (spduVersion == Type4Directive.SPDU_VERSION) {
+			return createHailType4();
+		} else if (spduVersion == Type5Directive.SPDU_VERSION) {
+			return createHailType5();
 		} else {
-			throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
+			LOG.error("unsupported spdu version: {}", spduVersion);
+			return null;
 		}
 	}
 
-	public static Type1Directive createHailProximityTxRx(Configuration config) {
+	public Type1Directive createHailType1() {
 		Type1Directive result = new Type1Directive();
-		result.setTxParams(createProximityTxRx(config));
-		result.setTxPlExtensions(createProximityPlExtensions(Direction.TRANSMITTER));
-		result.setRxParams(createProximityTxRx(config));
-		result.setRxPlExtensions(createProximityPlExtensions(Direction.RECEIVER));
+		result.setTxParams(createType1TxRx());
+		result.setTxPlExtensions(createType1PlExtensions(Direction.TRANSMITTER));
+		result.setRxParams(createType1TxRx());
+		result.setRxPlExtensions(createType1PlExtensions(Direction.RECEIVER));
 		return result;
 	}
 
-	private static TxRxParameters createProximityTxRx(Configuration config) {
+	private TxRxParameters createType1TxRx() {
 		// TODO not clear why hailing_data_rate exist
-		int symbolRate = config.getInteger("hailing_symbol_rate", -1);
-		int channel = config.getInteger("hailing_channel", -1);
 		TxRxParameters result = new TxRxParameters();
 		result.setDataEncoding(DataEncoding.NONE);
 		if (symbolRate != -1) {
@@ -69,7 +89,7 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	private static PlExtensions createProximityPlExtensions(Direction direction) {
+	private static PlExtensions createType1PlExtensions(Direction direction) {
 		PlExtensions result = new PlExtensions();
 		result.setCarrierModulation(CarrierModulation.PSK);
 		result.setDataModulation(DataModulation.MANCHESTER);
@@ -83,15 +103,17 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	public static void applyParameters(Object params, Configuration config, Transceiver transceiver) {
+	public void applyParameters(Object params) {
 		if (params instanceof Type1Directive) {
-			applyProximityParameters((Type1Directive) params, config, transceiver);
+			applyType1Parameters((Type1Directive) params);
+		} else if (params instanceof Type4Directive) {
+			applyType4Parameters((Type4Directive) params);
 		} else if (params instanceof Type5Directive) {
-			applyUslpParameters((Type5Directive) params, transceiver);
+			applyType5Parameters((Type5Directive) params);
 		}
 	}
 
-	public static void applyProximityParameters(Type1Directive params, Configuration config, Transceiver transceiver) {
+	public void applyType1Parameters(Type1Directive params) {
 		int symbolRate = params.getRxParams().getDataRate().getRate();
 		if (params.getRxPlExtensions().isUseExtendedDataRate()) {
 			symbolRate = params.getRxParams().getDataRate().getExtendedRate();
@@ -121,17 +143,15 @@ public class TransceiverUtil {
 		transceiver.setTxModulation(params.getTxParams().getModulation());
 	}
 
-	// from the initial hail channel type4 or type5 doesn't matter much
-	public static Type5Directive createHailUslpTxRx(Configuration config) {
+	public Type5Directive createHailType5() {
 		Type5Directive result = new Type5Directive();
-		result.setRxLink(createUslpTxRx(LinkDirection.RETURN, config));
-		result.setTxLink(createUslpTxRx(LinkDirection.FORWARD, config));
+		result.setRxLink(createType5TxRx(LinkDirection.RETURN));
+		result.setTxLink(createType5TxRx(LinkDirection.FORWARD));
 		return result;
 	}
 
-	private static Link2Establishment createUslpTxRx(LinkDirection direction, Configuration config) {
+	private Link2Establishment createType5TxRx(LinkDirection direction) {
 		Link2Establishment result = new Link2Establishment();
-		float symbolRate = config.getFloat("hailing_symbol_rate", -1);
 		if (symbolRate != -1) {
 			result.setSymbolRate(symbolRate);
 		} else {
@@ -145,19 +165,72 @@ public class TransceiverUtil {
 		result.setTransmitToken(false);
 		result.setCoherency(Modulation.NON_COHERENT_PSK);
 
-		int channel = config.getInteger("hailing_channel", -1);
+		int hailingChannel = channel;
 		if (channel == -1) {
-			channel = 0;
+			hailingChannel = 0;
 		}
 
-		result.setFrequency(config.getLong("frequency.4.ch" + channel + direction.getShortCode(), channel));
+		// use the same channel for type 4 and type 5 directives
+		result.setFrequency(config.getLong("frequency.4.ch" + hailingChannel + direction.getShortCode(), 0));
 		result.setModulation(LinkModulation.PCM_PM_BI_PHASE);
 		result.setCoding(Coding.LDPC2048_1024);
 		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
 		return result;
 	}
 
-	public static void applyUslpParameters(Type5Directive directive, Transceiver transceiver) {
+	public Type4Directive createHailType4() {
+		Type4Directive result = new Type4Directive();
+		result.setRxLink(createType4TxRx(LinkDirection.RETURN));
+		result.setTxLink(createType4TxRx(LinkDirection.FORWARD));
+		return result;
+	}
+
+	private LinkEstablishment createType4TxRx(LinkDirection direction) {
+		LinkEstablishment result = new LinkEstablishment();
+		if (symbolRate != -1) {
+			result.setSymbolRate(symbolRate);
+		} else {
+			result.setSymbolRate(2000);
+		}
+		result.setDirection(direction);
+		result.setDemandQuery(NegotiationType.DEMAND); // not specified in the spec
+		result.setPolarization(Polarization.LHCP);
+		result.setRnmd(false);
+		result.setTransmitToken(false);
+
+		int hailingChannel = channel;
+		if (channel == -1) {
+			hailingChannel = 0;
+		}
+
+		result.setFreqChannel(hailingChannel);
+		result.setModulation(LinkModulation.PCM_PM_BI_PHASE);
+		result.setCoding(Coding.LDPC2048_1024);
+		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
+		return result;
+	}
+
+	private void applyType4Parameters(Type4Directive directive) {
+		LinkEstablishment params = directive.getRxLink();
+		transceiver.setRxSymbolRate(params.getSymbolRate());
+		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
+			transceiver.setRxDataModulation(DataModulation.MANCHESTER);
+		} // FIXME other options
+		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
+		transceiver.setRxDataEncoding(params.getCoding());
+		transceiver.setRxPolarization(params.getPolarization());
+
+		params = directive.getTxLink();
+		transceiver.setTxSymbolRate(params.getSymbolRate());
+		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
+			transceiver.setTxDataModulation(DataModulation.MANCHESTER);
+		} // FIXME other options
+		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
+		transceiver.setTxDataEncoding(params.getCoding());
+		transceiver.setTxPolarization(params.getPolarization());
+	}
+
+	public void applyType5Parameters(Type5Directive directive) {
 		Link2Establishment params = directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {

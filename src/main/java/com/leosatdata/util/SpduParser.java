@@ -3,6 +3,9 @@ package com.leosatdata.util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.SpduHeader;
@@ -14,6 +17,8 @@ import com.leosatdata.model.Type5Directive;
 
 public class SpduParser {
 
+	private static final Logger LOG = LoggerFactory.getLogger(SpduParser.class);
+
 	private final static int FIXED_SPDU = 1;
 	private final static int VARIABLE_SPDU = 0;
 
@@ -23,11 +28,9 @@ public class SpduParser {
 	private final static int TYPE4_DIRECTIVE = 0b011;
 	private final static int TYPE5_DIRECTIVE = 0b100;
 
-	private final SpduParserCallback callback;
 	private final int spduVersion;
 
-	public SpduParser(Configuration config, SpduParserCallback callback) {
-		this.callback = callback;
+	public SpduParser(Configuration config) {
 		this.spduVersion = config.getInteger("spdu_version", 1);
 	}
 
@@ -73,13 +76,12 @@ public class SpduParser {
 		bos.writeFully(payloadData);
 	}
 
-	public void decode(BitInputStream bis) throws IOException {
+	public Object decode(BitInputStream bis) throws IOException {
 		SpduHeader header = new SpduHeader();
 		header.setFormat(bis.readUnsignedInt(1));
 		if (header.getFormat() == FIXED_SPDU) {
 			header.setType(bis.readUnsignedInt(1));
-			callback.onPlsw(PlcwParser.decode(header, bis));
-			return;
+			return PlcwParser.decode(header, bis);
 		}
 
 		// VARIABLE_SPDU
@@ -87,22 +89,18 @@ public class SpduParser {
 		int lengthBytes = bis.readUnsignedInt(4);
 		switch (header.getType()) {
 		case TYPE1_DIRECTIVE:
-			callback.onType1Directive(Type1DirectiveParser.decode(header, lengthBytes, bis));
-			break;
+			return Type1DirectiveParser.decode(header, lengthBytes, bis);
 		case TYPE2_DIRECTIVE:
-			callback.onTimeDistribution(TimeDistributionParser.decode(header, bis));
-			break;
+			return TimeDistributionParser.decode(header, bis);
 		case TYPE3_DIRECTIVE:
-			callback.onStatusReport(StatusReportParser.decode(header, bis));
-			break;
+			return StatusReportParser.decode(header, bis);
 		case TYPE4_DIRECTIVE:
-			callback.onType4Directive(Type4DirectiveParser.decode(header, bis));
-			break;
+			return Type4DirectiveParser.decode(header, bis);
 		case TYPE5_DIRECTIVE:
-			callback.onType5Directive(Type5DirectiveParser.decode(header, bis));
-			break;
+			return Type5DirectiveParser.decode(header, bis);
 		default:
-			throw new IOException("unknown directive type: " + header.getType());
+			LOG.error("unknown directive type: {}", header.getType());
+			return null;
 		}
 
 	}

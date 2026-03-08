@@ -28,6 +28,7 @@ public class Mac {
 	private final State state;
 	private final Configuration config;
 	private final Transceiver transceiver;
+	private final TransceiverUtil transceiverUtil;
 	private final NodeCallback callback;
 	private final int spduVersion;
 
@@ -41,6 +42,7 @@ public class Mac {
 		this.state = state;
 		this.config = config;
 		this.transceiver = transceiver;
+		this.transceiverUtil = new TransceiverUtil(config, transceiver);
 		this.callback = callback;
 		this.spduVersion = config.getInteger("spdu_version", 1);
 	}
@@ -65,14 +67,7 @@ public class Mac {
 			state.setPersistence(true);
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
 			state.setMode(MacMode.CONNECTING_T);
-			String frameVersion = config.getProperty("frame_version");
-			if (frameVersion.equals("3")) {
-				TransceiverUtil.applyProximityParameters(TransceiverUtil.createHailProximityTxRx(config), config, transceiver);
-			} else if (frameVersion.equals("4")) {
-				TransceiverUtil.applyUslpParameters(TransceiverUtil.createHailUslpTxRx(config), transceiver);
-			} else {
-				throw new IllegalArgumentException("unsupported frame_version: " + frameVersion);
-			}
+			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
 			transceiver.startTx();
 			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
@@ -110,7 +105,7 @@ public class Mac {
 			callback.handle(createNotification("hail", true));
 			currentHailAttempt = 0;
 			// switch over to the agreed link
-			TransceiverUtil.applyParameters(state.getCommParameters(), config, transceiver);
+			transceiverUtil.applyParameters(state.getCommParameters());
 			transceiver.startTx();
 			scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;

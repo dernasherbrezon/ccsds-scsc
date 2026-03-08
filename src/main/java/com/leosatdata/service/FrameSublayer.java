@@ -44,8 +44,7 @@ public class FrameSublayer {
 		this.localPcid = config.getInteger("local_pcid", 0);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
 		this.framev4Parser = new com.leosatdata.ccsds7321b3.util.TransferFrameParser(config);
-		// FIXME callback?
-		this.spduParser = new SpduParser(config, null);
+		this.spduParser = new SpduParser(config);
 	}
 
 	public void handle(Event e) {
