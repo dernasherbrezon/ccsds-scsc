@@ -37,12 +37,14 @@ public class SpduParser {
 	public void encode(Spdu message, BitOutputStream bos) throws IOException {
 		if (message instanceof Plcw) {
 			bos.writeUnsignedInt(1, FIXED_SPDU);
+			int type;
 			if (spduVersion == Type1Directive.SPDU_VERSION) {
-				bos.writeUnsignedInt(1, Plcw.SHORT_PLCW);
+				type = Plcw.SHORT_PLCW;
 			} else {
-				bos.writeUnsignedInt(1, Plcw.LONG_PLCW);
+				type = Plcw.LONG_PLCW;
 			}
-			PlcwParser.encode((Plcw) message, spduVersion, bos);
+			bos.writeUnsignedInt(1, type);
+			PlcwParser.encode((Plcw) message, type, bos);
 			return;
 		}
 

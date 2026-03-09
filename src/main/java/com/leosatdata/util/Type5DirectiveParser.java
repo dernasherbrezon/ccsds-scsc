@@ -95,6 +95,7 @@ public class Type5DirectiveParser {
 				daySegmented.setMillisecondsOfTheDay(bis.readUnsignedLong(32));
 				pnRanging.setPnEpochTime(daySegmented);
 				pnRanging.setReportRequest(RangingReportRequest.valueOfCode(bis.readUnsignedInt(5)));
+				bis.skipBits(2);
 				result.setPnRanging(pnRanging);
 				break;
 			default:
@@ -141,6 +142,7 @@ public class Type5DirectiveParser {
 			bos.writeUnsignedInt(16, params.getPnEpochTime().getDay());
 			bos.writeUnsignedLong(32, params.getPnEpochTime().getMillisecondsOfTheDay());
 			bos.writeUnsignedInt(5, params.getReportRequest().getCode());
+			bos.writeUnsignedInt(2, 0); // unused
 		}
 
 	}

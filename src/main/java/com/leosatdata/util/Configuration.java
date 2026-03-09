@@ -16,6 +16,10 @@ public class Configuration {
 		return config.getProperty(name);
 	}
 
+	public void setProperty(String name, String value) {
+		config.setProperty(name, value);
+	}
+
 	public long getLong(String name, long defaultValue) {
 		String result = config.getProperty(name);
 		if (result == null || result.trim().length() == 0) {
