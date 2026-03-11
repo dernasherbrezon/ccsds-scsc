@@ -124,7 +124,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		}
 
 		if (type.equals(PduTypeId.SPDU)) {
-			sendEvent(new Event(EventType.SPDU, payload));
+			sendEvent(new Event(EventType.SPDU, frameSublayer.decode(payload)));
 		} else {
 			rxCallback.onUserData(payload);
 		}

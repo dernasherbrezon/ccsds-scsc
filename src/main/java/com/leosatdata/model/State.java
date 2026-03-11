@@ -16,12 +16,31 @@ public class State {
 
 	private Spdu commParameters;
 	private MacMode mode = MacMode.INACTIVE;
+	private MacState state = MacState.S1_INACTIVE;
 	private int expFsn = 0; // VE(S)sequence number of the next Expedited frame to be sent
 	private int seqCtrlFsn = 0;
+	private boolean needPlcw = false;
+	private boolean uFrameLastSent = true;
 
 	public State(Configuration config) {
 		this.seqQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10));
 		this.expQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10)); // use the same parameter for expedited and sequenced
+	}
+	
+	public boolean isuFrameLastSent() {
+		return uFrameLastSent;
+	}
+	
+	public void setuFrameLastSent(boolean uFrameLastSent) {
+		this.uFrameLastSent = uFrameLastSent;
+	}
+	
+	public boolean isNeedPlcw() {
+		return needPlcw;
+	}
+	
+	public void setNeedPlcw(boolean needPlcw) {
+		this.needPlcw = needPlcw;
 	}
 	
 	public BlockingQueue<byte[]> getSeqQueue() {
@@ -80,4 +99,11 @@ public class State {
 		this.persistence = persistence;
 	}
 
+	public MacState getState() {
+		return state;
+	}
+	
+	public void setState(MacState state) {
+		this.state = state;
+	}
 }

@@ -11,7 +11,9 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacMode;
+import com.leosatdata.model.MacState;
 import com.leosatdata.model.PersistentActivity;
+import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
@@ -53,6 +55,13 @@ public class Mac {
 
 	public void handle(Event e) {
 		switch (e.getType()) {
+		case E1_CONNECTING_L:
+			LOG.info("waiting for hail");
+			state.setMode(MacMode.CONNECTING_L);
+			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
+			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
+			transceiver.startRx();
+			break;
 		case E2_CONNECTING_T:
 			if (state.getCommParameters() == null) {
 				LOG.error("comm parameters not configured");
@@ -64,28 +73,33 @@ public class Mac {
 				callback.handle(createNotification("hail", false));
 				return;
 			}
-			state.setPersistence(true);
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
-			state.setMode(MacMode.CONNECTING_T);
 			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
 			transceiver.startTx();
+			state.setPersistence(true);
+			state.setMode(MacMode.CONNECTING_T);
+			state.setState(MacState.S31_START_HAIL);
 			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
 		case E4_CARRIER_ONLY_TIMEOUT:
 			transceiver.startIdle();
+			state.setState(MacState.S32_SEND_HAIL_ACQUISITION);
 			scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
 			state.getMacQueue().add(state.getCommParameters());
+			state.setState(MacState.S33_SEND_HAIL_DIRECTIVES);
 			break;
 		case TX_COMPLETE:
 			if (state.isPersistence()) {
+				state.setState(MacState.S34_SEND_HAIL_TAIL);
 				scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
 			hailCarrierReceived = false;
 			transceiver.startRx();
+			state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
 			scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
 		case E8_1_CARRIER_RECEIVED:
@@ -98,24 +112,34 @@ public class Mac {
 			}
 			// no break clause here because should proceed as valid frame
 		case SPDU:
-			if (!state.isPersistence()) {
-				break;
+			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE)) {
+				waitTimerTask.cancel();
+				callback.handle(createNotification("hail", true));
+				currentHailAttempt = 0;
+				// switch over to the agreed link
+				transceiverUtil.applyParameters(state.getCommParameters());
+				transceiver.startTx();
+				state.setState(MacState.S41_RADIATE_CARRIER);
+				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
-			waitTimerTask.cancel();
-			callback.handle(createNotification("hail", true));
-			currentHailAttempt = 0;
-			// switch over to the agreed link
-			transceiverUtil.applyParameters(state.getCommParameters());
-			transceiver.startTx();
-			scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
+				if (!validateSpdu(e.getArg())) {
+					break;
+				}
+				state.setCommParameters((Spdu) e.getArg());
+				state.setNeedPlcw(true);
+				transceiver.startTx();
+			}
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
 			transceiver.startIdle();
+			state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
 			scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			state.setPersistence(false);
 			state.setMode(MacMode.ACTIVE);
+//			state.setState(MacState.s40);
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {

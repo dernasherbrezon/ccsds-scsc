@@ -48,9 +48,10 @@ public class FrameSublayer {
 	}
 
 	public void handle(Event e) {
-		byte[] payload;
-		QualityOfService qos;
-		PduTypeId type;
+		byte[] payload = null;
+		QualityOfService qos = null;
+		PduTypeId type = null;
+
 		if (state.isPersistence()) {
 			Spdu spdu = state.getMacQueue().poll();
 			if (spdu == null) {
@@ -66,15 +67,37 @@ public class FrameSublayer {
 				return;
 			}
 			payload = baos.toByteArray();
-		} else {
+		}
+
+		// FIXME set isuFrameLastSent properly
+		if (payload == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
+			state.setNeedPlcw(false);
+			qos = QualityOfService.EXPEDITED;
+			type = PduTypeId.SPDU;
+			// FIXME create plcw
+		}
+
+		if (payload == null) {
 			payload = state.getExpQueue().poll();
 			if (payload != null) {
 				qos = QualityOfService.EXPEDITED;
 				type = PduTypeId.USER_DATA;
-			} else {
-				// FIXME proper algorithm with priorities
-				return;
 			}
+		}
+
+		if (payload == null) {
+			payload = state.getSeqQueue().poll();
+			if (payload != null) {
+				qos = QualityOfService.SEQUENCE_CONTROLLED;
+				type = PduTypeId.USER_DATA;
+			}
+		}
+
+		if (payload == null && !state.isuFrameLastSent() && state.isNeedPlcw()) {
+			state.setNeedPlcw(false);
+			qos = QualityOfService.EXPEDITED;
+			type = PduTypeId.SPDU;
+			// FIXME create plcw
 		}
 
 		if (payload == null) {
@@ -271,8 +294,8 @@ public class FrameSublayer {
 			if (uFrameVersion != 2) {
 				return null;
 			}
-			try {
-				return framev2Parser.decode(new BitInputStream(data));
+			try (BitInputStream bis = new BitInputStream(data)) {
+				return framev2Parser.decode(bis);
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe2", e);
 				return null;
@@ -281,8 +304,8 @@ public class FrameSublayer {
 			if (uFrameVersion != 3) {
 				return null;
 			}
-			try {
-				return com.leosatdata.ccsds2110b6.util.TransferFrameParser.decode(new BitInputStream(data));
+			try (BitInputStream bis = new BitInputStream(data)) {
+				return com.leosatdata.ccsds2110b6.util.TransferFrameParser.decode(bis);
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe3", e);
 				return null;
@@ -291,8 +314,8 @@ public class FrameSublayer {
 			if (uFrameVersion != 4) {
 				return null;
 			}
-			try {
-				return framev4Parser.decode(new BitInputStream(data));
+			try (BitInputStream bis = new BitInputStream(data)) {
+				return framev4Parser.decode(bis);
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe4", e);
 				return null;
@@ -300,6 +323,15 @@ public class FrameSublayer {
 		} else {
 			// data is somehow corrupted and completely unsupported even after crc and FEC
 			LOG.debug("invalid frame received");
+			return null;
+		}
+	}
+
+	public Object decodeSpdu(byte[] data) {
+		try (BitInputStream bis = new BitInputStream(data)) {
+			return spduParser.decode(bis);
+		} catch (IOException e) {
+			LOG.error("unable to read spdu", e);
 			return null;
 		}
 	}
