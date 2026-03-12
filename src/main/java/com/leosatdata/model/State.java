@@ -18,7 +18,7 @@ public class State {
 	private MacMode mode = MacMode.INACTIVE;
 	private MacState state = MacState.S1_INACTIVE;
 	// FIXME module-8. Most likely won't work for some trasnfer frames
-	private int expFsn = 0; // VE(S)sequence number of the next Expedited frame to be sent
+	private int ves = 0; // sequence number of the next Expedited frame to be sent
 	private int seqCtrlFsn = 0;
 	private boolean needPlcw = false;
 	private boolean uFrameLastSent = true;
@@ -71,12 +71,12 @@ public class State {
 		this.seqCtrlFsn = seqCtrlFsn;
 	}
 
-	public int getExpFsn() {
-		return expFsn;
+	public int getVes() {
+		return ves;
 	}
-
-	public void setExpFsn(int expFsn) {
-		this.expFsn = expFsn;
+	
+	public void setVes(int ves) {
+		this.ves = ves;
 	}
 
 	public LinkedBlockingQueue<Spdu> getMacQueue() {

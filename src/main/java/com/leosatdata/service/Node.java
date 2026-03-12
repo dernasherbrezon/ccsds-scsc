@@ -42,7 +42,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
 		this.state = new State(config);
 		this.mac = new Mac(state, config, transceiver, callback);
-		this.frameSublayer = new FrameSublayer(state, config, transceiver);
+		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
 		t = new Thread(this, "node-thread");
 		t.setDaemon(true);
 	}

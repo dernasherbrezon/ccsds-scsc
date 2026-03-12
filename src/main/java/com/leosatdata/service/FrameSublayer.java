@@ -22,10 +22,13 @@ import com.leosatdata.util.SpduParser;
 public class FrameSublayer {
 
 	private final static Logger LOG = LoggerFactory.getLogger(FrameSublayer.class);
+	private final static int MAX_SEQUENCE_NUMBER_BYTES = 1; // 2^8
+	private final static int MAX_SEQUENCE_NUMBER = 256; // 2^8
 
 	private final State state;
 	private final Configuration config;
 	private final Transceiver transceiver;
+	private final NodeCallback callback;
 	private final int uFrameVersion;
 	private final int pFrameVersion;
 	private final int localScid;
@@ -35,7 +38,7 @@ public class FrameSublayer {
 	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
 	private final SpduParser spduParser;
 
-	public FrameSublayer(State state, Configuration config, Transceiver transceiver) {
+	public FrameSublayer(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.state = state;
 		this.config = config;
 		this.transceiver = transceiver;
@@ -46,6 +49,7 @@ public class FrameSublayer {
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
 		this.framev4Parser = new com.leosatdata.ccsds7321b3.util.TransferFrameParser(config);
 		this.spduParser = new SpduParser(config);
+		this.callback = callback;
 	}
 
 	public void handle(Event e) {
@@ -118,7 +122,7 @@ public class FrameSublayer {
 	private byte[] createPlcw(boolean retransmitRequired) {
 		Plcw plcw = new Plcw();
 		plcw.setReportValue(state.getVr());
-		plcw.setExpeditedFrameCounter(state.getExpFsn());
+		plcw.setExpeditedFrameCounter(state.getVes());
 		plcw.setPcid(localPcid);
 		plcw.setRetransmit(retransmitRequired);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -143,9 +147,14 @@ public class FrameSublayer {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		int nextSeqNumber;
 		if (qos.equals(QualityOfService.EXPEDITED)) {
-			nextSeqNumber = state.getExpFsn();
+			nextSeqNumber = state.getVes();
 		} else {
 			nextSeqNumber = state.getSeqCtrlFsn();
+		}
+		if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
+			nextSeqNumber = 0;
+		} else {
+			nextSeqNumber++;
 		}
 		if (uFrameVersion == 2) {
 			com.leosatdata.ccsds2110b6.model.TransferFrameHeader header = new com.leosatdata.ccsds2110b6.model.TransferFrameHeader();
@@ -158,11 +167,6 @@ public class FrameSublayer {
 			header.setSourceOrDestination(SourceDestination.SOURCE);
 			header.setPcid(localPcid);
 			header.setFrameLength(payload.length);
-			if (nextSeqNumber > com.leosatdata.ccsds2110b6.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
-				nextSeqNumber = 0;
-			} else {
-				nextSeqNumber++;
-			}
 			header.setFrameSequenceNumber(nextSeqNumber);
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
 			frame.setHeader(header);
@@ -185,11 +189,6 @@ public class FrameSublayer {
 			header.setPortId(0); // TODO read from user input?
 			header.setPcid(localPcid);
 			header.setFrameLength(payload.length);
-			if (nextSeqNumber > com.leosatdata.ccsds2110b6.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
-				nextSeqNumber = 0;
-			} else {
-				nextSeqNumber++;
-			}
 			header.setFrameSequenceNumber(nextSeqNumber);
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
 			frame.setHeader(header);
@@ -216,12 +215,7 @@ public class FrameSublayer {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
-			frame.getHeader().setVcfCountLength(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VCF_COUNT_LENGTH);
-			if (nextSeqNumber > com.leosatdata.ccsds7321b3.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
-				nextSeqNumber = 0;
-			} else {
-				nextSeqNumber++;
-			}
+			frame.getHeader().setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
 			frame.getHeader().setVcfCount(nextSeqNumber);
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				framev4Parser.encode(frame, bos);
@@ -233,7 +227,7 @@ public class FrameSublayer {
 
 		if (qos.equals(QualityOfService.EXPEDITED)) {
 			// TODO notify obc about VE(S)
-			state.setExpFsn(nextSeqNumber);
+			state.setVes(nextSeqNumber);
 		} else {
 			// TODO notify obc about VS(S)
 			state.setSeqCtrlFsn(nextSeqNumber);
@@ -243,7 +237,12 @@ public class FrameSublayer {
 
 	private byte[] encodePFrame(byte[] payload) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		int nextSeqNumber = state.getExpFsn();
+		int nextSeqNumber = state.getVes();
+		if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
+			nextSeqNumber = 0;
+		} else {
+			nextSeqNumber++;
+		}
 		if (pFrameVersion == 3) {
 			com.leosatdata.ccsds2110b6.model.TransferFrameHeader header = new com.leosatdata.ccsds2110b6.model.TransferFrameHeader();
 			header.setVersionNumber(com.leosatdata.ccsds2110b6.util.TransferFrameParser.VERSION_NUMBER);
@@ -255,11 +254,6 @@ public class FrameSublayer {
 			header.setPortId(0); // not used in P frames
 			header.setPcid(localPcid);
 			header.setFrameLength(payload.length);
-			if (nextSeqNumber > com.leosatdata.ccsds2110b6.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
-				nextSeqNumber = 0;
-			} else {
-				nextSeqNumber++;
-			}
 			header.setFrameSequenceNumber(nextSeqNumber);
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
 			frame.setHeader(header);
@@ -285,12 +279,7 @@ public class FrameSublayer {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
-			frame.getHeader().setVcfCountLength(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VCF_COUNT_LENGTH);
-			if (nextSeqNumber > com.leosatdata.ccsds7321b3.util.TransferFrameParser.MAX_SEQUENCE_NUMBER) {
-				nextSeqNumber = 0;
-			} else {
-				nextSeqNumber++;
-			}
+			frame.getHeader().setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
 			frame.getHeader().setVcfCount(nextSeqNumber);
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				framev4Parser.encode(frame, bos);
@@ -304,7 +293,7 @@ public class FrameSublayer {
 		}
 
 		// TODO notify obc about VE(S)
-		state.setExpFsn(nextSeqNumber);
+		state.setVes(nextSeqNumber);
 		return baos.toByteArray();
 	}
 

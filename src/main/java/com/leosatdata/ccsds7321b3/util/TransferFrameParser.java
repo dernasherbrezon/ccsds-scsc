@@ -15,8 +15,6 @@ public class TransferFrameParser {
 
 	// even if it dynamic, make it static and consistent with version 3 frame
 	public static final int VERSION_NUMBER = 0b1100;
-	public static final int VCF_COUNT_LENGTH = 0b011; // 3 bytes
-	public static final int MAX_SEQUENCE_NUMBER = (int) Math.pow(2, VCF_COUNT_LENGTH);
 
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
