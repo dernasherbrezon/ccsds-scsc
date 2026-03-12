@@ -17,14 +17,26 @@ public class State {
 	private Spdu commParameters;
 	private MacMode mode = MacMode.INACTIVE;
 	private MacState state = MacState.S1_INACTIVE;
+	// FIXME module-8. Most likely won't work for some trasnfer frames
 	private int expFsn = 0; // VE(S)sequence number of the next Expedited frame to be sent
 	private int seqCtrlFsn = 0;
 	private boolean needPlcw = false;
 	private boolean uFrameLastSent = true;
+	
+	// FIXME Separate Report Values shall be reported for each physical channel	independent of the I/O port.
+	private int vr = 0;
 
 	public State(Configuration config) {
 		this.seqQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10));
 		this.expQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10)); // use the same parameter for expedited and sequenced
+	}
+	
+	public int getVr() {
+		return vr;
+	}
+	
+	public void setVr(int vr) {
+		this.vr = vr;
 	}
 	
 	public boolean isuFrameLastSent() {

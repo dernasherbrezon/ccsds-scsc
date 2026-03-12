@@ -11,6 +11,7 @@ import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.Event;
+import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
 import com.leosatdata.util.BitInputStream;
@@ -69,12 +70,12 @@ public class FrameSublayer {
 			payload = baos.toByteArray();
 		}
 
-		// FIXME set isuFrameLastSent properly
 		if (payload == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
+			state.setuFrameLastSent(false);
 			qos = QualityOfService.EXPEDITED;
 			type = PduTypeId.SPDU;
-			// FIXME create plcw
+			payload = createPlcw(false);
 		}
 
 		if (payload == null) {
@@ -82,6 +83,7 @@ public class FrameSublayer {
 			if (payload != null) {
 				qos = QualityOfService.EXPEDITED;
 				type = PduTypeId.USER_DATA;
+				state.setuFrameLastSent(true);
 			}
 		}
 
@@ -90,14 +92,16 @@ public class FrameSublayer {
 			if (payload != null) {
 				qos = QualityOfService.SEQUENCE_CONTROLLED;
 				type = PduTypeId.USER_DATA;
+				state.setuFrameLastSent(true);
 			}
 		}
 
 		if (payload == null && !state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
+			state.setuFrameLastSent(false);
 			qos = QualityOfService.EXPEDITED;
 			type = PduTypeId.SPDU;
-			// FIXME create plcw
+			payload = createPlcw(false);
 		}
 
 		if (payload == null) {
@@ -109,6 +113,22 @@ public class FrameSublayer {
 			return;
 		}
 		transceiver.send(frame);
+	}
+
+	private byte[] createPlcw(boolean retransmitRequired) {
+		Plcw plcw = new Plcw();
+		plcw.setReportValue(state.getVr());
+		plcw.setExpeditedFrameCounter(state.getExpFsn());
+		plcw.setPcid(localPcid);
+		plcw.setRetransmit(retransmitRequired);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			spduParser.encode(plcw, bos);
+		} catch (IOException e1) {
+			LOG.error("cannot encode spdu", e1);
+			return null;
+		}
+		return baos.toByteArray();
 	}
 
 	private byte[] encode(byte[] payload, QualityOfService qos, PduTypeId type) {
