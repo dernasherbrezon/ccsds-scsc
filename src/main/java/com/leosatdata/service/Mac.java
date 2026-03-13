@@ -60,6 +60,7 @@ public class Mac {
 			state.setMode(MacMode.CONNECTING_L);
 			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
 			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
+			transceiver.startTx();
 			transceiver.startRx();
 			break;
 		case E2_CONNECTING_T:
@@ -76,6 +77,7 @@ public class Mac {
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
 			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
 			transceiver.startTx();
+			transceiver.startRx();
 			state.setPersistence(true);
 			state.setMode(MacMode.CONNECTING_T);
 			state.setState(MacState.S31_START_HAIL);
@@ -102,7 +104,6 @@ public class Mac {
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
 			hailCarrierReceived = false;
-			transceiver.startRx();
 			state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
 			scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
@@ -122,7 +123,6 @@ public class Mac {
 				currentHailAttempt = 0;
 				// switch over to the agreed link
 				transceiverUtil.applyParameters(state.getCommParameters());
-				transceiver.startTx();
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
@@ -133,7 +133,6 @@ public class Mac {
 				state.setCommParameters((Spdu) e.getArg());
 				state.setNeedPlcw(true);
 				callback.handle(createNotification("hail", true));
-				transceiver.startTx();
 			}
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:

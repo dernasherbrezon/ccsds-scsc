@@ -21,4 +21,9 @@ public class SpduHeader {
 		this.type = type;
 	}
 
+	@Override
+	public String toString() {
+		return format + "/" + type;
+	}
+
 }

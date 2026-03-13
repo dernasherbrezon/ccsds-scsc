@@ -118,7 +118,48 @@ public class FrameSublayer {
 		if (frame == null) {
 			return;
 		}
+		debug(false, frame);
 		transceiver.send(frame);
+	}
+
+	public void debug(boolean rx, byte[] payload) {
+		Logger log;
+		if (rx) {
+			log = RX;
+		} else {
+			log = TX;
+		}
+		if (!log.isInfoEnabled() || payload == null) {
+			return;
+		}
+
+		Object obj = decode(payload);
+		PduTypeId type = null;
+		byte[] data = null;
+		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
+			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
+			com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader header = (com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader) frame.getHeader();
+			type = PduTypeId.USER_DATA;
+			data = frame.getDataField();
+			log.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getVcid(), PduTypeId.USER_DATA, QualityOfService.EXPEDITED, frame.getDataField().length });
+		}
+		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
+			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
+			com.leosatdata.ccsds2110b6.model.TransferFrameHeader header = frame.getHeader();
+			type = header.getPduTypeId();
+			data = frame.getDataField();
+			log.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getPortId(), header.getPduTypeId(), header.getQualityOfService(), header.getFrameLength() });
+		}
+		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
+			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
+			com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = frame.getHeader();
+			type = header.getProtocolControl();
+			data = frame.getDataField();
+			log.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getVcid(), header.getProtocolControl(), header.getSequenceControl(), header.getFrameLength() });
+		}
+		if (type != null && data != null && type.equals(PduTypeId.SPDU)) {
+			log.info("\t{}", decodeSpdu(data).toString());
+		}
 	}
 
 	private byte[] createPlcw(boolean retransmitRequired) {
@@ -128,7 +169,6 @@ public class FrameSublayer {
 		plcw.setPcid(localPcid);
 		plcw.setRetransmit(retransmitRequired);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		TX.info(plcw.toString());
 		try (BitOutputStream bos = new BitOutputStream(baos)) {
 			spduParser.encode(plcw, bos);
 		} catch (IOException e1) {
@@ -175,7 +215,6 @@ public class FrameSublayer {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
-			TX.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getPortId(), header.getPduTypeId(), header.getQualityOfService(), header.getFrameLength() });
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
 			} catch (IOException e1) {
@@ -198,7 +237,6 @@ public class FrameSublayer {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
-			TX.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getPortId(), header.getPduTypeId(), header.getQualityOfService(), header.getFrameLength() });
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
 			} catch (IOException e1) {
@@ -223,7 +261,6 @@ public class FrameSublayer {
 			frame.setDataField(payload);
 			frame.getHeader().setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
 			frame.getHeader().setVcfCount(nextSeqNumber);
-			TX.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getVcid(), header.getProtocolControl(), header.getSequenceControl(), header.getFrameLength() });
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				framev4Parser.encode(frame, bos);
 			} catch (IOException e1) {
@@ -265,7 +302,6 @@ public class FrameSublayer {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
-			TX.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getPortId(), header.getPduTypeId(), header.getQualityOfService(), header.getFrameLength() });
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
 			} catch (IOException e1) {
@@ -289,7 +325,6 @@ public class FrameSublayer {
 			frame.setDataField(payload);
 			frame.getHeader().setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
 			frame.getHeader().setVcfCount(nextSeqNumber);
-			TX.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getVcid(), header.getProtocolControl(), header.getSequenceControl(), header.getFrameLength() });
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				framev4Parser.encode(frame, bos);
 			} catch (IOException e1) {
@@ -313,10 +348,7 @@ public class FrameSublayer {
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
-				com.leosatdata.ccsds7320b4.model.TransferFrame result = framev2Parser.decode(bis);
-				com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader header = result.getHeader();
-				RX.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getVcid(), PduTypeId.USER_DATA, QualityOfService.EXPEDITED, result.getDataField().length });
-				return result;
+				return framev2Parser.decode(bis);
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe2", e);
 				return null;
@@ -326,10 +358,7 @@ public class FrameSublayer {
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
-				com.leosatdata.ccsds2110b6.model.TransferFrame result = com.leosatdata.ccsds2110b6.util.TransferFrameParser.decode(bis);
-				com.leosatdata.ccsds2110b6.model.TransferFrameHeader header = result.getHeader();
-				RX.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getPortId(), header.getPduTypeId(), header.getQualityOfService(), header.getFrameLength() });
-				return result;
+				return com.leosatdata.ccsds2110b6.util.TransferFrameParser.decode(bis);
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe3", e);
 				return null;
@@ -339,10 +368,7 @@ public class FrameSublayer {
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
-				com.leosatdata.ccsds7321b3.model.TransferFrame result = framev4Parser.decode(bis);
-				com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = result.getHeader();
-				RX.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getVcid(), header.getProtocolControl(), header.getSequenceControl(), header.getFrameLength() });
-				return result;
+				return framev4Parser.decode(bis);
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe4", e);
 				return null;
@@ -356,9 +382,7 @@ public class FrameSublayer {
 
 	public Object decodeSpdu(byte[] data) {
 		try (BitInputStream bis = new BitInputStream(data)) {
-			Object result = spduParser.decode(bis);
-			RX.info(result.toString());
-			return result;
+			return spduParser.decode(bis);
 		} catch (IOException e) {
 			LOG.error("unable to read spdu", e);
 			return null;
