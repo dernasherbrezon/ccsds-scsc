@@ -47,11 +47,15 @@ public class CommTest {
 	public void testNoConnection() throws Exception {
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
-		ControllerEvent hail = groundCallback.waitForEvent();
-		assertNotNull(hail);
-		assertEquals(ControllerEventType.PERSISTENT_ACTIVITY, hail.getType());
-		PersistentActivity event = (PersistentActivity) hail.getObj();
-		assertFalse(event.isSuccess());
+		assertPersistentActivity(groundCallback.waitForEvent(), false);
+	}
+
+	@Test
+	public void testHail() throws Exception {
+		satellite.waitForSession();
+		ground.setCommParameters(createType1CommParameters());
+		ground.startSession();
+		assertPersistentActivity(groundCallback.waitForEvent(), true);
 	}
 
 	@Before
@@ -63,6 +67,7 @@ public class CommTest {
 		props.putAll(load("src/test/resources/ground.properties"));
 		groundConfig = new Configuration(props);
 		groundTransceiver = new NullTransceiver(groundConfig);
+		groundTransceiver.start();
 		groundCallback = new MockNodeCallback();
 		ground = new Node(groundConfig, groundTransceiver, groundCallback, new UserDataCallback() {
 
@@ -80,6 +85,7 @@ public class CommTest {
 		props.putAll(load("src/test/resources/satellite.properties"));
 		satelliteConfig = new Configuration(props);
 		satelliteTransceiver = new NullTransceiver(satelliteConfig);
+		satelliteTransceiver.start();
 		satelliteCallback = new MockNodeCallback();
 		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, new UserDataCallback() {
 
@@ -99,6 +105,8 @@ public class CommTest {
 
 	@After
 	public void stop() {
+		groundTransceiver.stop();
+		satelliteTransceiver.stop();
 		satellite.stop();
 		ground.stop();
 	}
@@ -152,6 +160,13 @@ public class CommTest {
 		result.setRxParams(rx);
 		result.setRxPlExtensions(rxExt);
 		return result;
+	}
+
+	private static void assertPersistentActivity(ControllerEvent hail, boolean expectedStatus) {
+		assertNotNull(hail);
+		assertEquals(ControllerEventType.PERSISTENT_ACTIVITY, hail.getType());
+		PersistentActivity event = (PersistentActivity) hail.getObj();
+		assertEquals(expectedStatus, event.isSuccess());
 	}
 
 }

@@ -91,9 +91,13 @@ public class Mac {
 			state.setState(MacState.S33_SEND_HAIL_DIRECTIVES);
 			break;
 		case TX_COMPLETE:
-			if (state.isPersistence()) {
+			if (state.getState().equals(MacState.S33_SEND_HAIL_DIRECTIVES)) {
 				state.setState(MacState.S34_SEND_HAIL_TAIL);
 				scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+			}
+			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
+				state.setState(MacState.S41_RADIATE_CARRIER);
+				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
@@ -128,6 +132,7 @@ public class Mac {
 				}
 				state.setCommParameters((Spdu) e.getArg());
 				state.setNeedPlcw(true);
+				callback.handle(createNotification("hail", true));
 				transceiver.startTx();
 			}
 			break;
@@ -192,6 +197,9 @@ public class Mac {
 	}
 
 	private boolean validateSpdu(Object obj) {
+		if (obj == null) {
+			return false;
+		}
 		if (obj instanceof Type1Directive) {
 			return spduVersion == Type1Directive.SPDU_VERSION;
 		} else if (obj instanceof Type4Directive) {

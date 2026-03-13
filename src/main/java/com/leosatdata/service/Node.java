@@ -2,6 +2,7 @@ package com.leosatdata.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
@@ -54,6 +55,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 
 	@Override
 	public void run() {
+		MDC.put("scid", String.valueOf(localScid));
 		while (!Thread.currentThread().isInterrupted()) {
 			try {
 				Event event = state.getQueue().take();
@@ -124,7 +126,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		}
 
 		if (type.equals(PduTypeId.SPDU)) {
-			sendEvent(new Event(EventType.SPDU, frameSublayer.decode(payload)));
+			sendEvent(new Event(EventType.SPDU, frameSublayer.decodeSpdu(payload)));
 		} else {
 			rxCallback.onUserData(payload);
 		}

@@ -58,4 +58,9 @@ public class Plcw implements Spdu {
 		this.reportValue = reportValue;
 	}
 
+	@Override
+	public String toString() {
+		return "plcw [header=" + header + ", retransmit=" + retransmit + ", pcid=" + pcid + ", expeditedFrameCounter=" + expeditedFrameCounter + ", reportValue=" + reportValue + "]";
+	}
+
 }

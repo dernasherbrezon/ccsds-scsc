@@ -66,7 +66,7 @@ public class NullTransceiver implements Transceiver {
 		getTxCallback().onTx();
 		// FIXME expected channel timeout
 		if (otherSide.rx) {
-			executor.schedule(new DelayedTask(otherSide.getRxCallback(), data), 10000, TimeUnit.MILLISECONDS);
+			executor.schedule(new DelayedTask(otherSide.getRxCallback(), data), 100, TimeUnit.MILLISECONDS);
 		}
 	}
 
