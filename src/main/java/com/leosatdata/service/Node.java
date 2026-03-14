@@ -12,6 +12,7 @@ import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.State;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.TransferFrameUtil;
 
 public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallback, CarrierCallback {
 
@@ -78,6 +79,15 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		sendEvent(new Event(EventType.E1_CONNECTING_L));
 	}
 
+	public void stopSession() {
+		sendEvent(new Event(EventType.E21_LNMD));
+	}
+
+	// going into inactive straightaway
+	public void reset() {
+		sendEvent(new Event(EventType.E28_INACTIVE));
+	}
+
 	public void setCommParameters(Object directive) {
 		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
 	}
@@ -100,10 +110,10 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 
 		frameSublayer.debug(true, data);
 
-		PduTypeId type = FrameSublayer.getPduTypeId(frame);
-		SourceDestination sourceDestination = FrameSublayer.getSourceDestination(frame);
-		int scid = FrameSublayer.getScid(frame);
-		byte[] payload = FrameSublayer.getPayload(frame);
+		PduTypeId type = TransferFrameUtil.getPduTypeId(frame);
+		SourceDestination sourceDestination = TransferFrameUtil.getSourceDestination(frame);
+		int scid = TransferFrameUtil.getScid(frame);
+		byte[] payload = TransferFrameUtil.getPayload(frame);
 		if (type == null || sourceDestination == null || scid < 0 || payload == null) {
 			return;
 		}

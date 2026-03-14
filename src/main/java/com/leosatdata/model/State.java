@@ -17,7 +17,6 @@ public class State {
 	private Spdu commParameters;
 	private MacMode mode = MacMode.INACTIVE;
 	private MacState state = MacState.S1_INACTIVE;
-	// FIXME module-8. Most likely won't work for some trasnfer frames
 	private int ves = 0; // sequence number of the next Expedited frame to be sent
 	private int seqCtrlFsn = 0;
 	private boolean needPlcw = false;

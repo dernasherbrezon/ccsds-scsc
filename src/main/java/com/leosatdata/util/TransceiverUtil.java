@@ -61,7 +61,7 @@ public class TransceiverUtil {
 		}
 	}
 
-	public Type1Directive createHailType1() {
+	private Type1Directive createHailType1() {
 		Type1Directive result = new Type1Directive();
 		result.setTxParams(createType1TxRx());
 		result.setTxPlExtensions(createType1PlExtensions(Direction.TRANSMITTER));
@@ -113,7 +113,7 @@ public class TransceiverUtil {
 		}
 	}
 
-	public void applyType1Parameters(Type1Directive params) {
+	private void applyType1Parameters(Type1Directive params) {
 		int symbolRate = params.getRxParams().getDataRate().getRate();
 		if (params.getRxPlExtensions().isUseExtendedDataRate()) {
 			symbolRate = params.getRxParams().getDataRate().getExtendedRate();
@@ -143,7 +143,7 @@ public class TransceiverUtil {
 		transceiver.setTxModulation(params.getTxParams().getModulation());
 	}
 
-	public Type5Directive createHailType5() {
+	private Type5Directive createHailType5() {
 		Type5Directive result = new Type5Directive();
 		result.setRxLink(createType5TxRx(LinkDirection.RETURN));
 		result.setTxLink(createType5TxRx(LinkDirection.FORWARD));
@@ -178,7 +178,7 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	public Type4Directive createHailType4() {
+	private Type4Directive createHailType4() {
 		Type4Directive result = new Type4Directive();
 		result.setRxLink(createType4TxRx(LinkDirection.RETURN));
 		result.setTxLink(createType4TxRx(LinkDirection.FORWARD));
@@ -230,7 +230,7 @@ public class TransceiverUtil {
 		transceiver.setTxPolarization(params.getPolarization());
 	}
 
-	public void applyType5Parameters(Type5Directive directive) {
+	private void applyType5Parameters(Type5Directive directive) {
 		Link2Establishment params = directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {

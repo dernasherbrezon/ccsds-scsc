@@ -55,6 +55,14 @@ public class CommTest {
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
 		assertPersistentActivity(groundCallback.waitForEvent(), true);
+
+		// according to spec extra timeout between callback to vehicle and transitioning
+		// to s40 state (data services)
+		Thread.sleep(2 * groundConfig.getDuration("acquisition_idle_duration"));
+
+		satellite.stopSession();
+		
+		// FIXME assert vehicle notification
 	}
 
 	@Before

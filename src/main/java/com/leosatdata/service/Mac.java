@@ -13,12 +13,14 @@ import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacMode;
 import com.leosatdata.model.MacState;
 import com.leosatdata.model.PersistentActivity;
+import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransceiverUtil;
 
 public class Mac {
@@ -54,6 +56,12 @@ public class Mac {
 	}
 
 	public void handle(Event e) {
+		handleHail(e);
+		handleTermination(e);
+	}
+
+	@SuppressWarnings("incomplete-switch")
+	private void handleHail(Event e) {
 		switch (e.getType()) {
 		case E1_CONNECTING_L:
 			LOG.info("waiting for hail");
@@ -99,6 +107,9 @@ public class Mac {
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
 				state.setState(MacState.S41_RADIATE_CARRIER);
+				// switch over to the agreed link once plcw sent
+				transceiverUtil.applyParameters(state.getCommParameters());
+				callback.handle(createNotification("hail", true));
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
 			break;
@@ -117,7 +128,9 @@ public class Mac {
 			}
 			// no break clause here because should proceed as valid frame
 		case SPDU:
-			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE)) {
+			// check several states because responder can send response faster than extra
+			// idle and carrier timeouts
+			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
 				waitTimerTask.cancel();
 				callback.handle(createNotification("hail", true));
 				currentHailAttempt = 0;
@@ -127,12 +140,11 @@ public class Mac {
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
-				if (!validateSpdu(e.getArg())) {
+				if (!validateSpdu((Spdu) e.getArg())) {
 					break;
 				}
 				state.setCommParameters((Spdu) e.getArg());
 				state.setNeedPlcw(true);
-				callback.handle(createNotification("hail", true));
 			}
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
@@ -143,7 +155,7 @@ public class Mac {
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			state.setPersistence(false);
 			state.setMode(MacMode.ACTIVE);
-//			state.setState(MacState.s40);
+			state.setState(MacState.S40_0_DATA_SERVICES);
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {
@@ -195,7 +207,53 @@ public class Mac {
 		}
 	}
 
-	private boolean validateSpdu(Object obj) {
+	// when initiated locally (lnmd) send to remote and wait response rnmd, then
+	// terminate
+	// when initiated remotely (rnmd) send response, wait until it was fully sent,
+	// then terminate
+	@SuppressWarnings("incomplete-switch")
+	private void handleTermination(Event e) {
+		switch (e.getType()) {
+		case E21_LNMD:
+			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+				LOG.info("session is stopping");
+				state.setState(MacState.S40_2_DATA_SERVICES);
+				state.getMacQueue().add(SpduUtil.createRnmdDirective(state.getCommParameters(), true));
+			}
+			break;
+		case E26_TAIL_IDLE_TIMEOUT:
+			LOG.info("session stopped");
+			state.setMode(MacMode.INACTIVE);
+			state.setState(MacState.S1_INACTIVE);
+			// FIXME notify vehicle controller
+			break;
+		case SPDU:
+			if (e.getArg() instanceof Plcw) {
+				break;
+			}
+			boolean rnmd = SpduUtil.isRnmd((Spdu) e.getArg());
+			if (!rnmd) {
+				break;
+			}
+			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+				LOG.info("session is stopping");
+				state.setState(MacState.S40_5_DATA_SERVICES);
+				state.getMacQueue().add(SpduUtil.createRnmdDirective(state.getCommParameters(), true));
+			}
+			if (state.getState().equals(MacState.S40_2_DATA_SERVICES)) {
+				state.setState(MacState.S40_5_DATA_SERVICES);
+				scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+			}
+			break;
+		case TX_COMPLETE:
+			if (state.getState().equals(MacState.S40_5_DATA_SERVICES)) {
+				scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+			}
+			break;
+		}
+	}
+
+	private boolean validateSpdu(Spdu obj) {
 		if (obj == null) {
 			return false;
 		}

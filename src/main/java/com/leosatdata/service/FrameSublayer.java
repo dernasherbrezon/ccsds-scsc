@@ -33,6 +33,7 @@ public class FrameSublayer {
 	private final NodeCallback callback;
 	private final int uFrameVersion;
 	private final int pFrameVersion;
+	private final int spduVersion;
 	private final int localScid;
 	private final int localPcid;
 
@@ -46,6 +47,7 @@ public class FrameSublayer {
 		this.transceiver = transceiver;
 		this.uFrameVersion = config.getInteger("u_frame_version", -1);
 		this.pFrameVersion = config.getInteger("frame_version", -1);
+		this.spduVersion = config.getInteger("spdu_version", 1);
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.localPcid = config.getInteger("local_pcid", 0);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
@@ -59,11 +61,8 @@ public class FrameSublayer {
 		QualityOfService qos = null;
 		PduTypeId type = null;
 
-		if (state.isPersistence()) {
-			Spdu spdu = state.getMacQueue().poll();
-			if (spdu == null) {
-				return;
-			}
+		Spdu spdu = state.getMacQueue().poll();
+		if (spdu != null) {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				spduParser.encode(spdu, bos);
@@ -74,6 +73,10 @@ public class FrameSublayer {
 				return;
 			}
 			payload = baos.toByteArray();
+		}
+
+		if (payload == null && state.isPersistence()) {
+			return;
 		}
 
 		if (payload == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
@@ -387,68 +390,6 @@ public class FrameSublayer {
 			LOG.error("unable to read spdu", e);
 			return null;
 		}
-	}
-
-	public static PduTypeId getPduTypeId(Object obj) {
-		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
-			return PduTypeId.USER_DATA;
-		}
-		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
-			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
-			return frame.getHeader().getPduTypeId();
-		}
-		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
-			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			return frame.getHeader().getProtocolControl();
-		}
-		return null;
-	}
-
-	public static SourceDestination getSourceDestination(Object obj) {
-		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
-			return SourceDestination.UNKNOWN;
-		}
-		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
-			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
-			return frame.getHeader().getSourceOrDestination();
-		}
-		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
-			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			return frame.getHeader().getSourceOrDestination();
-		}
-		return null;
-	}
-
-	public static int getScid(Object obj) {
-		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
-			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
-			return frame.getHeader().getScid();
-		}
-		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
-			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
-			return frame.getHeader().getScid();
-		}
-		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
-			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			return frame.getHeader().getScid();
-		}
-		return -1;
-	}
-
-	public static byte[] getPayload(Object obj) {
-		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
-			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
-			return frame.getDataField();
-		}
-		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
-			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
-			return frame.getDataField();
-		}
-		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
-			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			return frame.getDataField();
-		}
-		return null;
 	}
 
 }
