@@ -61,8 +61,9 @@ public class CommTest {
 		Thread.sleep(2 * groundConfig.getDuration("acquisition_idle_duration"));
 
 		satellite.stopSession();
-		
-		// FIXME assert vehicle notification
+
+		assertEvent(groundCallback.waitForEvent(), ControllerEventType.END_OF_SESSION);
+		assertEvent(satelliteCallback.waitForEvent(), ControllerEventType.END_OF_SESSION);
 	}
 
 	@Before
@@ -176,4 +177,8 @@ public class CommTest {
 		assertEquals(expectedStatus, event.isSuccess());
 	}
 
+	private static void assertEvent(ControllerEvent event, ControllerEventType expected) {
+		assertNotNull(event);
+		assertEquals(expected, event.getType());
+	}
 }

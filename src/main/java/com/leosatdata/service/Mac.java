@@ -225,7 +225,9 @@ public class Mac {
 			LOG.info("session stopped");
 			state.setMode(MacMode.INACTIVE);
 			state.setState(MacState.S1_INACTIVE);
-			// FIXME notify vehicle controller
+			// don't send number of received packets. not clear why and hard to sync rx
+			// thread data
+			callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));
 			break;
 		case SPDU:
 			if (e.getArg() instanceof Plcw) {
