@@ -15,7 +15,6 @@ public class State {
 	private final BlockingQueue<byte[]> expQueue;
 
 	private Spdu commParameters;
-	private MacMode mode = MacMode.INACTIVE;
 	private MacState state = MacState.S1_INACTIVE;
 	private int ves = 0; // sequence number of the next Expedited frame to be sent
 	private int seqCtrlFsn = 0;
@@ -80,14 +79,6 @@ public class State {
 
 	public LinkedBlockingQueue<Spdu> getMacQueue() {
 		return macQueue;
-	}
-
-	public MacMode getMode() {
-		return mode;
-	}
-
-	public void setMode(MacMode mode) {
-		this.mode = mode;
 	}
 
 	public Spdu getCommParameters() {

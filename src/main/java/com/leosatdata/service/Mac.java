@@ -10,7 +10,6 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
-import com.leosatdata.model.MacMode;
 import com.leosatdata.model.MacState;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.Plcw;
@@ -65,7 +64,6 @@ public class Mac {
 		switch (e.getType()) {
 		case E1_CONNECTING_L:
 			LOG.info("waiting for hail");
-			state.setMode(MacMode.CONNECTING_L);
 			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
 			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
 			transceiver.startTx();
@@ -87,7 +85,6 @@ public class Mac {
 			transceiver.startTx();
 			transceiver.startRx();
 			state.setPersistence(true);
-			state.setMode(MacMode.CONNECTING_T);
 			state.setState(MacState.S31_START_HAIL);
 			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
@@ -154,7 +151,6 @@ public class Mac {
 			break;
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			state.setPersistence(false);
-			state.setMode(MacMode.ACTIVE);
 			state.setState(MacState.S40_0_DATA_SERVICES);
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
@@ -200,9 +196,9 @@ public class Mac {
 				LOG.error("unknown arg type: {}", e.getArg());
 				return;
 			}
-			if (state.getMode().equals(MacMode.ACTIVE)) {
-				// FIXME send remote change
-			}
+//			if (state.getMode().equals(MacMode.ACTIVE)) {
+//				// FIXME send remote change
+//			}
 			break;
 		}
 	}
@@ -223,7 +219,6 @@ public class Mac {
 			break;
 		case E26_TAIL_IDLE_TIMEOUT:
 			LOG.info("session stopped");
-			state.setMode(MacMode.INACTIVE);
 			state.setState(MacState.S1_INACTIVE);
 			// don't send number of received packets. not clear why and hard to sync rx
 			// thread data
