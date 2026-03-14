@@ -3,7 +3,7 @@ package com.leosatdata.model;
 public class Type1Directive implements Spdu {
 
 	public static final int SPDU_VERSION = 1;
-	
+
 	private SpduHeader header;
 	private TxRxParameters txParams;
 	private PlExtensions txPlExtensions;
@@ -101,6 +101,37 @@ public class Type1Directive implements Spdu {
 
 	public void setSourceSpacecraftId(Integer sourceSpacecraftId) {
 		this.sourceSpacecraftId = sourceSpacecraftId;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder result = new StringBuilder();
+		result.append("type1 [header=").append(header);
+		if (txParams != null) {
+			result.append(", tx=").append(txParams);
+		}
+		if (txPlExtensions != null) {
+			result.append(", txExt=").append(txPlExtensions);
+		}
+		if (controlParams != null) {
+			result.append(", control=").append(controlParams);
+		}
+		if (rxParams != null) {
+			result.append(", rx=").append(rxParams);
+		}
+		if (rxPlExtensions != null) {
+			result.append(", rxExt=").append(rxPlExtensions);
+		}
+		if (vr != null) {
+			result.append(", vr=").append(vr);
+		}
+		if (reportReq != null) {
+			result.append(", report=").append(reportReq);
+		}
+		if (sourceSpacecraftId != null) {
+			result.append(", ssid=").append(sourceSpacecraftId);
+		}
+		return result.toString();
 	}
 
 }

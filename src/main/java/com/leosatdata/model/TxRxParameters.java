@@ -47,4 +47,9 @@ public class TxRxParameters {
 	public void setDataEncoding(DataEncoding dataEncoding) {
 		this.dataEncoding = dataEncoding;
 	}
+
+	@Override
+	public String toString() {
+		return "[mode=" + mode + ", dataRate=" + dataRate + ", modulation=" + modulation + ", dataEncoding=" + dataEncoding + ", frequency=" + frequency + "]";
+	}
 }

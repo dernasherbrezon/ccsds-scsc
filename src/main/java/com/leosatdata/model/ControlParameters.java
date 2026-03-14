@@ -39,4 +39,9 @@ public class ControlParameters {
 		this.timeSampleField = timeSampleField;
 	}
 
+	@Override
+	public String toString() {
+		return "[transmitToken=" + transmitToken + ", rnmd=" + rnmd + ", duplex=" + duplex + ", timeSampleField=" + timeSampleField + "]";
+	}
+
 }

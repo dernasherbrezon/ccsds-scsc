@@ -84,4 +84,10 @@ public class PlExtensions {
 		this.direction = direction;
 	}
 
+	@Override
+	public String toString() {
+		return "[rsCode=" + rsCode + ", differentialEncoding=" + differentialEncoding + ", scrambler=" + scrambler + ", modeSelect=" + modeSelect + ", dataModulation=" + dataModulation + ", carrierModulation=" + carrierModulation + ", useExtendedDataRate=" + useExtendedDataRate
+				+ ", useExtendedFreqSet=" + useExtendedFreqSet + ", direction=" + direction + "]";
+	}
+
 }

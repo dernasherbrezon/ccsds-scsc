@@ -39,4 +39,9 @@ public class ReportRequest {
 		this.statusReportRequest = statusReportRequest;
 	}
 
+	@Override
+	public String toString() {
+		return "[pcid1PlcwRequest=" + pcid1PlcwRequest + ", pcid0PlcwRequest=" + pcid0PlcwRequest + ", timeTagRequest=" + timeTagRequest + ", statusReportRequest=" + statusReportRequest + "]";
+	}
+
 }

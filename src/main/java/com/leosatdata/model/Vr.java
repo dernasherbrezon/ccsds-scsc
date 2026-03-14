@@ -12,4 +12,9 @@ public class Vr {
 		this.frameSequenceNumber = frameSequenceNumber;
 	}
 
+	@Override
+	public String toString() {
+		return "[frameSequenceNumber=" + frameSequenceNumber + "]";
+	}
+
 }
