@@ -2,11 +2,8 @@ package com.leosatdata.util;
 
 import static org.junit.Assert.assertNull;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 import org.junit.Before;
@@ -342,10 +339,10 @@ public class SpduParserTest {
 	@Before
 	public void start() throws Exception {
 		Properties props = new Properties();
-		props.putAll(load("src/main/resources/mib.properties"));
-		props.putAll(load("src/main/resources/transceiver.properties"));
-		props.putAll(load("src/main/resources/custom.properties"));
-		props.putAll(load("src/test/resources/ground.properties"));
+		props.putAll(TestUtil.load("src/main/resources/mib.properties"));
+		props.putAll(TestUtil.load("src/main/resources/transceiver.properties"));
+		props.putAll(TestUtil.load("src/main/resources/custom.properties"));
+		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
 		config = new Configuration(props);
 		parser = new SpduParser(config);
 	}
@@ -363,11 +360,4 @@ public class SpduParserTest {
 		TestUtil.assertObjectEqual(expected, actual);
 	}
 
-	private static Properties load(String file) throws Exception {
-		Properties result = new Properties();
-		try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-			result.load(is);
-		}
-		return result;
-	}
 }

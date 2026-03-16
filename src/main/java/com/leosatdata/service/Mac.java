@@ -214,7 +214,12 @@ public class Mac {
 			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
 				LOG.info("session is stopping");
 				state.setState(MacState.S40_2_DATA_SERVICES);
-				state.getMacQueue().add(SpduUtil.createRnmdDirective(state.getCommParameters(), true));
+				Spdu rnmdDirective = SpduUtil.createRnmdDirective(state.getCommParameters(), true);
+				if (rnmdDirective == null) {
+					LOG.error("unable to create rnmd - not enough data in comm parameters");
+					return;
+				}
+				state.getMacQueue().add(rnmdDirective);
 			}
 			break;
 		case E26_TAIL_IDLE_TIMEOUT:
@@ -235,7 +240,12 @@ public class Mac {
 			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
 				LOG.info("session is stopping");
 				state.setState(MacState.S40_5_DATA_SERVICES);
-				state.getMacQueue().add(SpduUtil.createRnmdDirective(state.getCommParameters(), true));
+				Spdu rnmdDirective = SpduUtil.createRnmdDirective(state.getCommParameters(), true);
+				if (rnmdDirective == null) {
+					LOG.error("unable to create rnmd - not enough data in comm parameters");
+					return;
+				}
+				state.getMacQueue().add(rnmdDirective);
 			}
 			if (state.getState().equals(MacState.S40_2_DATA_SERVICES)) {
 				state.setState(MacState.S40_5_DATA_SERVICES);

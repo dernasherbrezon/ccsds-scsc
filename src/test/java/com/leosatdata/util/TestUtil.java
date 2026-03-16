@@ -2,11 +2,15 @@ package com.leosatdata.util;
 
 import static org.junit.Assert.fail;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Properties;
 
 public class TestUtil {
 
@@ -104,5 +108,13 @@ public class TestUtil {
 				}
 			}
 		}
+	}
+	
+	public static Properties load(String file) throws Exception {
+		Properties result = new Properties();
+		try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+			result.load(is);
+		}
+		return result;
 	}
 }

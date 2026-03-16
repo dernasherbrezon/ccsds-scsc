@@ -44,6 +44,8 @@ public class TransferFrameParser {
 		bis.skipBits(2);
 		if (header.isVcFrameCountCycleUsed()) {
 			header.setVcFrameCountCycle(bis.readUnsignedInt(4));
+		} else {
+			bis.skipBits(4);
 		}
 		if (frameErrorControl) {
 			header.setFrameErrorControl(bis.readUnsignedInt(16));
@@ -64,7 +66,7 @@ public class TransferFrameParser {
 
 	public void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
 		TransferFramePrimaryHeader header = frame.getHeader();
-		bos.writeUnsignedInt(2, header.getVersionNumber());
+		bos.writeUnsignedInt(2, VERSION_NUMBER);
 		bos.writeUnsignedInt(8, header.getScid());
 		bos.writeUnsignedInt(6, header.getVcid());
 		bos.writeUnsignedInt(24, header.getVcFrameCount());
@@ -73,12 +75,15 @@ public class TransferFrameParser {
 		bos.writeUnsignedInt(2, 0); // unused
 		if (header.isVcFrameCountCycleUsed()) {
 			bos.writeUnsignedInt(4, header.getVcFrameCountCycle());
+		} else {
+			bos.writeUnsignedInt(4, 0);
 		}
 		if (frameErrorControl) {
 			int frameErrorControl = 0;
 			if (header.getFrameErrorControl() != null) {
 				frameErrorControl = header.getFrameErrorControl();
 			}
+			// if not provided and required, then populate with zeros
 			bos.writeUnsignedInt(16, frameErrorControl);
 		}
 		if (insertZoneLength != 0) {
