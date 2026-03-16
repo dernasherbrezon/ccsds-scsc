@@ -27,7 +27,7 @@ public class TransferFrameParser {
 	}
 
 	public static boolean accept(byte[] data) {
-		if (data.length == 0) {
+		if (data == null || data.length == 0) {
 			return false;
 		}
 		return ((data[0] & 0b1100_0000) >> 6) == VERSION_NUMBER;

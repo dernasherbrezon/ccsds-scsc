@@ -1,6 +1,7 @@
 package com.leosatdata.ccsds7320b4.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -28,13 +29,16 @@ public class TransferFrameParserTest {
 		TransferFramePrimaryHeader header = createHeader();
 		TransferFrame frame = new TransferFrame();
 		frame.setHeader(header);
-		frame.setInsertZone(new byte[10]);
-		frame.setDataField(new byte[2027]);
+		frame.setDataField(new byte[2037]);
 		assertDirectives(frame);
 	}
 
 	@Test
 	public void testPadInzertZone() throws Exception {
+		// make sure insertZone preserved on the wire
+		config.setProperty("aos.insertZoneLength", "10");
+		parser = new TransferFrameParser(config);
+
 		TransferFramePrimaryHeader header = createHeader();
 		TransferFrame frame = new TransferFrame();
 		frame.setHeader(header);
@@ -43,6 +47,62 @@ public class TransferFrameParserTest {
 		TransferFrame actual = encodeDecode(frame);
 		assertNotNull(actual.getInsertZone());
 		assertEquals(10, actual.getInsertZone().length);
+		
+		byte[] insertZone = new byte[10];
+		insertZone[0] = 5;
+		frame.setInsertZone(insertZone);
+		actual = encodeDecode(frame);
+		assertEquals(5, actual.getInsertZone()[0]);
+	}
+
+	@Test
+	public void testCycleCount() throws Exception {
+		TransferFramePrimaryHeader header = createHeader();
+		header.setVcFrameCountCycleUsed(false);
+		header.setVcFrameCountCycle(4);
+		TransferFrame frame = new TransferFrame();
+		frame.setHeader(header);
+		frame.setDataField(new byte[2037]);
+
+		TransferFrame actual = encodeDecode(frame);
+		// ignore count cycle value if used=false
+		assertEquals(0, actual.getHeader().getVcFrameCountCycle());
+
+		header.setVcFrameCountCycleUsed(true);
+		header.setVcFrameCount(4);
+		actual = encodeDecode(frame);
+		assertEquals(4, actual.getHeader().getVcFrameCountCycle());
+	}
+
+	@Test
+	public void testFrameControl() throws Exception {
+		config.setProperty("aos.frameErrorControl", "true");
+		parser = new TransferFrameParser(config);
+
+		int fec = 0x1278;
+
+		TransferFramePrimaryHeader header = createHeader();
+		header.setFrameErrorControl(fec);
+		TransferFrame frame = new TransferFrame();
+		frame.setHeader(header);
+		frame.setDataField(new byte[2037]);
+		TransferFrame actual = encodeDecode(frame);
+		assertEquals(fec, actual.getHeader().getFrameErrorControl().intValue());
+
+		header = createHeader();
+		frame = new TransferFrame();
+		frame.setHeader(header);
+		frame.setDataField(new byte[2037]);
+		actual = encodeDecode(frame);
+		// even if not set, send zeros
+		assertEquals(0, actual.getHeader().getFrameErrorControl().intValue());
+	}
+
+	@Test
+	public void testInvalidArguments() throws Exception {
+		assertFalse(TransferFrameParser.accept(null));
+		assertFalse(TransferFrameParser.accept(new byte[0]));
+		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
 	}
 
 	private static TransferFramePrimaryHeader createHeader() {
@@ -84,8 +144,6 @@ public class TransferFrameParserTest {
 		props.putAll(TestUtil.load("src/main/resources/transceiver.properties"));
 		props.putAll(TestUtil.load("src/main/resources/custom.properties"));
 		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
-		// make sure insertZone preserved on the wire
-		props.put("aos.insertZoneLength", "10");
 		config = new Configuration(props);
 		parser = new TransferFrameParser(config);
 	}
