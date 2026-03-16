@@ -54,6 +54,12 @@ public class Mac {
 		waitTimer = new Timer("wt"); // this will start Thread
 	}
 
+	public void stop() {
+		if (waitTimer != null) {
+			waitTimer.cancel();
+		}
+	}
+
 	public void handle(Event e) {
 		handleHail(e);
 		handleTermination(e);

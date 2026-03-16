@@ -189,6 +189,7 @@ public class FrameSublayer {
 		}
 	}
 
+	// FIXME assume payload length match maximum_frame_length - header length
 	private byte[] encodeUFrame(byte[] payload, QualityOfService qos) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		int nextSeqNumber;
@@ -203,23 +204,18 @@ public class FrameSublayer {
 			nextSeqNumber++;
 		}
 		if (uFrameVersion == 2) {
-			// FIXME this is not frame 2
-			com.leosatdata.ccsds2110b6.model.TransferFrameHeader header = new com.leosatdata.ccsds2110b6.model.TransferFrameHeader();
-			header.setVersionNumber(com.leosatdata.ccsds2110b6.util.TransferFrameParser.VERSION_NUMBER);
-			header.setQualityOfService(qos);
-			header.setPduTypeId(PduTypeId.USER_DATA);
-			header.setDfcId(DfcId.USER); // FIXME check
+			com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader header = new com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader();
+			header.setVersionNumber(com.leosatdata.ccsds7320b4.util.TransferFrameParser.VERSION_NUMBER);
+			header.setReplay(false);
 			header.setScid(localScid);
-			header.setPortId(0); // TODO read from user input?
-			header.setSourceOrDestination(SourceDestination.SOURCE);
-			header.setPcid(localPcid);
-			header.setFrameLength(payload.length);
-			header.setFrameSequenceNumber(nextSeqNumber);
-			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
+			header.setVcFrameCount(nextSeqNumber);
+			header.setVcFrameCountCycleUsed(false);
+			header.setVcid(0); // TODO read from user input?
+			com.leosatdata.ccsds7320b4.model.TransferFrame frame = new com.leosatdata.ccsds7320b4.model.TransferFrame();
 			frame.setHeader(header);
 			frame.setDataField(payload);
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
+				framev2Parser.encode(frame, bos);
 			} catch (IOException e1) {
 				LOG.error("can't serialize transferframe2", e1);
 				return null;

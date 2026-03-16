@@ -163,13 +163,14 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	}
 
 	public void stop() {
-		t.interrupt();
 		sendEvent(new Event(EventType.STOP));
+		t.interrupt();
 		try {
 			t.join(config.getDuration("shutdown_duration"));
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
+		mac.stop();
 	}
 
 	private void sendEvent(Event e) {
