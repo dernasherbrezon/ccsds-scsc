@@ -6,8 +6,10 @@ import java.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
+import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacState;
@@ -178,7 +180,14 @@ public class Mac {
 				return;
 			}
 			if (e.getArg() instanceof Type1Directive) {
+				// FIXME default duplex mode
+				ControlParameters controlParameters = new ControlParameters();
+				controlParameters.setDuplex(Duplex.FULL_DUPLEX);
+				controlParameters.setRnmd(false);
+				controlParameters.setTimeSampleField(0);
+				controlParameters.setTransmitToken(false);
 				Type1Directive obj = (Type1Directive) e.getArg();
+				obj.setControlParams(controlParameters);
 				if (state.getCommParameters() == null) {
 					state.setCommParameters(obj);
 				} else {
