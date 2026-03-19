@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.util.Configuration;
 
-public class FrameOutputStream extends OutputStream {
+public class PacketOutputStream {
 
 	private final Node node;
 	private final QualityOfService qos;
@@ -18,7 +18,9 @@ public class FrameOutputStream extends OutputStream {
 	// The number of valid bytes in the buffer
 	private int count;
 
-	public FrameOutputStream(Node node, Configuration config, QualityOfService qos, int vcid) {
+	private Object currentFrame;
+
+	public PacketOutputStream(Node node, Configuration config, QualityOfService qos, int vcid) {
 		this.node = node;
 		this.qos = qos;
 		this.vcid = vcid;
@@ -42,12 +44,11 @@ public class FrameOutputStream extends OutputStream {
 		this.buffer = new byte[this.dataLength];
 	}
 
-	@Override
-	public void write(int b) throws IOException {
-		if (count >= buffer.length) {
-			flushBuffer();
+	public void write(byte b[], int off, int len) throws IOException {
+		int remaining = dataLength - count;
+		if (len > remaining) {
+			System.arraycopy(b, off, buffer, count, remaining);
 		}
-		buffer[count++] = (byte) b;
 	}
 
 	private void flushBuffer() throws IOException {

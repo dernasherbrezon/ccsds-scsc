@@ -94,18 +94,18 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
 	}
 
-	public void send(byte[] data, QualityOfService qos, int vcid) {
+	void send(byte[] packet, QualityOfService qos, int vcid) {
 		// will lock if no free space available in queues
 		if (qos.equals(QualityOfService.EXPEDITED)) {
-			state.getExpQueue().add(data);
+			state.getExpQueue().add(packet);
 		} else {
-			state.getSeqQueue().add(data);
+			state.getSeqQueue().add(packet);
 		}
 	}
 
-	public OutputStream getOutputStream(QualityOfService qos, int vcid) {
-		return new FrameOutputStream(this, config, qos, vcid);
-	}
+//	public OutputStream getOutputStream(QualityOfService qos, int vcid) {
+//		return new PacketOutputStream(this, config, qos, vcid);
+//	}
 
 	@Override
 	public void onRx(byte[] data) {

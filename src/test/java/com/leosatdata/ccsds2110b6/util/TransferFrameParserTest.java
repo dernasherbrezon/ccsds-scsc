@@ -13,7 +13,6 @@ import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds2110b6.model.TransferFrame;
-import com.leosatdata.ccsds2110b6.model.TransferFrameHeader;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.TestUtil;
@@ -23,19 +22,17 @@ public class TransferFrameParserTest {
 	@Test
 	public void testSuccess() throws Exception {
 		byte[] payload = new byte[] { 0, 1, 2 };
-		TransferFrameHeader header = new TransferFrameHeader();
-		header.setDfcId(DfcId.USER);
-		header.setFrameLength(payload.length);
-		header.setFrameSequenceNumber(12);
-		header.setPcid(1);
-		header.setPduTypeId(PduTypeId.USER_DATA);
-		header.setPortId(1);
-		header.setQualityOfService(QualityOfService.EXPEDITED);
-		header.setScid(2);
-		header.setSourceOrDestination(SourceDestination.SOURCE);
-		header.setVersionNumber(TransferFrameParser.VERSION_NUMBER);
 		TransferFrame frame = new TransferFrame();
-		frame.setHeader(header);
+		frame.setDfcId(DfcId.USER);
+		frame.setFrameLength(payload.length);
+		frame.setFrameSequenceNumber(12);
+		frame.setPcid(1);
+		frame.setPduTypeId(PduTypeId.USER_DATA);
+		frame.setPortId(1);
+		frame.setQualityOfService(QualityOfService.EXPEDITED);
+		frame.setScid(2);
+		frame.setSourceOrDestination(SourceDestination.SOURCE);
+		frame.setVersionNumber(TransferFrameParser.VERSION_NUMBER);
 		frame.setDataField(payload);
 
 		assertDirectives(frame);

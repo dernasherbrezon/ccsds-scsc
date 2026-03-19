@@ -11,7 +11,7 @@ public class TransferFrameUtil {
 		}
 		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
-			return frame.getHeader().getPduTypeId();
+			return frame.getPduTypeId();
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
@@ -26,7 +26,7 @@ public class TransferFrameUtil {
 		}
 		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
-			return frame.getHeader().getSourceOrDestination();
+			return frame.getSourceOrDestination();
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
@@ -42,7 +42,7 @@ public class TransferFrameUtil {
 		}
 		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
-			return frame.getHeader().getScid();
+			return frame.getScid();
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
