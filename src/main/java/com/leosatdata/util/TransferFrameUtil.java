@@ -15,7 +15,7 @@ public class TransferFrameUtil {
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			return frame.getHeader().getProtocolControl();
+			return frame.getProtocolControl();
 		}
 		return null;
 	}
@@ -30,7 +30,7 @@ public class TransferFrameUtil {
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			return frame.getHeader().getSourceOrDestination();
+			return frame.getSourceOrDestination();
 		}
 		return null;
 	}
@@ -46,7 +46,7 @@ public class TransferFrameUtil {
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			return frame.getHeader().getScid();
+			return frame.getScid();
 		}
 		return -1;
 	}

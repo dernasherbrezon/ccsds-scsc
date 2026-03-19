@@ -153,10 +153,9 @@ public class FrameSublayer {
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = frame.getHeader();
-			type = header.getProtocolControl();
+			type = frame.getProtocolControl();
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getVcid(), header.getProtocolControl(), header.getSequenceControl(), header.getFrameLength() });
+			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getProtocolControl(), frame.getSequenceControl(), frame.getFrameLength() });
 		}
 		if (type != null && data != null && type.equals(PduTypeId.SPDU)) {
 			log.info("\t{}", decodeSpdu(data).toString());
@@ -238,22 +237,20 @@ public class FrameSublayer {
 			}
 		}
 		if (uFrameVersion == 4) {
-			com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = new com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader();
-			header.setVersionNumber(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VERSION_NUMBER);
-			header.setScid(localScid);
-			header.setSourceOrDestination(SourceDestination.SOURCE);
-			header.setVcid(0); // TODO read from user input?
-			header.setMapid(0); // not clear
-			header.setHeaderTruncated(false);
-			header.setFrameLength(payload.length);
-			header.setSequenceControl(qos);
-			header.setProtocolControl(PduTypeId.USER_DATA);
-			header.setOcf(false);
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
-			frame.setHeader(header);
+			frame.setVersionNumber(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VERSION_NUMBER);
+			frame.setScid(localScid);
+			frame.setSourceOrDestination(SourceDestination.SOURCE);
+			frame.setVcid(0); // TODO read from user input?
+			frame.setMapid(0); // not clear
+			frame.setHeaderTruncated(false);
+			frame.setFrameLength(payload.length);
+			frame.setSequenceControl(qos);
+			frame.setProtocolControl(PduTypeId.USER_DATA);
+			frame.setOcf(false);
 			frame.setDataField(payload);
-			frame.getHeader().setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
-			frame.getHeader().setVcfCount(nextSeqNumber);
+			frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
+			frame.setVcfCount(nextSeqNumber);
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				framev4Parser.encode(frame, bos);
 			} catch (IOException e1) {
@@ -300,22 +297,20 @@ public class FrameSublayer {
 				return null;
 			}
 		} else if (pFrameVersion == 4) {
-			com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader header = new com.leosatdata.ccsds7321b3.model.TransferFramePrimaryHeader();
-			header.setVersionNumber(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VERSION_NUMBER);
-			header.setScid(localScid);
-			header.setSourceOrDestination(SourceDestination.SOURCE);
-			header.setVcid(0); // not clear
-			header.setMapid(0); // not clear
-			header.setHeaderTruncated(false);
-			header.setFrameLength(payload.length);
-			header.setSequenceControl(QualityOfService.EXPEDITED);
-			header.setProtocolControl(PduTypeId.SPDU);
-			header.setOcf(false);
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
-			frame.setHeader(header);
+			frame.setVersionNumber(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VERSION_NUMBER);
+			frame.setScid(localScid);
+			frame.setSourceOrDestination(SourceDestination.SOURCE);
+			frame.setVcid(0); // not clear
+			frame.setMapid(0); // not clear
+			frame.setHeaderTruncated(false);
+			frame.setFrameLength(payload.length);
+			frame.setSequenceControl(QualityOfService.EXPEDITED);
+			frame.setProtocolControl(PduTypeId.SPDU);
+			frame.setOcf(false);
 			frame.setDataField(payload);
-			frame.getHeader().setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
-			frame.getHeader().setVcfCount(nextSeqNumber);
+			frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
+			frame.setVcfCount(nextSeqNumber);
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				framev4Parser.encode(frame, bos);
 			} catch (IOException e1) {
