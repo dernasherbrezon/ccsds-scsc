@@ -62,6 +62,7 @@ public class TransferFrameParser {
 		result.setInsertZone(insertZone);
 		// 4.1.5.2 or the Insert Zone, if the TFDF is not present,
 		// FIXME how to calculate payload length? How come payload can be missing?
+		// FIXME setup Transfer Frame Data Field Header
 		byte[] dataField = new byte[bis.available()];
 		bis.readFully(dataField);
 		result.setDataField(dataField);
@@ -97,10 +98,29 @@ public class TransferFrameParser {
 				bos.writeUnsignedInt(header.getVcfCountLength() * 8, header.getVcfCount());
 			}
 		}
-		if (frame.getInsertZone() != null) {
-			bos.writeFully(frame.getInsertZone());
+		if (insertZoneLength != 0) {
+			if (frame.getInsertZone() != null) {
+				bos.writeFully(frame.getInsertZone());
+			} else {
+				// if missing just sent zeroes
+				bos.writeFully(new byte[insertZoneLength]);
+			}
 		}
 		bos.writeFully(frame.getDataField());
+		if (header.isOcf()) {
+			if (frame.getOperationalControl() != null) {
+				bos.writeFully(frame.getOperationalControl());
+			} else {
+				bos.writeFully(new byte[4]);
+			}
+		}
+		if (frameErrorControl) {
+			if (frame.getFrameErrorControl() != null) {
+				bos.writeFully(frame.getFrameErrorControl());
+			} else {
+				bos.writeFully(new byte[2]);
+			}
+		}
 	}
 
 }
