@@ -3,7 +3,6 @@ package com.leosatdata.ccsds7320b4.util;
 import java.io.IOException;
 
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
-import com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -34,25 +33,23 @@ public class TransferFrameParser {
 	}
 
 	public TransferFrame decode(BitInputStream bis) throws IOException {
-		TransferFramePrimaryHeader header = new TransferFramePrimaryHeader();
-		header.setVersionNumber(bis.readUnsignedInt(2));
-		header.setScid(bis.readUnsignedInt(8));
-		header.setVcid(bis.readUnsignedInt(6));
-		header.setVcFrameCount(bis.readUnsignedInt(24));
-		header.setReplay(bis.readBoolean());
-		header.setVcFrameCountCycleUsed(bis.readBoolean());
+		TransferFrame result = new TransferFrame();
+		result.setVersionNumber(bis.readUnsignedInt(2));
+		result.setScid(bis.readUnsignedInt(8));
+		result.setVcid(bis.readUnsignedInt(6));
+		result.setVcFrameCount(bis.readUnsignedInt(24));
+		result.setReplay(bis.readBoolean());
+		result.setVcFrameCountCycleUsed(bis.readBoolean());
 		bis.skipBits(2);
-		if (header.isVcFrameCountCycleUsed()) {
-			header.setVcFrameCountCycle(bis.readUnsignedInt(4));
+		if (result.isVcFrameCountCycleUsed()) {
+			result.setVcFrameCountCycle(bis.readUnsignedInt(4));
 		} else {
 			bis.skipBits(4);
 		}
 		if (frameErrorControl) {
-			header.setFrameErrorControl(bis.readUnsignedInt(16));
+			result.setFrameErrorControl(bis.readUnsignedInt(16));
 		}
 
-		TransferFrame result = new TransferFrame();
-		result.setHeader(header);
 		if (insertZoneLength != 0) {
 			byte[] insertZone = new byte[insertZoneLength];
 			bis.readFully(insertZone);
@@ -65,23 +62,22 @@ public class TransferFrameParser {
 	}
 
 	public void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
-		TransferFramePrimaryHeader header = frame.getHeader();
 		bos.writeUnsignedInt(2, VERSION_NUMBER);
-		bos.writeUnsignedInt(8, header.getScid());
-		bos.writeUnsignedInt(6, header.getVcid());
-		bos.writeUnsignedInt(24, header.getVcFrameCount());
-		bos.writeBoolean(header.isReplay());
-		bos.writeBoolean(header.isVcFrameCountCycleUsed());
+		bos.writeUnsignedInt(8, frame.getScid());
+		bos.writeUnsignedInt(6, frame.getVcid());
+		bos.writeUnsignedInt(24, frame.getVcFrameCount());
+		bos.writeBoolean(frame.isReplay());
+		bos.writeBoolean(frame.isVcFrameCountCycleUsed());
 		bos.writeUnsignedInt(2, 0); // unused
-		if (header.isVcFrameCountCycleUsed()) {
-			bos.writeUnsignedInt(4, header.getVcFrameCountCycle());
+		if (frame.isVcFrameCountCycleUsed()) {
+			bos.writeUnsignedInt(4, frame.getVcFrameCountCycle());
 		} else {
 			bos.writeUnsignedInt(4, 0);
 		}
 		if (frameErrorControl) {
 			int frameErrorControl = 0;
-			if (header.getFrameErrorControl() != null) {
-				frameErrorControl = header.getFrameErrorControl();
+			if (frame.getFrameErrorControl() != null) {
+				frameErrorControl = frame.getFrameErrorControl();
 			}
 			// if not provided and required, then populate with zeros
 			bos.writeUnsignedInt(16, frameErrorControl);

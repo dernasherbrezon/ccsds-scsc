@@ -13,7 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
-import com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -26,9 +25,7 @@ public class TransferFrameParserTest {
 
 	@Test
 	public void testSuccess() throws Exception {
-		TransferFramePrimaryHeader header = createHeader();
-		TransferFrame frame = new TransferFrame();
-		frame.setHeader(header);
+		TransferFrame frame = createFrame();
 		frame.setDataField(new byte[2037]);
 		assertDirectives(frame);
 	}
@@ -39,15 +36,13 @@ public class TransferFrameParserTest {
 		config.setProperty("aos.insertZoneLength", "10");
 		parser = new TransferFrameParser(config);
 
-		TransferFramePrimaryHeader header = createHeader();
-		TransferFrame frame = new TransferFrame();
-		frame.setHeader(header);
+		TransferFrame frame = createFrame();
 		frame.setDataField(new byte[2027]);
 
 		TransferFrame actual = encodeDecode(frame);
 		assertNotNull(actual.getInsertZone());
 		assertEquals(10, actual.getInsertZone().length);
-		
+
 		byte[] insertZone = new byte[10];
 		insertZone[0] = 5;
 		frame.setInsertZone(insertZone);
@@ -57,21 +52,19 @@ public class TransferFrameParserTest {
 
 	@Test
 	public void testCycleCount() throws Exception {
-		TransferFramePrimaryHeader header = createHeader();
-		header.setVcFrameCountCycleUsed(false);
-		header.setVcFrameCountCycle(4);
-		TransferFrame frame = new TransferFrame();
-		frame.setHeader(header);
+		TransferFrame frame = createFrame();
+		frame.setVcFrameCountCycleUsed(false);
+		frame.setVcFrameCountCycle(4);
 		frame.setDataField(new byte[2037]);
 
 		TransferFrame actual = encodeDecode(frame);
 		// ignore count cycle value if used=false
-		assertEquals(0, actual.getHeader().getVcFrameCountCycle());
+		assertEquals(0, actual.getVcFrameCountCycle());
 
-		header.setVcFrameCountCycleUsed(true);
-		header.setVcFrameCount(4);
+		frame.setVcFrameCountCycleUsed(true);
+		frame.setVcFrameCount(4);
 		actual = encodeDecode(frame);
-		assertEquals(4, actual.getHeader().getVcFrameCountCycle());
+		assertEquals(4, actual.getVcFrameCountCycle());
 	}
 
 	@Test
@@ -81,21 +74,17 @@ public class TransferFrameParserTest {
 
 		int fec = 0x1278;
 
-		TransferFramePrimaryHeader header = createHeader();
-		header.setFrameErrorControl(fec);
-		TransferFrame frame = new TransferFrame();
-		frame.setHeader(header);
+		TransferFrame frame = createFrame();
+		frame.setFrameErrorControl(fec);
 		frame.setDataField(new byte[2037]);
 		TransferFrame actual = encodeDecode(frame);
-		assertEquals(fec, actual.getHeader().getFrameErrorControl().intValue());
+		assertEquals(fec, actual.getFrameErrorControl().intValue());
 
-		header = createHeader();
-		frame = new TransferFrame();
-		frame.setHeader(header);
+		frame = createFrame();
 		frame.setDataField(new byte[2037]);
 		actual = encodeDecode(frame);
 		// even if not set, send zeros
-		assertEquals(0, actual.getHeader().getFrameErrorControl().intValue());
+		assertEquals(0, actual.getFrameErrorControl().intValue());
 	}
 
 	@Test
@@ -105,16 +94,16 @@ public class TransferFrameParserTest {
 		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
 	}
 
-	private static TransferFramePrimaryHeader createHeader() {
-		TransferFramePrimaryHeader header = new TransferFramePrimaryHeader();
-		header.setVersionNumber(TransferFrameParser.VERSION_NUMBER);
-		header.setReplay(false);
-		header.setScid(2);
-		header.setVcid(0);
-		header.setVcFrameCount(13);
-		header.setVcFrameCountCycleUsed(false);
-		header.setVcFrameCountCycle(0);
-		return header;
+	private static TransferFrame createFrame() {
+		TransferFrame result = new TransferFrame();
+		result.setVersionNumber(TransferFrameParser.VERSION_NUMBER);
+		result.setReplay(false);
+		result.setScid(2);
+		result.setVcid(0);
+		result.setVcFrameCount(13);
+		result.setVcFrameCountCycleUsed(false);
+		result.setVcFrameCountCycle(0);
+		return result;
 	}
 
 	private TransferFrame encodeDecode(TransferFrame input) throws IOException {

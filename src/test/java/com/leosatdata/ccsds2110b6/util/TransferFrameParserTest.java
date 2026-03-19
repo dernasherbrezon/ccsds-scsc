@@ -37,7 +37,7 @@ public class TransferFrameParserTest {
 
 		assertDirectives(frame);
 	}
-	
+
 	@Test
 	public void testInvalidArguments() throws Exception {
 		assertFalse(TransferFrameParser.accept(null));

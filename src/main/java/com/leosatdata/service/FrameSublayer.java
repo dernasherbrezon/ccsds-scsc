@@ -141,10 +141,9 @@ public class FrameSublayer {
 		byte[] data = null;
 		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
 			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
-			com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader header = (com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader) frame.getHeader();
 			type = PduTypeId.USER_DATA;
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{} {} bytes", new Object[] { header.getScid(), header.getVcid(), PduTypeId.USER_DATA, QualityOfService.EXPEDITED, frame.getDataField().length });
+			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), PduTypeId.USER_DATA, QualityOfService.EXPEDITED, frame.getDataField().length });
 		}
 		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
@@ -203,15 +202,13 @@ public class FrameSublayer {
 			nextSeqNumber++;
 		}
 		if (uFrameVersion == 2) {
-			com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader header = new com.leosatdata.ccsds7320b4.model.TransferFramePrimaryHeader();
-			header.setVersionNumber(com.leosatdata.ccsds7320b4.util.TransferFrameParser.VERSION_NUMBER);
-			header.setReplay(false);
-			header.setScid(localScid);
-			header.setVcFrameCount(nextSeqNumber);
-			header.setVcFrameCountCycleUsed(false);
-			header.setVcid(0); // TODO read from user input?
 			com.leosatdata.ccsds7320b4.model.TransferFrame frame = new com.leosatdata.ccsds7320b4.model.TransferFrame();
-			frame.setHeader(header);
+			frame.setVersionNumber(com.leosatdata.ccsds7320b4.util.TransferFrameParser.VERSION_NUMBER);
+			frame.setReplay(false);
+			frame.setScid(localScid);
+			frame.setVcFrameCount(nextSeqNumber);
+			frame.setVcFrameCountCycleUsed(false);
+			frame.setVcid(0); // TODO read from user input?
 			frame.setDataField(payload);
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				framev2Parser.encode(frame, bos);
