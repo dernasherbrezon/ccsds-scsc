@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
+import com.leosatdata.ccsds7321b3.model.ConstructionRules;
 import com.leosatdata.ccsds7321b3.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
@@ -24,13 +25,14 @@ public class TransferFrameParser {
 	}
 
 	public static boolean accept(byte[] data) {
-		if (data.length == 0) {
+		if (data == null || data.length == 0) {
 			return false;
 		}
 		return ((data[0] & 0b1111_0000) >> 4) == VERSION_NUMBER;
 	}
 
 	public TransferFrame decode(BitInputStream bis) throws IOException {
+		int start = bis.available();
 		TransferFrame result = new TransferFrame();
 		result.setVersionNumber(bis.readUnsignedInt(4));
 		result.setScid(bis.readUnsignedInt(16));
@@ -57,10 +59,22 @@ public class TransferFrameParser {
 		}
 
 		result.setInsertZone(insertZone);
-		// 4.1.5.2 or the Insert Zone, if the TFDF is not present,
-		// FIXME how to calculate payload length? How come payload can be missing?
-		// FIXME setup Transfer Frame Data Field frame
-		byte[] dataField = new byte[bis.available()];
+
+		result.setConstructionRule(ConstructionRules.valueOfCode(bis.readUnsignedInt(3)));
+		result.setUpid(bis.readUnsignedInt(5));
+		if (hasFirstHeaderPointer(result)) {
+			result.setFirstHeaderPointer(bis.readUnsignedInt(16));
+		}
+		int readSoFar = start - bis.available();
+		// assume frame header is not truncated
+		int payloadLength = result.getFrameLength() + 1 - readSoFar;
+		if (result.isOcf()) {
+			payloadLength -= 4;
+		}
+		if (frameErrorControl) {
+			payloadLength -= 2;
+		}
+		byte[] dataField = new byte[payloadLength];
 		bis.readFully(dataField);
 		result.setDataField(dataField);
 		if (result.isOcf()) {
@@ -102,6 +116,15 @@ public class TransferFrameParser {
 				bos.writeFully(new byte[insertZoneLength]);
 			}
 		}
+		bos.writeUnsignedInt(3, frame.getConstructionRule().getCode());
+		bos.writeUnsignedInt(5, frame.getUpid());
+		if (hasFirstHeaderPointer(frame)) {
+			int firstHeaderPointer = 0;
+			if (frame.getFirstHeaderPointer() != null) {
+				firstHeaderPointer = frame.getFirstHeaderPointer();
+			}
+			bos.writeUnsignedInt(16, firstHeaderPointer);
+		}
 		bos.writeFully(frame.getDataField());
 		if (frame.isOcf()) {
 			if (frame.getOperationalControl() != null) {
@@ -117,6 +140,10 @@ public class TransferFrameParser {
 				bos.writeFully(new byte[2]);
 			}
 		}
+	}
+
+	private static boolean hasFirstHeaderPointer(TransferFrame frame) {
+		return frame.getConstructionRule().equals(ConstructionRules.PSMF) || frame.getConstructionRule().equals(ConstructionRules.START_VCDU) || frame.getConstructionRule().equals(ConstructionRules.CONTINUING_VCDU);
 	}
 
 }

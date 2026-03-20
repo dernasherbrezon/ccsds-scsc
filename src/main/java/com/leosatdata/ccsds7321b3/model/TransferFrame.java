@@ -22,9 +22,38 @@ public class TransferFrame {
 	private int vcfCount;
 
 	private byte[] insertZone;
+
+	private ConstructionRules constructionRule;
+	private int upid;
+	private Integer firstHeaderPointer; // all ones if packet nor started nor ended in this frame
+
 	private byte[] dataField;
 	private byte[] operationalControl;
 	private byte[] frameErrorControl;
+
+	public int getUpid() {
+		return upid;
+	}
+
+	public void setUpid(int upid) {
+		this.upid = upid;
+	}
+
+	public Integer getFirstHeaderPointer() {
+		return firstHeaderPointer;
+	}
+
+	public void setFirstHeaderPointer(Integer firstHeaderPointer) {
+		this.firstHeaderPointer = firstHeaderPointer;
+	}
+
+	public ConstructionRules getConstructionRule() {
+		return constructionRule;
+	}
+
+	public void setConstructionRule(ConstructionRules constructionRule) {
+		this.constructionRule = constructionRule;
+	}
 
 	public int getVersionNumber() {
 		return versionNumber;

@@ -1,0 +1,119 @@
+package com.leosatdata.ccsds7321b3.util;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Properties;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import com.leosatdata.ccsds2110b6.model.PduTypeId;
+import com.leosatdata.ccsds2110b6.model.QualityOfService;
+import com.leosatdata.ccsds2110b6.model.SourceDestination;
+import com.leosatdata.ccsds7321b3.model.ConstructionRules;
+import com.leosatdata.ccsds7321b3.model.TransferFrame;
+import com.leosatdata.util.BitInputStream;
+import com.leosatdata.util.BitOutputStream;
+import com.leosatdata.util.Configuration;
+import com.leosatdata.util.TestUtil;
+
+public class TransferFrameParserTest {
+
+	private Configuration config;
+	private TransferFrameParser parser;
+
+	@Test
+	public void testSuccess() throws Exception {
+		TransferFrame frame = createFrame();
+		assertDirectives(frame);
+	}
+
+	@Test
+	public void testInsertZone() throws Exception {
+		config.setProperty("framev4.insertZoneLength", "10");
+		parser = new TransferFrameParser(config);
+		TransferFrame frame = createFrame();
+		frame.setInsertZone(new byte[10]);
+		frame.setFrameLength(frame.getFrameLength() + frame.getInsertZone().length);
+		assertDirectives(frame);
+	}
+
+	@Test
+	public void testFec() throws Exception {
+		config.setProperty("framev4.frameErrorControl", "true");
+		parser = new TransferFrameParser(config);
+		TransferFrame frame = createFrame();
+		frame.setFrameErrorControl(new byte[2]);
+		frame.setFrameLength(frame.getFrameLength() + frame.getFrameErrorControl().length);
+		assertDirectives(frame);
+	}
+
+	@Test
+	public void testInvalidArguments() throws Exception {
+		assertFalse(TransferFrameParser.accept(null));
+		assertFalse(TransferFrameParser.accept(new byte[0]));
+		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
+	}
+
+	private TransferFrame encodeDecode(TransferFrame input) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			parser.encode(input, bos);
+		}
+
+		byte[] data = baos.toByteArray();
+		assertTrue(TransferFrameParser.accept(data));
+
+		TransferFrame actual;
+		try (BitInputStream bis = new BitInputStream(data)) {
+			actual = parser.decode(bis);
+		}
+		return actual;
+	}
+
+	private void assertDirectives(TransferFrame expected) throws IOException {
+		TestUtil.assertObjectEqual(expected, encodeDecode(expected));
+	}
+
+	private static TransferFrame createFrame() {
+		byte[] payload = new byte[] { 1, 2, 3 };
+		TransferFrame result = new TransferFrame();
+		result.setVersionNumber(TransferFrameParser.VERSION_NUMBER);
+		result.setScid(1);
+		result.setSourceOrDestination(SourceDestination.SOURCE);
+		result.setVcid(2);
+		result.setMapid(2);
+		result.setHeaderTruncated(false);
+		int headerLength = 56 / 8 + 1;
+		int ocf = 4;
+		int insertZone = 0;
+		int fec = 0;
+		int tfdfHeader = 1 + 2;
+		int frameLength = headerLength + insertZone + tfdfHeader + payload.length + ocf + fec;
+		result.setFrameLength(frameLength - 1);
+		result.setSequenceControl(QualityOfService.EXPEDITED);
+		result.setProtocolControl(PduTypeId.SPDU);
+		result.setOcf(true);
+		result.setOperationalControl(new byte[4]);
+		result.setVcfCountLength(1);
+		result.setVcfCount(4);
+		result.setConstructionRule(ConstructionRules.PSMF);
+		result.setFirstHeaderPointer(0);
+		result.setDataField(payload);
+		return result;
+	}
+
+	@Before
+	public void start() throws Exception {
+		Properties props = new Properties();
+		props.putAll(TestUtil.load("src/main/resources/mib.properties"));
+		props.putAll(TestUtil.load("src/main/resources/transceiver.properties"));
+		props.putAll(TestUtil.load("src/main/resources/custom.properties"));
+		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
+		config = new Configuration(props);
+		parser = new TransferFrameParser(config);
+	}
+}
