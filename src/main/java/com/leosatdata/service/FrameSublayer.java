@@ -39,6 +39,7 @@ public class FrameSublayer {
 	private final int localPcid;
 
 	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
+	private final com.leosatdata.ccsds2110b6.util.TransferFrameParser framev3Parser;
 	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
 	private final SpduParser spduParser;
 
@@ -52,6 +53,7 @@ public class FrameSublayer {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.localPcid = config.getInteger("local_pcid", 0);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
+		this.framev3Parser = new com.leosatdata.ccsds2110b6.util.TransferFrameParser(config);
 		this.framev4Parser = new com.leosatdata.ccsds7321b3.util.TransferFrameParser(config);
 		this.spduParser = new SpduParser(config);
 		this.callback = callback;
@@ -352,7 +354,12 @@ public class FrameSublayer {
 		if (uFrameVersion == 2) {
 			return framev2Parser.getMaxDataLength();
 		}
-		// FIXME other parsers
+		if (uFrameVersion == 3) {
+			return framev3Parser.getMaxDataLength();
+		}
+		if (uFrameVersion == 4) {
+			return framev4Parser.getMaxDataLength();
+		}
 		return 0;
 	}
 }

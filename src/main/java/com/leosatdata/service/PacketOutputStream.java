@@ -1,11 +1,8 @@
 package com.leosatdata.service;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
-import com.leosatdata.ccsds2110b6.model.TransferFrame;
-import com.leosatdata.ccsds2110b6.util.TransferFrameParser;
 import com.leosatdata.util.Configuration;
 
 public class PacketOutputStream {
@@ -28,28 +25,16 @@ public class PacketOutputStream {
 		this.frameSublayer = frameSublayer;
 		this.qos = qos;
 		this.vcid = vcid;
+		this.maxDataLength = frameSublayer.getMaxDataLength();
 		int frameVersion = config.getInteger("u_frame_version", 3);
-		int maxFrameLength = config.getInteger("maximum_frame_length", 2043);
 		if (frameVersion == 2) {
 			// v2 is always fixed
 			this.fixedFrameLength = true;
-			this.maxDataLength = frameSublayer.getMaxDataLength();
 		} else if (frameVersion == 3) {
 			// v3 is always variable
 			this.fixedFrameLength = false;
-			this.maxDataLength = maxFrameLength - com.leosatdata.ccsds2110b6.model.TransferFrame.HEADER_LENGTH - com.leosatdata.ccsds2110b6.model.TransferFrame.SEGMENT_HEADER_LENGTH;
 		} else if (frameVersion == 4) {
 			this.fixedFrameLength = config.getBoolean("framev4.fixedLength");
-
-			int headerLength = 32 / 8;
-			headerLength += 24 / 8; // not truncated header
-			headerLength += 1; // VcfCountLength=1 byte
-			headerLength += 16; // segmented SDU
-			headerLength += com.leosatdata.ccsds7321b3.model.TransferFrame.TFDF_HEADER_LENGTH;
-			headerLength += 0; // no ocf
-			headerLength += config.getBoolean("framev4.frameErrorControl") ? com.leosatdata.ccsds7321b3.model.TransferFrame.FEC_LENGTH : 0;
-
-			this.maxDataLength = maxFrameLength - config.getInteger("framev4.insertZoneLength", 0) - headerLength;
 		} else {
 			throw new IllegalArgumentException("unsupported frame version: " + frameVersion);
 		}

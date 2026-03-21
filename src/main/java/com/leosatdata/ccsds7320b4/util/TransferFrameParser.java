@@ -28,9 +28,10 @@ public class TransferFrameParser {
 		headerLength += (dataUnitType == 1 || dataUnitType == 2) ? 2 : 0;
 		headerLength += ocf ? TransferFrame.OCF_LENGTH : 0;
 		headerLength += frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
-		this.maxDataLength = config.getInteger("maximum_frame_length", 0) - headerLength;
+		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
+		this.maxDataLength = maxFrameLength - headerLength;
 		if (maxDataLength <= 0) {
-			throw new IllegalArgumentException("invalid configuration: maximum_frame_length - aos.frameInsertZone");
+			throw new IllegalArgumentException("maximum_frame_length is too small: " + maxFrameLength);
 		}
 	}
 

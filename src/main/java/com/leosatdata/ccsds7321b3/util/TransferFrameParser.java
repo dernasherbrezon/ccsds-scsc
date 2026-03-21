@@ -15,10 +15,27 @@ public class TransferFrameParser {
 
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
+	private final int maxDataLength;
+	private final boolean fixedFrameLength;
 
 	public TransferFrameParser(Configuration config) {
 		this.insertZoneLength = config.getInteger("framev4.insertZoneLength", 0);
 		this.frameErrorControl = config.getBoolean("framev4.frameErrorControl");
+		this.fixedFrameLength = config.getBoolean("framev4.fixedLength");
+		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
+		int headerLength = 32 / 8;
+		headerLength += 24 / 8; // not truncated header
+		headerLength += 1; // VcfCountLength=1 byte
+		headerLength += insertZoneLength;
+		headerLength += 16; // segmented SDU
+		headerLength += com.leosatdata.ccsds7321b3.model.TransferFrame.TFDF_HEADER_LENGTH;
+		headerLength += 0; // no ocf
+		headerLength += frameErrorControl ? com.leosatdata.ccsds7321b3.model.TransferFrame.FEC_LENGTH : 0;
+
+		this.maxDataLength = maxFrameLength - headerLength;
+		if (maxDataLength <= 0) {
+			throw new IllegalArgumentException("maximum_frame_length is too small: " + maxFrameLength);
+		}
 	}
 
 	public static boolean accept(byte[] data) {
@@ -88,21 +105,26 @@ public class TransferFrameParser {
 	}
 
 	public void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
-		int headerLength = 32 / 8;
+		int frameLength = 32 / 8;
 		if (!frame.isHeaderTruncated()) {
-			headerLength += 24 / 8;
+			frameLength += 24 / 8;
 			if (frame.getVcfCountLength() != 0b000) {
-				headerLength += frame.getVcfCountLength();
+				frameLength += frame.getVcfCountLength();
 			}
 		}
-		headerLength += insertZoneLength;
+		frameLength += insertZoneLength;
 		if (hasFirstHeaderPointer(frame)) {
-			headerLength += 16 / 8;
+			frameLength += 16 / 8;
 		}
-		headerLength += TransferFrame.TFDF_HEADER_LENGTH;
-		int ocfLength = frame.isOcf() ? TransferFrame.OCF_LENGTH : 0;
-		int fecLength = frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
-		frame.setFrameLength(headerLength + frame.getDataField().length + ocfLength + fecLength - 1);
+		frameLength += TransferFrame.TFDF_HEADER_LENGTH;
+		frameLength += frame.isOcf() ? TransferFrame.OCF_LENGTH : 0;
+		frameLength += frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
+		if (fixedFrameLength) {
+			frameLength += maxDataLength;
+		} else {
+			frameLength += frame.getDataField().length;
+		}
+		frame.setFrameLength(frameLength - 1);
 		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		bos.writeUnsignedInt(4, frame.getVersionNumber());
 		bos.writeUnsignedInt(16, frame.getScid());
@@ -139,6 +161,12 @@ public class TransferFrameParser {
 			bos.writeUnsignedInt(16, firstHeaderPointer);
 		}
 		bos.writeFully(frame.getDataField());
+		if (fixedFrameLength) {
+			int padding = maxDataLength - frame.getDataField().length;
+			if (padding > 0) {
+				bos.writeFully(new byte[padding]);
+			}
+		}
 		if (frame.isOcf()) {
 			if (frame.getOperationalControl() != null) {
 				bos.writeFully(frame.getOperationalControl());
@@ -157,6 +185,10 @@ public class TransferFrameParser {
 
 	private static boolean hasFirstHeaderPointer(TransferFrame frame) {
 		return frame.getConstructionRule().equals(ConstructionRules.PSMF) || frame.getConstructionRule().equals(ConstructionRules.START_VCDU) || frame.getConstructionRule().equals(ConstructionRules.CONTINUING_VCDU);
+	}
+
+	public int getMaxDataLength() {
+		return maxDataLength;
 	}
 
 }

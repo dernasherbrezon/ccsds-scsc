@@ -10,8 +10,21 @@ import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds2110b6.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
+import com.leosatdata.util.Configuration;
 
 public class TransferFrameParser {
+
+	private final int maxDataLength;
+
+	public TransferFrameParser(Configuration config) {
+		int headerLength = TransferFrame.HEADER_LENGTH;
+		headerLength += TransferFrame.SEGMENT_HEADER_LENGTH; // Uframes are segmented
+		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
+		this.maxDataLength = maxFrameLength - headerLength;
+		if (maxDataLength <= 0) {
+			throw new IllegalArgumentException("maximum_frame_length is too small: " + maxFrameLength);
+		}
+	}
 
 	public static boolean accept(byte[] data) {
 		if (data == null || data.length == 0) {
@@ -68,6 +81,10 @@ public class TransferFrameParser {
 			bos.writeUnsignedInt(6, frame.getPseudoPacketId());
 		}
 		bos.writeFully(frame.getDataField());
+	}
+
+	public int getMaxDataLength() {
+		return maxDataLength;
 	}
 
 }

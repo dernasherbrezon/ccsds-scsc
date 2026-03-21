@@ -1,5 +1,6 @@
 package com.leosatdata.ccsds7321b3.util;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -47,6 +48,15 @@ public class TransferFrameParserTest {
 		TransferFrame frame = createFrame();
 		frame.setFrameErrorControl(new byte[2]);
 		assertDirectives(frame);
+	}
+
+	@Test
+	public void testFixedLength() throws Exception {
+		config.setProperty("framev4.fixedLength", "true");
+		parser = new TransferFrameParser(config);
+		TransferFrame frame = createFrame();
+		TransferFrame actual = encodeDecode(frame);
+		assertEquals(parser.getMaxDataLength(), actual.getDataField().length);
 	}
 
 	@Test
