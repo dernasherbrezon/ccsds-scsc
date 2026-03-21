@@ -5,7 +5,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Properties;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.leosatdata.ccsds2110b6.model.DfcId;
@@ -16,9 +18,12 @@ import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds2110b6.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
+import com.leosatdata.util.Configuration;
 import com.leosatdata.util.TestUtil;
 
 public class TransferFrameParserTest {
+
+	private Configuration config;
 
 	@Test
 	public void testSuccess() throws Exception {
@@ -42,6 +47,16 @@ public class TransferFrameParserTest {
 		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
 	}
 
+	@Before
+	public void start() throws Exception {
+		Properties props = new Properties();
+		props.putAll(TestUtil.load("src/main/resources/mib.properties"));
+		props.putAll(TestUtil.load("src/main/resources/transceiver.properties"));
+		props.putAll(TestUtil.load("src/main/resources/custom.properties"));
+		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
+		config = new Configuration(props);
+	}
+
 	private static TransferFrame createFrame() {
 		byte[] payload = new byte[] { 0, 1, 2 };
 		TransferFrame frame = new TransferFrame();
@@ -57,7 +72,7 @@ public class TransferFrameParserTest {
 		return frame;
 	}
 
-	private static TransferFrame encodeDecode(TransferFrame input) throws IOException {
+	private TransferFrame encodeDecode(TransferFrame input) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (BitOutputStream bos = new BitOutputStream(baos)) {
 			TransferFrameParser.encode(input, bos);
@@ -65,6 +80,7 @@ public class TransferFrameParserTest {
 
 		byte[] data = baos.toByteArray();
 		assertTrue(TransferFrameParser.accept(data));
+		assertTrue(config.getInteger("maximum_frame_length", 0) >= data.length);
 
 		TransferFrame actual;
 		try (BitInputStream bis = new BitInputStream(data)) {
@@ -73,7 +89,7 @@ public class TransferFrameParserTest {
 		return actual;
 	}
 
-	private static void assertDirectives(TransferFrame expected) throws IOException {
+	private void assertDirectives(TransferFrame expected) throws IOException {
 		TestUtil.assertObjectEqual(expected, encodeDecode(expected));
 	}
 }

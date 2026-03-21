@@ -59,16 +59,12 @@ public class FrameSublayer {
 
 	public void handle(Event e) {
 		Object frame = null;
-		QualityOfService qos = null;
-		PduTypeId type = null;
 
 		Spdu spdu = state.getMacQueue().poll();
 		if (spdu != null) {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
 				spduParser.encode(spdu, bos);
-				qos = QualityOfService.EXPEDITED;
-				type = PduTypeId.SPDU;
 			} catch (IOException e1) {
 				LOG.error("cannot encode spdu", e);
 				return;
@@ -83,16 +79,12 @@ public class FrameSublayer {
 		if (frame == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
-			qos = QualityOfService.EXPEDITED;
-			type = PduTypeId.SPDU;
 			frame = createPFrame(createPlcw(false));
 		}
 
 		if (frame == null) {
 			frame = state.getExpQueue().poll();
 			if (frame != null) {
-				qos = QualityOfService.EXPEDITED;
-				type = PduTypeId.USER_DATA;
 				state.setuFrameLastSent(true);
 			}
 		}
@@ -100,8 +92,6 @@ public class FrameSublayer {
 		if (frame == null) {
 			frame = state.getSeqQueue().poll();
 			if (frame != null) {
-				qos = QualityOfService.SEQUENCE_CONTROLLED;
-				type = PduTypeId.USER_DATA;
 				state.setuFrameLastSent(true);
 			}
 		}
@@ -109,8 +99,6 @@ public class FrameSublayer {
 		if (frame == null && !state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
-			qos = QualityOfService.EXPEDITED;
-			type = PduTypeId.SPDU;
 			frame = createPFrame(createPlcw(false));
 		}
 
@@ -119,6 +107,7 @@ public class FrameSublayer {
 		}
 
 		int nextSeqNumber;
+		QualityOfService qos = TransferFrameUtil.getQualityOfService(frame);
 		if (qos.equals(QualityOfService.EXPEDITED)) {
 			nextSeqNumber = state.getVes();
 		} else {
@@ -359,4 +348,11 @@ public class FrameSublayer {
 		}
 	}
 
+	public int getMaxDataLength() {
+		if (uFrameVersion == 2) {
+			return framev2Parser.getMaxDataLength();
+		}
+		// FIXME other parsers
+		return 0;
+	}
 }

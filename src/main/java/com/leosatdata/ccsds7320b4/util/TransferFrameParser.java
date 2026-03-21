@@ -11,7 +11,7 @@ public class TransferFrameParser {
 
 	private final int insertZoneLength;
 	private final boolean frameHeaderErrorControl;
-	private final int dataFieldLength;
+	private final int maxDataLength;
 	private final int dataUnitType;
 	private final boolean ocf;
 	private final boolean frameErrorControl;
@@ -25,10 +25,11 @@ public class TransferFrameParser {
 		int headerLength = TransferFrame.HEADER_LENGTH;
 		headerLength += frameHeaderErrorControl ? TransferFrame.FEC_HEADER_LENGTH : 0;
 		headerLength += this.insertZoneLength;
+		headerLength += (dataUnitType == 1 || dataUnitType == 2) ? 2 : 0;
 		headerLength += ocf ? TransferFrame.OCF_LENGTH : 0;
 		headerLength += frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
-		this.dataFieldLength = config.getInteger("maximum_frame_length", 0) - headerLength;
-		if (dataFieldLength <= 0) {
+		this.maxDataLength = config.getInteger("maximum_frame_length", 0) - headerLength;
+		if (maxDataLength <= 0) {
 			throw new IllegalArgumentException("invalid configuration: maximum_frame_length - aos.frameInsertZone");
 		}
 	}
@@ -70,7 +71,7 @@ public class TransferFrameParser {
 			bis.skipBits(2);
 			result.setBitstreamDataPointer(bis.readUnsignedInt(14));
 		}
-		byte[] dataField = new byte[dataFieldLength];
+		byte[] dataField = new byte[maxDataLength];
 		bis.readFully(dataField);
 		result.setDataField(dataField);
 		if (ocf) {
@@ -87,6 +88,9 @@ public class TransferFrameParser {
 	}
 
 	public void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
+		if (frame.getDataField().length > maxDataLength) {
+			throw new IOException("data field length too big: " + frame.getDataField().length);
+		}
 		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		bos.writeUnsignedInt(2, frame.getVersionNumber());
 		bos.writeUnsignedInt(8, frame.getScid());
@@ -124,6 +128,12 @@ public class TransferFrameParser {
 		}
 		// every other dataUnitTypes are just bytes
 		bos.writeFully(frame.getDataField());
+		int padding = maxDataLength - frame.getDataField().length;
+		if (padding > 0) {
+			// TODO follow spec and write pseudo-random instead of zeroes
+			bos.writeFully(new byte[padding]);
+		}
+
 		if (ocf) {
 			if (frame.getOperationalControl() != null) {
 				bos.writeFully(frame.getOperationalControl());
@@ -138,6 +148,10 @@ public class TransferFrameParser {
 				bos.writeFully(new byte[TransferFrame.FEC_LENGTH]);
 			}
 		}
+	}
+
+	public int getMaxDataLength() {
+		return maxDataLength;
 	}
 
 }

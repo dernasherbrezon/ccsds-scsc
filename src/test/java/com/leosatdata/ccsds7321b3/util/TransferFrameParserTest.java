@@ -64,6 +64,7 @@ public class TransferFrameParserTest {
 
 		byte[] data = baos.toByteArray();
 		assertTrue(TransferFrameParser.accept(data));
+		assertTrue(config.getInteger("maximum_frame_length", 0) >= data.length);
 
 		TransferFrame actual;
 		try (BitInputStream bis = new BitInputStream(data)) {

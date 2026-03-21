@@ -26,7 +26,10 @@ public class TransferFrameParserTest {
 	@Test
 	public void testSuccess() throws Exception {
 		TransferFrame frame = createFrame();
-		frame.setDataField(new byte[2037]);
+		assertDirectives(frame);
+
+		config.setProperty("aos.dataUnitType", "2");
+		parser = new TransferFrameParser(config);
 		assertDirectives(frame);
 	}
 
@@ -37,7 +40,6 @@ public class TransferFrameParserTest {
 		parser = new TransferFrameParser(config);
 
 		TransferFrame frame = createFrame();
-		frame.setDataField(new byte[2027]);
 
 		TransferFrame actual = encodeDecode(frame);
 		assertNotNull(actual.getInsertZone());
@@ -55,7 +57,6 @@ public class TransferFrameParserTest {
 		TransferFrame frame = createFrame();
 		frame.setVcFrameCountCycleUsed(false);
 		frame.setVcFrameCountCycle(4);
-		frame.setDataField(new byte[2037]);
 
 		TransferFrame actual = encodeDecode(frame);
 		// ignore count cycle value if used=false
@@ -68,7 +69,7 @@ public class TransferFrameParserTest {
 	}
 
 	@Test
-	public void testFrameControl() throws Exception {
+	public void testFrameHeaderErrorControl() throws Exception {
 		config.setProperty("aos.frameHeaderErrorControl", "true");
 		parser = new TransferFrameParser(config);
 
@@ -76,15 +77,47 @@ public class TransferFrameParserTest {
 
 		TransferFrame frame = createFrame();
 		frame.setFrameHeaderErrorControl(fec);
-		frame.setDataField(new byte[2037]);
 		TransferFrame actual = encodeDecode(frame);
 		assertEquals(fec, actual.getFrameHeaderErrorControl().intValue());
 
 		frame = createFrame();
-		frame.setDataField(new byte[2037]);
 		actual = encodeDecode(frame);
 		// even if not set, send zeros
 		assertEquals(0, actual.getFrameHeaderErrorControl().intValue());
+	}
+
+	@Test
+	public void testFrameErrorControl() throws Exception {
+		config.setProperty("aos.frameErrorControl", "true");
+		parser = new TransferFrameParser(config);
+
+		TransferFrame frame = createFrame();
+		TransferFrame actual = encodeDecode(frame);
+		assertNotNull(actual.getFrameErrorControl());
+		assertEquals(TransferFrame.FEC_LENGTH, actual.getFrameErrorControl().length);
+
+		byte[] fec = new byte[TransferFrame.FEC_LENGTH];
+		fec[0] = 5;
+		frame.setFrameErrorControl(fec);
+		actual = encodeDecode(frame);
+		assertEquals(5, actual.getFrameErrorControl()[0]);
+	}
+
+	@Test
+	public void testOcf() throws Exception {
+		config.setProperty("aos.ocf", "true");
+		parser = new TransferFrameParser(config);
+
+		TransferFrame frame = createFrame();
+		TransferFrame actual = encodeDecode(frame);
+		assertNotNull(actual.getOperationalControl());
+		assertEquals(TransferFrame.OCF_LENGTH, actual.getOperationalControl().length);
+
+		byte[] ocf = new byte[TransferFrame.OCF_LENGTH];
+		ocf[0] = 5;
+		frame.setOperationalControl(ocf);
+		actual = encodeDecode(frame);
+		assertEquals(5, actual.getOperationalControl()[0]);
 	}
 
 	@Test
@@ -95,6 +128,10 @@ public class TransferFrameParserTest {
 	}
 
 	private static TransferFrame createFrame() {
+		byte[] data = new byte[4];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte) i;
+		}
 		TransferFrame result = new TransferFrame();
 		result.setReplay(false);
 		result.setScid(2);
@@ -102,6 +139,7 @@ public class TransferFrameParserTest {
 		result.setVcFrameCount(13);
 		result.setVcFrameCountCycleUsed(false);
 		result.setVcFrameCountCycle(0);
+		result.setDataField(data);
 		return result;
 	}
 
@@ -113,6 +151,7 @@ public class TransferFrameParserTest {
 
 		byte[] data = baos.toByteArray();
 		assertTrue(TransferFrameParser.accept(data));
+		assertEquals(config.getInteger("maximum_frame_length", 0), data.length);
 
 		TransferFrame actual;
 		try (BitInputStream bis = new BitInputStream(data)) {
@@ -122,7 +161,11 @@ public class TransferFrameParserTest {
 	}
 
 	private void assertDirectives(TransferFrame expected) throws IOException {
-		TestUtil.assertObjectEqual(expected, encodeDecode(expected));
+		TransferFrame actual = encodeDecode(expected);
+		byte[] actualData = new byte[expected.getDataField().length];
+		System.arraycopy(expected.getDataField(), 0, actualData, 0, actualData.length);
+		actual.setDataField(actualData);
+		TestUtil.assertObjectEqual(expected, actual);
 	}
 
 	@Before

@@ -11,6 +11,7 @@ import com.leosatdata.util.Configuration;
 public class PacketOutputStream {
 
 	private final Node node;
+	private final FrameSublayer frameSublayer;
 	private final QualityOfService qos;
 	private final int vcid;
 	private final boolean fixedFrameLength;
@@ -22,8 +23,9 @@ public class PacketOutputStream {
 
 	private Object currentFrame;
 
-	public PacketOutputStream(Node node, Configuration config, QualityOfService qos, int vcid) {
+	public PacketOutputStream(Node node, FrameSublayer frameSublayer, Configuration config, QualityOfService qos, int vcid) {
 		this.node = node;
+		this.frameSublayer = frameSublayer;
 		this.qos = qos;
 		this.vcid = vcid;
 		int frameVersion = config.getInteger("u_frame_version", 3);
@@ -31,17 +33,7 @@ public class PacketOutputStream {
 		if (frameVersion == 2) {
 			// v2 is always fixed
 			this.fixedFrameLength = true;
-
-			int dataUnitType = config.getInteger("aos.dataUnitType", 1);
-
-			int headerLength = com.leosatdata.ccsds7320b4.model.TransferFrame.HEADER_LENGTH;
-			headerLength += config.getBoolean("aos.frameHeaderErrorControl") ? com.leosatdata.ccsds7320b4.model.TransferFrame.FEC_HEADER_LENGTH : 0;
-			headerLength += config.getInteger("aos.insertZoneLength", 0);
-			headerLength += (dataUnitType == 1 || dataUnitType == 2) ? 2 : 0;
-			headerLength += config.getBoolean("aos.ocf") ? com.leosatdata.ccsds7320b4.model.TransferFrame.OCF_LENGTH : 0;
-			headerLength += config.getBoolean("aos.frameErrorControl") ? com.leosatdata.ccsds7320b4.model.TransferFrame.FEC_LENGTH : 0;
-
-			this.maxDataLength = maxFrameLength - headerLength;
+			this.maxDataLength = frameSublayer.getMaxDataLength();
 		} else if (frameVersion == 3) {
 			// v3 is always variable
 			this.fixedFrameLength = false;
@@ -68,7 +60,7 @@ public class PacketOutputStream {
 		int remaining = maxDataLength - count;
 		if (len > remaining) {
 			System.arraycopy(b, off, buffer, count, remaining);
-			
+
 		}
 	}
 
