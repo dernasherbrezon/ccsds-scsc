@@ -3,6 +3,10 @@ package com.leosatdata.ccsds2110b6.model;
 // PROXIMITY-1 CCSDS 211.0-B-6 Transfer Frame version 3
 public class TransferFrame {
 
+	public static final int VERSION_NUMBER = 0b10;
+	public static final int HEADER_LENGTH = 5;
+	public static final int SEGMENT_HEADER_LENGTH = 1;
+	
 	private int versionNumber;
 	private QualityOfService qualityOfService;
 	private PduTypeId pduTypeId;
@@ -14,7 +18,27 @@ public class TransferFrame {
 	private int frameLength;
 	private int frameSequenceNumber;
 
+	// segment header. only when dfcId=01
+	private SegmentFlags segmentFlags;
+	private int pseudoPacketId;
+
 	private byte[] dataField;
+
+	public SegmentFlags getSegmentFlags() {
+		return segmentFlags;
+	}
+
+	public void setSegmentFlags(SegmentFlags segmentFlags) {
+		this.segmentFlags = segmentFlags;
+	}
+
+	public int getPseudoPacketId() {
+		return pseudoPacketId;
+	}
+
+	public void setPseudoPacketId(int pseudoPacketId) {
+		this.pseudoPacketId = pseudoPacketId;
+	}
 
 	public int getVersionNumber() {
 		return versionNumber;

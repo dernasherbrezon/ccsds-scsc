@@ -81,14 +81,14 @@ public class TransferFrameParserTest {
 	private static TransferFrame createFrame() {
 		byte[] payload = new byte[] { 1, 2, 3 };
 		TransferFrame result = new TransferFrame();
-		result.setVersionNumber(TransferFrameParser.VERSION_NUMBER);
+		result.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		result.setScid(1);
 		result.setSourceOrDestination(SourceDestination.SOURCE);
 		result.setVcid(2);
 		result.setMapid(2);
 		result.setHeaderTruncated(false);
 		int headerLength = 56 / 8 + 1;
-		int ocf = 4;
+		int ocf = TransferFrame.OCF_LENGTH;
 		int insertZone = 0;
 		int fec = 0;
 		int tfdfHeader = 1 + 2;

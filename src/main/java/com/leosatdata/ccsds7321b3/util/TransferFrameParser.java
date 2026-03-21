@@ -13,9 +13,6 @@ import com.leosatdata.util.Configuration;
 
 public class TransferFrameParser {
 
-	// even if it dynamic, make it static and consistent with version 3 frame
-	public static final int VERSION_NUMBER = 0b1100;
-
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
 
@@ -28,7 +25,7 @@ public class TransferFrameParser {
 		if (data == null || data.length == 0) {
 			return false;
 		}
-		return ((data[0] & 0b1111_0000) >> 4) == VERSION_NUMBER;
+		return ((data[0] & 0b1111_0000) >> 4) == TransferFrame.VERSION_NUMBER;
 	}
 
 	public TransferFrame decode(BitInputStream bis) throws IOException {
@@ -69,21 +66,21 @@ public class TransferFrameParser {
 		// assume frame header is not truncated
 		int payloadLength = result.getFrameLength() + 1 - readSoFar;
 		if (result.isOcf()) {
-			payloadLength -= 4;
+			payloadLength -= TransferFrame.OCF_LENGTH;
 		}
 		if (frameErrorControl) {
-			payloadLength -= 2;
+			payloadLength -= TransferFrame.FEC_LENGTH;
 		}
 		byte[] dataField = new byte[payloadLength];
 		bis.readFully(dataField);
 		result.setDataField(dataField);
 		if (result.isOcf()) {
-			byte[] ocf = new byte[4];
+			byte[] ocf = new byte[TransferFrame.OCF_LENGTH];
 			bis.readFully(ocf);
 			result.setOperationalControl(ocf);
 		}
 		if (frameErrorControl) {
-			byte[] fec = new byte[2];
+			byte[] fec = new byte[TransferFrame.FEC_LENGTH];
 			bis.readFully(fec);
 			result.setFrameErrorControl(fec);
 		}
@@ -130,14 +127,14 @@ public class TransferFrameParser {
 			if (frame.getOperationalControl() != null) {
 				bos.writeFully(frame.getOperationalControl());
 			} else {
-				bos.writeFully(new byte[4]);
+				bos.writeFully(new byte[TransferFrame.OCF_LENGTH]);
 			}
 		}
 		if (frameErrorControl) {
 			if (frame.getFrameErrorControl() != null) {
 				bos.writeFully(frame.getFrameErrorControl());
 			} else {
-				bos.writeFully(new byte[2]);
+				bos.writeFully(new byte[TransferFrame.FEC_LENGTH]);
 			}
 		}
 	}

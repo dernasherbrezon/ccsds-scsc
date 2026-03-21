@@ -218,7 +218,7 @@ public class FrameSublayer {
 		}
 		if (uFrameVersion == 3) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds2110b6.util.TransferFrameParser.VERSION_NUMBER);
+			frame.setVersionNumber(com.leosatdata.ccsds2110b6.model.TransferFrame.VERSION_NUMBER);
 			frame.setQualityOfService(qos);
 			frame.setPduTypeId(PduTypeId.USER_DATA);
 			frame.setDfcId(DfcId.USER); // FIXME check
@@ -238,7 +238,7 @@ public class FrameSublayer {
 		}
 		if (uFrameVersion == 4) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VERSION_NUMBER);
+			frame.setVersionNumber(com.leosatdata.ccsds7321b3.model.TransferFrame.VERSION_NUMBER);
 			frame.setScid(localScid);
 			frame.setSourceOrDestination(SourceDestination.SOURCE);
 			frame.setVcid(0); // TODO read from user input?
@@ -279,7 +279,7 @@ public class FrameSublayer {
 		}
 		if (pFrameVersion == 3) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds2110b6.util.TransferFrameParser.VERSION_NUMBER);
+			frame.setVersionNumber(com.leosatdata.ccsds2110b6.model.TransferFrame.VERSION_NUMBER);
 			frame.setQualityOfService(QualityOfService.EXPEDITED);
 			frame.setPduTypeId(PduTypeId.SPDU);
 			frame.setDfcId(DfcId.PACKETS);
@@ -298,7 +298,7 @@ public class FrameSublayer {
 			}
 		} else if (pFrameVersion == 4) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds7321b3.util.TransferFrameParser.VERSION_NUMBER);
+			frame.setVersionNumber(com.leosatdata.ccsds7321b3.model.TransferFrame.VERSION_NUMBER);
 			frame.setScid(localScid);
 			frame.setSourceOrDestination(SourceDestination.SOURCE);
 			frame.setVcid(0); // not clear

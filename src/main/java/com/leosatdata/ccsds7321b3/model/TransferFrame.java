@@ -7,6 +7,11 @@ import com.leosatdata.ccsds2110b6.model.SourceDestination;
 // CCSDS 732.1-B-3 Transfer Frame version 4
 public class TransferFrame {
 
+	// even if it dynamic, make it static and consistent with version 3 frame
+	public static final int VERSION_NUMBER = 0b1100;
+	public static final int OCF_LENGTH = 4;
+	public static final int FEC_LENGTH = 2;
+
 	// header
 	private int versionNumber;
 	private int scid;

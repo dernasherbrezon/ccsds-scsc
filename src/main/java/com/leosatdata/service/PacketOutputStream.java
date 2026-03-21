@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
+import com.leosatdata.ccsds2110b6.model.TransferFrame;
+import com.leosatdata.ccsds2110b6.util.TransferFrameParser;
 import com.leosatdata.util.Configuration;
 
 public class PacketOutputStream {
@@ -30,8 +32,9 @@ public class PacketOutputStream {
 			this.fixedFrameLength = false;
 			this.dataLength = 0;
 		} else if (frameVersion == 3) {
+			// v3 is always variable
 			this.fixedFrameLength = false;
-			this.dataLength = 0;
+			this.dataLength = config.getInteger("maximum_frame_length", 2043) - com.leosatdata.ccsds2110b6.model.TransferFrame.HEADER_LENGTH - com.leosatdata.ccsds2110b6.model.TransferFrame.SEGMENT_HEADER_LENGTH;
 		} else if (frameVersion == 4) {
 			this.fixedFrameLength = config.getBoolean("framev4.fixedLength");
 			int fecLength = config.getBoolean("framev4.frameErrorControl") ? 2 : 0;
