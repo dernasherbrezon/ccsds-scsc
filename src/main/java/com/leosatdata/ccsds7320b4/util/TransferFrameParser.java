@@ -12,14 +12,24 @@ public class TransferFrameParser {
 	public static final int VERSION_NUMBER = 0b01;
 
 	private final int insertZoneLength;
-	private final boolean frameErrorControl;
+	private final boolean frameHeaderErrorControl;
 	private final int dataFieldLength;
+	private final int dataUnitType;
+	private final boolean ocf;
+	private final boolean frameErrorControl;
 
 	public TransferFrameParser(Configuration config) {
 		this.insertZoneLength = config.getInteger("aos.insertZoneLength", 0);
+		this.frameHeaderErrorControl = config.getBoolean("aos.frameHeaderErrorControl");
+		this.dataUnitType = config.getInteger("aos.dataUnitType", 1);
+		this.ocf = config.getBoolean("aos.ocf");
 		this.frameErrorControl = config.getBoolean("aos.frameErrorControl");
-		int headerLength = frameErrorControl ? 8 : 6;
-		this.dataFieldLength = config.getInteger("maximum_frame_length", 0) - this.insertZoneLength - headerLength;
+		int headerLength = TransferFrame.HEADER_LENGTH;
+		headerLength += frameHeaderErrorControl ? TransferFrame.FEC_HEADER_LENGTH : 0;
+		headerLength += this.insertZoneLength;
+		headerLength += ocf ? TransferFrame.OCF_LENGTH : 0;
+		headerLength += frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
+		this.dataFieldLength = config.getInteger("maximum_frame_length", 0) - headerLength;
 		if (dataFieldLength <= 0) {
 			throw new IllegalArgumentException("invalid configuration: maximum_frame_length - aos.frameInsertZone");
 		}
@@ -46,8 +56,8 @@ public class TransferFrameParser {
 		} else {
 			bis.skipBits(4);
 		}
-		if (frameErrorControl) {
-			result.setFrameErrorControl(bis.readUnsignedInt(16));
+		if (frameHeaderErrorControl) {
+			result.setFrameHeaderErrorControl(bis.readUnsignedInt(16));
 		}
 
 		if (insertZoneLength != 0) {
@@ -55,9 +65,26 @@ public class TransferFrameParser {
 			bis.readFully(insertZone);
 			result.setInsertZone(insertZone);
 		}
+		if (dataUnitType == 1) {
+			bis.skipBits(5);
+			result.setFirstHeaderPointer(bis.readUnsignedInt(11));
+		} else if (dataUnitType == 2) {
+			bis.skipBits(2);
+			result.setBitstreamDataPointer(bis.readUnsignedInt(14));
+		}
 		byte[] dataField = new byte[dataFieldLength];
 		bis.readFully(dataField);
 		result.setDataField(dataField);
+		if (ocf) {
+			byte[] ocf = new byte[TransferFrame.OCF_LENGTH];
+			bis.readFully(ocf);
+			result.setOperationalControl(ocf);
+		}
+		if (frameErrorControl) {
+			byte[] fec = new byte[TransferFrame.FEC_LENGTH];
+			bis.readFully(fec);
+			result.setFrameErrorControl(fec);
+		}
 		return result;
 	}
 
@@ -74,10 +101,10 @@ public class TransferFrameParser {
 		} else {
 			bos.writeUnsignedInt(4, 0);
 		}
-		if (frameErrorControl) {
+		if (frameHeaderErrorControl) {
 			int frameErrorControl = 0;
-			if (frame.getFrameErrorControl() != null) {
-				frameErrorControl = frame.getFrameErrorControl();
+			if (frame.getFrameHeaderErrorControl() != null) {
+				frameErrorControl = frame.getFrameHeaderErrorControl();
 			}
 			// if not provided and required, then populate with zeros
 			bos.writeUnsignedInt(16, frameErrorControl);
@@ -89,7 +116,29 @@ public class TransferFrameParser {
 			}
 			bos.writeFully(insertZone);
 		}
+		if (dataUnitType == 1) {
+			bos.writeUnsignedInt(5, 0); // unused
+			bos.writeUnsignedInt(11, frame.getFirstHeaderPointer());
+		} else if (dataUnitType == 2) {
+			bos.writeUnsignedInt(2, 0); // unused
+			bos.writeUnsignedInt(14, frame.getBitstreamDataPointer());
+		}
+		// every other dataUnitTypes are just bytes
 		bos.writeFully(frame.getDataField());
+		if (ocf) {
+			if (frame.getOperationalControl() != null) {
+				bos.writeFully(frame.getOperationalControl());
+			} else {
+				bos.writeFully(new byte[TransferFrame.OCF_LENGTH]);
+			}
+		}
+		if (frameErrorControl) {
+			if (frame.getFrameErrorControl() != null) {
+				bos.writeFully(frame.getFrameErrorControl());
+			} else {
+				bos.writeFully(new byte[TransferFrame.FEC_LENGTH]);
+			}
+		}
 	}
 
 }

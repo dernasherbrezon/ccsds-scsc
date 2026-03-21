@@ -99,7 +99,7 @@ public class TransferFrameParser {
 		if (hasFirstHeaderPointer(frame)) {
 			headerLength += 16 / 8;
 		}
-		headerLength += 1; // tfdf length
+		headerLength += TransferFrame.TFDF_HEADER_LENGTH;
 		int ocfLength = frame.isOcf() ? TransferFrame.OCF_LENGTH : 0;
 		int fecLength = frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
 		frame.setFrameLength(headerLength + frame.getDataField().length + ocfLength + fecLength - 1);

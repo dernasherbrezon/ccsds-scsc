@@ -69,22 +69,22 @@ public class TransferFrameParserTest {
 
 	@Test
 	public void testFrameControl() throws Exception {
-		config.setProperty("aos.frameErrorControl", "true");
+		config.setProperty("aos.frameHeaderErrorControl", "true");
 		parser = new TransferFrameParser(config);
 
 		int fec = 0x1278;
 
 		TransferFrame frame = createFrame();
-		frame.setFrameErrorControl(fec);
+		frame.setFrameHeaderErrorControl(fec);
 		frame.setDataField(new byte[2037]);
 		TransferFrame actual = encodeDecode(frame);
-		assertEquals(fec, actual.getFrameErrorControl().intValue());
+		assertEquals(fec, actual.getFrameHeaderErrorControl().intValue());
 
 		frame = createFrame();
 		frame.setDataField(new byte[2037]);
 		actual = encodeDecode(frame);
 		// even if not set, send zeros
-		assertEquals(0, actual.getFrameErrorControl().intValue());
+		assertEquals(0, actual.getFrameHeaderErrorControl().intValue());
 	}
 
 	@Test

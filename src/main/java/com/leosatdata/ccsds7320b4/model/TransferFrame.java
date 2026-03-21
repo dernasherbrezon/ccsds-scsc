@@ -3,6 +3,11 @@ package com.leosatdata.ccsds7320b4.model;
 // AOS SPACE DATA LINK PROTOCOL CCSDS 732.0-B-4
 public class TransferFrame {
 
+	public static final int HEADER_LENGTH = 6;
+	public static final int FEC_HEADER_LENGTH = 2;
+	public static final int OCF_LENGTH = 4;
+	public static final int FEC_LENGTH = 2;
+
 	private int versionNumber;
 	private int scid;
 	private int vcid;
@@ -11,10 +16,19 @@ public class TransferFrame {
 	private boolean replay;
 	private boolean vcFrameCountCycleUsed;
 	private int vcFrameCountCycle;
-	private Integer frameErrorControl;
+	private Integer frameHeaderErrorControl;
 
 	private byte[] insertZone;
+
+	// M_PDU
+	private int firstHeaderPointer;
+
+	// B_PDU
+	private int bitstreamDataPointer;
+
 	private byte[] dataField;
+	private byte[] operationalControl;
+	private byte[] frameErrorControl;
 
 	public int getVersionNumber() {
 		return versionNumber;
@@ -72,12 +86,12 @@ public class TransferFrame {
 		this.vcFrameCountCycle = vcFrameCountCycle;
 	}
 
-	public Integer getFrameErrorControl() {
-		return frameErrorControl;
+	public Integer getFrameHeaderErrorControl() {
+		return frameHeaderErrorControl;
 	}
 
-	public void setFrameErrorControl(Integer frameErrorControl) {
-		this.frameErrorControl = frameErrorControl;
+	public void setFrameHeaderErrorControl(Integer frameHeaderErrorControl) {
+		this.frameHeaderErrorControl = frameHeaderErrorControl;
 	}
 
 	public byte[] getInsertZone() {
@@ -88,6 +102,22 @@ public class TransferFrame {
 		this.insertZone = insertZone;
 	}
 
+	public int getFirstHeaderPointer() {
+		return firstHeaderPointer;
+	}
+
+	public void setFirstHeaderPointer(int firstHeaderPointer) {
+		this.firstHeaderPointer = firstHeaderPointer;
+	}
+
+	public int getBitstreamDataPointer() {
+		return bitstreamDataPointer;
+	}
+
+	public void setBitstreamDataPointer(int bitstreamDataPointer) {
+		this.bitstreamDataPointer = bitstreamDataPointer;
+	}
+
 	public byte[] getDataField() {
 		return dataField;
 	}
@@ -96,4 +126,19 @@ public class TransferFrame {
 		this.dataField = dataField;
 	}
 
+	public byte[] getOperationalControl() {
+		return operationalControl;
+	}
+
+	public void setOperationalControl(byte[] operationalControl) {
+		this.operationalControl = operationalControl;
+	}
+
+	public byte[] getFrameErrorControl() {
+		return frameErrorControl;
+	}
+
+	public void setFrameErrorControl(byte[] frameErrorControl) {
+		this.frameErrorControl = frameErrorControl;
+	}
 }

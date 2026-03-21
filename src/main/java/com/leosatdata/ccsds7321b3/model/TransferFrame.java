@@ -11,6 +11,7 @@ public class TransferFrame {
 	public static final int VERSION_NUMBER = 0b1100;
 	public static final int OCF_LENGTH = 4;
 	public static final int FEC_LENGTH = 2;
+	public static final int TFDF_HEADER_LENGTH = 1;
 
 	// header
 	private int versionNumber;
