@@ -32,7 +32,6 @@ public class TransferFrameParserTest {
 		frame.setDfcId(DfcId.SEGMENTED);
 		frame.setSegmentFlags(SegmentFlags.FIRST);
 		frame.setPseudoPacketId(4);
-		frame.setFrameLength(frame.getFrameLength() + 1);
 		assertDirectives(frame);
 	}
 
@@ -47,8 +46,6 @@ public class TransferFrameParserTest {
 		byte[] payload = new byte[] { 0, 1, 2 };
 		TransferFrame frame = new TransferFrame();
 		frame.setDfcId(DfcId.USER);
-		int headerLength = 5;
-		frame.setFrameLength(headerLength + payload.length - 1);
 		frame.setFrameSequenceNumber(12);
 		frame.setPcid(1);
 		frame.setPduTypeId(PduTypeId.USER_DATA);

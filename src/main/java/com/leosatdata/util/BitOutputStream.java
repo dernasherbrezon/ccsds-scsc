@@ -10,6 +10,7 @@ public class BitOutputStream implements Closeable {
 	private byte writeBuffer[] = new byte[8];
 	private int spareBitsInCurrentByte = 8;
 	private int current;
+	private int written;
 
 	public BitOutputStream(OutputStream os) {
 		this.os = os;
@@ -23,6 +24,7 @@ public class BitOutputStream implements Closeable {
 		while (remaining > 0) {
 			if (spareBitsInCurrentByte == 0) {
 				os.write(current);
+				written++;
 				spareBitsInCurrentByte = 8;
 				current = 0;
 			}
@@ -41,6 +43,7 @@ public class BitOutputStream implements Closeable {
 		}
 		if (spareBitsInCurrentByte == 0) {
 			os.write(current);
+			written++;
 			spareBitsInCurrentByte = 8;
 			current = 0;
 		}
@@ -71,6 +74,7 @@ public class BitOutputStream implements Closeable {
 		writeBuffer[6] = (byte) (v >>> 8);
 		writeBuffer[7] = (byte) (v >>> 0);
 		os.write(writeBuffer, 0, 8);
+		written += 8;
 	}
 
 	public void writeFloat(float v) throws IOException {
@@ -79,15 +83,21 @@ public class BitOutputStream implements Closeable {
 		os.write((bits >>> 16) & 0xFF);
 		os.write((bits >>> 8) & 0xFF);
 		os.write((bits >>> 0) & 0xFF);
+		written += 4;
 	}
 
 	public void writeFully(byte[] payloadData) throws IOException {
 		os.write(payloadData);
+		written += payloadData.length;
 	}
 
 	@Override
 	public void close() throws IOException {
 		os.close();
+	}
+
+	public int getWritten() {
+		return written;
 	}
 
 }

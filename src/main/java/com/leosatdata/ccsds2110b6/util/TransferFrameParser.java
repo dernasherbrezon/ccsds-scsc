@@ -47,6 +47,11 @@ public class TransferFrameParser {
 	}
 
 	public static void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
+		int headerLength = TransferFrame.HEADER_LENGTH;
+		if (frame.getDfcId().equals(DfcId.SEGMENTED)) {
+			headerLength++;
+		}
+		frame.setFrameLength(headerLength + frame.getDataField().length - 1);
 		bos.writeUnsignedInt(2, frame.getVersionNumber());
 		bos.writeUnsignedInt(1, frame.getQualityOfService().getCode());
 		bos.writeUnsignedInt(1, frame.getPduTypeId().getCode());

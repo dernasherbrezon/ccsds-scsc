@@ -158,7 +158,7 @@ public class FrameSublayer {
 			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getProtocolControl(), frame.getSequenceControl(), frame.getFrameLength() });
 		}
 		if (type != null && data != null && type.equals(PduTypeId.SPDU)) {
-			log.info("\t{}", decodeSpdu(data).toString());
+			log.info("\t{}", decodeSpdu(data));
 		}
 	}
 
@@ -226,7 +226,6 @@ public class FrameSublayer {
 			frame.setScid(localScid);
 			frame.setPortId(0); // TODO read from user input?
 			frame.setPcid(localPcid);
-			frame.setFrameLength(payload.length);
 			frame.setFrameSequenceNumber(nextSeqNumber);
 			frame.setDataField(payload);
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
@@ -244,7 +243,6 @@ public class FrameSublayer {
 			frame.setVcid(0); // TODO read from user input?
 			frame.setMapid(0); // not clear
 			frame.setHeaderTruncated(false);
-			frame.setFrameLength(payload.length);
 			frame.setSequenceControl(qos);
 			frame.setProtocolControl(PduTypeId.USER_DATA);
 			frame.setOcf(false);
@@ -287,7 +285,6 @@ public class FrameSublayer {
 			frame.setScid(localScid);
 			frame.setPortId(0); // not used in P frames
 			frame.setPcid(localPcid);
-			frame.setFrameLength(payload.length);
 			frame.setFrameSequenceNumber(nextSeqNumber);
 			frame.setDataField(payload);
 			try (BitOutputStream bos = new BitOutputStream(baos)) {
@@ -304,7 +301,6 @@ public class FrameSublayer {
 			frame.setVcid(0); // not clear
 			frame.setMapid(0); // not clear
 			frame.setHeaderTruncated(false);
-			frame.setFrameLength(payload.length);
 			frame.setSequenceControl(QualityOfService.EXPEDITED);
 			frame.setProtocolControl(PduTypeId.SPDU);
 			frame.setOcf(false);

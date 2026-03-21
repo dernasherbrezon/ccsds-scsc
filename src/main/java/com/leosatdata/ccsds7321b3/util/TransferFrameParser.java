@@ -88,6 +88,21 @@ public class TransferFrameParser {
 	}
 
 	public void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
+		int headerLength = 32 / 8;
+		if (!frame.isHeaderTruncated()) {
+			headerLength += 24 / 8;
+			if (frame.getVcfCountLength() != 0b000) {
+				headerLength += frame.getVcfCountLength();
+			}
+		}
+		headerLength += insertZoneLength;
+		if (hasFirstHeaderPointer(frame)) {
+			headerLength += 16 / 8;
+		}
+		headerLength += 1; // tfdf length
+		int ocfLength = frame.isOcf() ? TransferFrame.OCF_LENGTH : 0;
+		int fecLength = frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
+		frame.setFrameLength(headerLength + frame.getDataField().length + ocfLength + fecLength - 1);
 		bos.writeUnsignedInt(4, frame.getVersionNumber());
 		bos.writeUnsignedInt(16, frame.getScid());
 		bos.writeUnsignedInt(1, frame.getSourceOrDestination().getCode());

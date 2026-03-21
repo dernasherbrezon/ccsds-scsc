@@ -37,7 +37,6 @@ public class TransferFrameParserTest {
 		parser = new TransferFrameParser(config);
 		TransferFrame frame = createFrame();
 		frame.setInsertZone(new byte[10]);
-		frame.setFrameLength(frame.getFrameLength() + frame.getInsertZone().length);
 		assertDirectives(frame);
 	}
 
@@ -47,7 +46,6 @@ public class TransferFrameParserTest {
 		parser = new TransferFrameParser(config);
 		TransferFrame frame = createFrame();
 		frame.setFrameErrorControl(new byte[2]);
-		frame.setFrameLength(frame.getFrameLength() + frame.getFrameErrorControl().length);
 		assertDirectives(frame);
 	}
 
@@ -87,13 +85,6 @@ public class TransferFrameParserTest {
 		result.setVcid(2);
 		result.setMapid(2);
 		result.setHeaderTruncated(false);
-		int headerLength = 56 / 8 + 1;
-		int ocf = TransferFrame.OCF_LENGTH;
-		int insertZone = 0;
-		int fec = 0;
-		int tfdfHeader = 1 + 2;
-		int frameLength = headerLength + insertZone + tfdfHeader + payload.length + ocf + fec;
-		result.setFrameLength(frameLength - 1);
 		result.setSequenceControl(QualityOfService.EXPEDITED);
 		result.setProtocolControl(PduTypeId.SPDU);
 		result.setOcf(true);
