@@ -1,6 +1,7 @@
 package com.leosatdata.util;
 
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
+import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 
 public class TransferFrameUtil {
@@ -65,6 +66,36 @@ public class TransferFrameUtil {
 			return frame.getDataField();
 		}
 		return null;
+	}
+
+	public static QualityOfService getQualityOfService(Object obj) {
+		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
+			return QualityOfService.EXPEDITED;
+		}
+		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
+			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
+			return frame.getQualityOfService();
+		}
+		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
+			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
+			return frame.getSequenceControl();
+		}
+		return null;
+	}
+
+	public static void setSequenceNumber(Object obj, int nextSeqNumber) {
+		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
+			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
+			frame.setVcFrameCount(nextSeqNumber);
+		}
+		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
+			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
+			frame.setFrameSequenceNumber(nextSeqNumber);
+		}
+		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
+			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
+			frame.setVcfCount(nextSeqNumber);
+		}
 	}
 
 }

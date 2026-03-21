@@ -18,6 +18,7 @@ import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
+import com.leosatdata.util.TransferFrameUtil;
 
 public class FrameSublayer {
 
@@ -57,7 +58,7 @@ public class FrameSublayer {
 	}
 
 	public void handle(Event e) {
-		byte[] payload = null;
+		Object frame = null;
 		QualityOfService qos = null;
 		PduTypeId type = null;
 
@@ -72,71 +73,94 @@ public class FrameSublayer {
 				LOG.error("cannot encode spdu", e);
 				return;
 			}
-			payload = baos.toByteArray();
+			frame = createPFrame(baos.toByteArray());
 		}
 
-		if (payload == null && state.isPersistence()) {
+		if (frame == null && state.isPersistence()) {
 			return;
 		}
 
-		if (payload == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
+		if (frame == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
 			qos = QualityOfService.EXPEDITED;
 			type = PduTypeId.SPDU;
-			payload = createPlcw(false);
+			frame = createPFrame(createPlcw(false));
 		}
 
-		if (payload == null) {
-			payload = state.getExpQueue().poll();
-			if (payload != null) {
+		if (frame == null) {
+			frame = state.getExpQueue().poll();
+			if (frame != null) {
 				qos = QualityOfService.EXPEDITED;
 				type = PduTypeId.USER_DATA;
 				state.setuFrameLastSent(true);
 			}
 		}
 
-		if (payload == null) {
-			payload = state.getSeqQueue().poll();
-			if (payload != null) {
+		if (frame == null) {
+			frame = state.getSeqQueue().poll();
+			if (frame != null) {
 				qos = QualityOfService.SEQUENCE_CONTROLLED;
 				type = PduTypeId.USER_DATA;
 				state.setuFrameLastSent(true);
 			}
 		}
 
-		if (payload == null && !state.isuFrameLastSent() && state.isNeedPlcw()) {
+		if (frame == null && !state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
 			qos = QualityOfService.EXPEDITED;
 			type = PduTypeId.SPDU;
-			payload = createPlcw(false);
+			frame = createPFrame(createPlcw(false));
 		}
 
+		if (frame == null) {
+			return;
+		}
+
+		int nextSeqNumber;
+		if (qos.equals(QualityOfService.EXPEDITED)) {
+			nextSeqNumber = state.getVes();
+		} else {
+			nextSeqNumber = state.getSeqCtrlFsn();
+		}
+		if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
+			nextSeqNumber = 0;
+		} else {
+			nextSeqNumber++;
+		}
+
+		TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
+
+		if (qos.equals(QualityOfService.EXPEDITED)) {
+			// TODO notify obc about VE(S)
+			state.setVes(nextSeqNumber);
+		} else {
+			// TODO notify obc about VS(S)
+			state.setSeqCtrlFsn(nextSeqNumber);
+		}
+
+		debug(false, frame);
+
+		byte[] payload = encode(frame);
 		if (payload == null) {
 			return;
 		}
 
-		byte[] frame = encode(payload, qos, type);
-		if (frame == null) {
-			return;
-		}
-		debug(false, frame);
-		transceiver.send(frame);
+		transceiver.send(payload);
 	}
 
-	public void debug(boolean rx, byte[] payload) {
+	public void debug(boolean rx, Object obj) {
 		Logger log;
 		if (rx) {
 			log = RX;
 		} else {
 			log = TX;
 		}
-		if (!log.isInfoEnabled() || payload == null) {
+		if (!log.isInfoEnabled() || obj == null) {
 			return;
 		}
 
-		Object obj = decode(payload);
 		PduTypeId type = null;
 		byte[] data = null;
 		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
@@ -178,69 +202,35 @@ public class FrameSublayer {
 		return baos.toByteArray();
 	}
 
-	private byte[] encode(byte[] payload, QualityOfService qos, PduTypeId type) {
-		if (type.equals(PduTypeId.SPDU)) {
-			return encodePFrame(payload);
-		} else {
-			return encodeUFrame(payload, qos);
-		}
-	}
-
-	// FIXME assume payload length match maximum_frame_length - header length
-	private byte[] encodeUFrame(byte[] payload, QualityOfService qos) {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		int nextSeqNumber;
-		if (qos.equals(QualityOfService.EXPEDITED)) {
-			nextSeqNumber = state.getVes();
-		} else {
-			nextSeqNumber = state.getSeqCtrlFsn();
-		}
-		if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
-			nextSeqNumber = 0;
-		} else {
-			nextSeqNumber++;
-		}
+	public Object createUFrame(byte[] payload, QualityOfService qos, int vcid) {
+		// FIXME first header pointer
+		// FIXME if payload smaller than expected, then generate random
 		if (uFrameVersion == 2) {
 			com.leosatdata.ccsds7320b4.model.TransferFrame frame = new com.leosatdata.ccsds7320b4.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds7320b4.util.TransferFrameParser.VERSION_NUMBER);
 			frame.setReplay(false);
 			frame.setScid(localScid);
-			frame.setVcFrameCount(nextSeqNumber);
 			frame.setVcFrameCountCycleUsed(false);
-			frame.setVcid(0); // TODO read from user input?
+			frame.setVcid(vcid);
 			frame.setDataField(payload);
-			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				framev2Parser.encode(frame, bos);
-			} catch (IOException e1) {
-				LOG.error("can't serialize transferframe2", e1);
-				return null;
-			}
+			return frame;
 		}
 		if (uFrameVersion == 3) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds2110b6.model.TransferFrame.VERSION_NUMBER);
 			frame.setQualityOfService(qos);
 			frame.setPduTypeId(PduTypeId.USER_DATA);
-			frame.setDfcId(DfcId.USER); // FIXME check
+			frame.setDfcId(DfcId.PACKETS); // support packet outputstream only
 			frame.setSourceOrDestination(SourceDestination.SOURCE);
 			frame.setScid(localScid);
-			frame.setPortId(0); // TODO read from user input?
+			frame.setPortId(vcid);
 			frame.setPcid(localPcid);
-			frame.setFrameSequenceNumber(nextSeqNumber);
 			frame.setDataField(payload);
-			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
-			} catch (IOException e1) {
-				LOG.error("can't serialize transferframe3", e1);
-				return null;
-			}
+			return frame;
 		}
 		if (uFrameVersion == 4) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds7321b3.model.TransferFrame.VERSION_NUMBER);
 			frame.setScid(localScid);
 			frame.setSourceOrDestination(SourceDestination.SOURCE);
-			frame.setVcid(0); // TODO read from user input?
+			frame.setVcid(vcid);
 			frame.setMapid(0); // not clear
 			frame.setHeaderTruncated(false);
 			frame.setSequenceControl(qos);
@@ -248,36 +238,14 @@ public class FrameSublayer {
 			frame.setOcf(false);
 			frame.setDataField(payload);
 			frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
-			frame.setVcfCount(nextSeqNumber);
-			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				framev4Parser.encode(frame, bos);
-			} catch (IOException e1) {
-				LOG.error("can't serialize transferframe4", e1);
-				return null;
-			}
+			return frame;
 		}
-
-		if (qos.equals(QualityOfService.EXPEDITED)) {
-			// TODO notify obc about VE(S)
-			state.setVes(nextSeqNumber);
-		} else {
-			// TODO notify obc about VS(S)
-			state.setSeqCtrlFsn(nextSeqNumber);
-		}
-		return baos.toByteArray();
+		return null;
 	}
 
-	private byte[] encodePFrame(byte[] payload) {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		int nextSeqNumber = state.getVes();
-		if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
-			nextSeqNumber = 0;
-		} else {
-			nextSeqNumber++;
-		}
+	private Object createPFrame(byte[] payload) {
 		if (pFrameVersion == 3) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds2110b6.model.TransferFrame.VERSION_NUMBER);
 			frame.setQualityOfService(QualityOfService.EXPEDITED);
 			frame.setPduTypeId(PduTypeId.SPDU);
 			frame.setDfcId(DfcId.PACKETS);
@@ -285,17 +253,11 @@ public class FrameSublayer {
 			frame.setScid(localScid);
 			frame.setPortId(0); // not used in P frames
 			frame.setPcid(localPcid);
-			frame.setFrameSequenceNumber(nextSeqNumber);
 			frame.setDataField(payload);
-			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
-			} catch (IOException e1) {
-				LOG.error("can't serialize transferframe3", e1);
-				return null;
-			}
-		} else if (pFrameVersion == 4) {
+			return frame;
+		}
+		if (pFrameVersion == 4) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
-			frame.setVersionNumber(com.leosatdata.ccsds7321b3.model.TransferFrame.VERSION_NUMBER);
 			frame.setScid(localScid);
 			frame.setSourceOrDestination(SourceDestination.SOURCE);
 			frame.setVcid(0); // not clear
@@ -306,21 +268,10 @@ public class FrameSublayer {
 			frame.setOcf(false);
 			frame.setDataField(payload);
 			frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
-			frame.setVcfCount(nextSeqNumber);
-			try (BitOutputStream bos = new BitOutputStream(baos)) {
-				framev4Parser.encode(frame, bos);
-			} catch (IOException e1) {
-				LOG.error("can't serialize transferframe4", e1);
-				return null;
-			}
-		} else {
-			LOG.error("unknown p frame version: {}", pFrameVersion);
-			return null;
+			return frame;
 		}
-
-		// TODO notify obc about VE(S)
-		state.setVes(nextSeqNumber);
-		return baos.toByteArray();
+		LOG.error("unknown p frame version: {}", pFrameVersion);
+		return null;
 	}
 
 	// can be called on a separate thread, shouldn't share any state with encode
@@ -335,7 +286,8 @@ public class FrameSublayer {
 				LOG.error("unable to read transferframe2", e);
 				return null;
 			}
-		} else if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data)) {
+		}
+		if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data)) {
 			if (uFrameVersion != 3) {
 				return null;
 			}
@@ -345,7 +297,8 @@ public class FrameSublayer {
 				LOG.error("unable to read transferframe3", e);
 				return null;
 			}
-		} else if (com.leosatdata.ccsds7321b3.util.TransferFrameParser.accept(data)) {
+		}
+		if (com.leosatdata.ccsds7321b3.util.TransferFrameParser.accept(data)) {
 			if (uFrameVersion != 4) {
 				return null;
 			}
@@ -355,11 +308,46 @@ public class FrameSublayer {
 				LOG.error("unable to read transferframe4", e);
 				return null;
 			}
-		} else {
-			// data is somehow corrupted and completely unsupported even after crc and FEC
-			LOG.debug("invalid frame received");
-			return null;
 		}
+		// data is somehow corrupted and completely unsupported even after crc and FEC
+		LOG.debug("invalid frame received");
+		return null;
+	}
+
+	private byte[] encode(Object obj) {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
+			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
+			try (BitOutputStream bos = new BitOutputStream(baos)) {
+				framev2Parser.encode(frame, bos);
+			} catch (IOException e1) {
+				LOG.error("can't serialize transferframe2", e1);
+				return null;
+			}
+			return baos.toByteArray();
+		}
+		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
+			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
+			try (BitOutputStream bos = new BitOutputStream(baos)) {
+				com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
+			} catch (IOException e1) {
+				LOG.error("can't serialize transferframe3", e1);
+				return null;
+			}
+			return baos.toByteArray();
+		}
+		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
+			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
+			try (BitOutputStream bos = new BitOutputStream(baos)) {
+				framev4Parser.encode(frame, bos);
+			} catch (IOException e1) {
+				LOG.error("can't serialize transferframe4", e1);
+				return null;
+			}
+			return baos.toByteArray();
+		}
+		LOG.debug("invalid frame requested: {}", obj);
+		return null;
 	}
 
 	public Object decodeSpdu(byte[] data) {

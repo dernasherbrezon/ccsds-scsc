@@ -103,6 +103,7 @@ public class TransferFrameParser {
 		int ocfLength = frame.isOcf() ? TransferFrame.OCF_LENGTH : 0;
 		int fecLength = frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
 		frame.setFrameLength(headerLength + frame.getDataField().length + ocfLength + fecLength - 1);
+		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		bos.writeUnsignedInt(4, frame.getVersionNumber());
 		bos.writeUnsignedInt(16, frame.getScid());
 		bos.writeUnsignedInt(1, frame.getSourceOrDestination().getCode());

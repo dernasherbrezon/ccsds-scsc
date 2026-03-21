@@ -53,7 +53,6 @@ public class TransferFrameParserTest {
 		frame.setQualityOfService(QualityOfService.EXPEDITED);
 		frame.setScid(2);
 		frame.setSourceOrDestination(SourceDestination.SOURCE);
-		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		frame.setDataField(payload);
 		return frame;
 	}

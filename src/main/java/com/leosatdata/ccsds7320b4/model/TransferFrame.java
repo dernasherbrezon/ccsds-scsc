@@ -3,6 +3,7 @@ package com.leosatdata.ccsds7320b4.model;
 // AOS SPACE DATA LINK PROTOCOL CCSDS 732.0-B-4
 public class TransferFrame {
 
+	public static final int VERSION_NUMBER = 0b01;
 	public static final int HEADER_LENGTH = 6;
 	public static final int FEC_HEADER_LENGTH = 2;
 	public static final int OCF_LENGTH = 4;

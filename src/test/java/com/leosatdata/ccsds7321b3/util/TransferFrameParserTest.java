@@ -79,7 +79,6 @@ public class TransferFrameParserTest {
 	private static TransferFrame createFrame() {
 		byte[] payload = new byte[] { 1, 2, 3 };
 		TransferFrame result = new TransferFrame();
-		result.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		result.setScid(1);
 		result.setSourceOrDestination(SourceDestination.SOURCE);
 		result.setVcid(2);

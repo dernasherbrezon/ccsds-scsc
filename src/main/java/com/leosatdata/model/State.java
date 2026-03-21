@@ -11,8 +11,8 @@ public class State {
 	private boolean persistence;
 	private final LinkedBlockingQueue<Event> queue = new LinkedBlockingQueue<>();
 	private final LinkedBlockingQueue<Spdu> macQueue = new LinkedBlockingQueue<>(); // FIXME should it be blocking queue?
-	private final BlockingQueue<byte[]> seqQueue;
-	private final BlockingQueue<byte[]> expQueue;
+	private final BlockingQueue<Object> seqQueue;
+	private final BlockingQueue<Object> expQueue;
 
 	private Spdu commParameters;
 	private MacState state = MacState.S1_INACTIVE;
@@ -53,11 +53,11 @@ public class State {
 		this.needPlcw = needPlcw;
 	}
 	
-	public BlockingQueue<byte[]> getSeqQueue() {
+	public BlockingQueue<Object> getSeqQueue() {
 		return seqQueue;
 	}
 	
-	public BlockingQueue<byte[]> getExpQueue() {
+	public BlockingQueue<Object> getExpQueue() {
 		return expQueue;
 	}
 

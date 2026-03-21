@@ -68,6 +68,7 @@ public class PacketOutputStream {
 		int remaining = maxDataLength - count;
 		if (len > remaining) {
 			System.arraycopy(b, off, buffer, count, remaining);
+			
 		}
 	}
 

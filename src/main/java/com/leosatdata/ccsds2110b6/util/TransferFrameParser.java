@@ -52,6 +52,7 @@ public class TransferFrameParser {
 			headerLength++;
 		}
 		frame.setFrameLength(headerLength + frame.getDataField().length - 1);
+		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		bos.writeUnsignedInt(2, frame.getVersionNumber());
 		bos.writeUnsignedInt(1, frame.getQualityOfService().getCode());
 		bos.writeUnsignedInt(1, frame.getPduTypeId().getCode());

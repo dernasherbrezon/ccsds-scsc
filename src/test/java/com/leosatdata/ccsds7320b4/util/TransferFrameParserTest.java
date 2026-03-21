@@ -96,7 +96,6 @@ public class TransferFrameParserTest {
 
 	private static TransferFrame createFrame() {
 		TransferFrame result = new TransferFrame();
-		result.setVersionNumber(TransferFrameParser.VERSION_NUMBER);
 		result.setReplay(false);
 		result.setScid(2);
 		result.setVcid(0);

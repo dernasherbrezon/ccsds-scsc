@@ -9,8 +9,6 @@ import com.leosatdata.util.Configuration;
 
 public class TransferFrameParser {
 
-	public static final int VERSION_NUMBER = 0b01;
-
 	private final int insertZoneLength;
 	private final boolean frameHeaderErrorControl;
 	private final int dataFieldLength;
@@ -39,7 +37,7 @@ public class TransferFrameParser {
 		if (data == null || data.length == 0) {
 			return false;
 		}
-		return ((data[0] & 0b1100_0000) >> 6) == VERSION_NUMBER;
+		return ((data[0] & 0b1100_0000) >> 6) == TransferFrame.VERSION_NUMBER;
 	}
 
 	public TransferFrame decode(BitInputStream bis) throws IOException {
@@ -89,7 +87,8 @@ public class TransferFrameParser {
 	}
 
 	public void encode(TransferFrame frame, BitOutputStream bos) throws IOException {
-		bos.writeUnsignedInt(2, VERSION_NUMBER);
+		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
+		bos.writeUnsignedInt(2, frame.getVersionNumber());
 		bos.writeUnsignedInt(8, frame.getScid());
 		bos.writeUnsignedInt(6, frame.getVcid());
 		bos.writeUnsignedInt(24, frame.getVcFrameCount());
