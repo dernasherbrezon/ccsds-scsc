@@ -2,6 +2,6 @@ package com.leosatdata.service;
 
 public interface UserDataCallback {
 	
-	void onUserData(byte[] payload);
+	void onUserData(byte[] payload, int portId);
 
 }

@@ -172,4 +172,9 @@ public class TransferFrameParser {
 		return Collections.singletonList(frame);
 	}
 
+	public byte[] assemblePacket(Object frame) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

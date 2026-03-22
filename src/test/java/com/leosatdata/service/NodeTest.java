@@ -61,10 +61,17 @@ public class NodeTest {
 		ground.startSession();
 		assertPersistentActivity(groundCallback.waitForEvent(), true);
 
+		// test small packet
 		byte[] packet = TestUtil.createTestData(20);
 		ground.send(packet, QualityOfService.EXPEDITED, 0);
-
 		byte[] actual = satelliteDataCallback.waitForData();
+		assertNotNull(actual);
+		assertArrayEquals(packet, actual);
+
+		// test packet span over several frames
+		packet = TestUtil.createTestData(2 * groundConfig.getInteger("maximum_frame_length", 0));
+		ground.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
+		actual = satelliteDataCallback.waitForData();
 		assertNotNull(actual);
 		assertArrayEquals(packet, actual);
 

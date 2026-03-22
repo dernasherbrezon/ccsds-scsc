@@ -107,6 +107,10 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		} else {
 			state.getSeqQueue().addAll(frames);
 		}
+		// event queue might be polluted by these events
+		// when persistent activity is ongoing and queues not processed
+		// shouldn't be a big issue to discard them and start processing queues
+		// naturally
 		sendEvent(new Event(EventType.UFRAME));
 	}
 
@@ -144,10 +148,15 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 			LOG.info("test source validation started for {}", remoteScid);
 		}
 
+		// TODO discard idle packets?
+
 		if (type.equals(PduTypeId.SPDU)) {
 			sendEvent(new Event(EventType.SPDU, frameSublayer.decodeSpdu(payload)));
 		} else {
-			rxCallback.onUserData(payload);
+			byte[] packet = frameSublayer.assemblePacket(frame);
+			if (packet != null) {
+				rxCallback.onUserData(packet, TransferFrameUtil.getPortId(frame));
+			}
 		}
 	}
 

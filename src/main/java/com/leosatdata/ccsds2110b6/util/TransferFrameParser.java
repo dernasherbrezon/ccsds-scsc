@@ -1,9 +1,13 @@
 package com.leosatdata.ccsds2110b6.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.leosatdata.ccsds2110b6.model.DfcId;
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
@@ -17,11 +21,17 @@ import com.leosatdata.util.Configuration;
 
 public class TransferFrameParser {
 
+	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
+
 	private final int maxDataLength;
 	private final int localScid;
 	private final int localPcid;
 
 	private int pseudoPacketId = 0;
+
+	private SegmentFlags previousFlag = SegmentFlags.LAST;
+	private int currentPseudoPacketId = 0;
+	private final ByteArrayOutputStream currentBuffer = new ByteArrayOutputStream();
 
 	public TransferFrameParser(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
@@ -146,6 +156,59 @@ public class TransferFrameParser {
 		}
 		pseudoPacketId++;
 		return result;
+	}
+
+	// first -> continuing -> last
+	// first -> last
+	public byte[] assemblePacket(Object obj) {
+		TransferFrame frame = (TransferFrame) obj;
+		if (frame.getSegmentFlags().equals(SegmentFlags.NO_SEGMENTATION)) {
+			return frame.getDataField();
+		}
+		boolean transitionState = false;
+		if (frame.getSegmentFlags().equals(SegmentFlags.FIRST)) {
+			currentBuffer.reset();
+			currentPseudoPacketId = frame.getPseudoPacketId();
+			transitionState = true;
+		}
+		if (frame.getSegmentFlags().equals(SegmentFlags.LAST)) {
+			transitionState = (previousFlag.equals(SegmentFlags.FIRST) || previousFlag.equals(SegmentFlags.CONTINUING));
+		}
+		if (frame.getSegmentFlags().equals(SegmentFlags.CONTINUING)) {
+			transitionState = (previousFlag.equals(SegmentFlags.FIRST) || previousFlag.equals(SegmentFlags.CONTINUING));
+		}
+
+		if (!transitionState) {
+			currentBuffer.reset();
+			previousFlag = SegmentFlags.LAST;
+			return null;
+		}
+
+		if (currentPseudoPacketId != frame.getPseudoPacketId()) {
+			LOG.info("invalid pseudo packet id received: {} expected {}", frame.getPseudoPacketId(), currentPseudoPacketId);
+			currentBuffer.reset();
+			previousFlag = SegmentFlags.LAST;
+			return null;
+		}
+
+		previousFlag = frame.getSegmentFlags();
+
+		try {
+			currentBuffer.write(frame.getDataField());
+		} catch (IOException e) {
+			LOG.error("can't output to bytes", e);
+			currentBuffer.reset();
+			previousFlag = SegmentFlags.LAST;
+			return null;
+		}
+
+		if (previousFlag.equals(SegmentFlags.LAST)) {
+			byte[] result = currentBuffer.toByteArray();
+			currentBuffer.reset();
+			return result;
+		}
+
+		return null;
 	}
 
 }

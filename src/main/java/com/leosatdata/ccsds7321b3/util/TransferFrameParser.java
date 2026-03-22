@@ -254,4 +254,9 @@ public class TransferFrameParser {
 		return result;
 	}
 
+	public byte[] assemblePacket(Object frame) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

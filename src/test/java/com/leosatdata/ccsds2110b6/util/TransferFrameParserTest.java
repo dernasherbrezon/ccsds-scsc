@@ -1,7 +1,10 @@
 package com.leosatdata.ccsds2110b6.util;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -61,12 +64,49 @@ public class TransferFrameParserTest {
 		assertEquals(packet, frames.get(0).getDataField());
 		assertEquals(SegmentFlags.NO_SEGMENTATION, frames.get(0).getSegmentFlags());
 
+		byte[] actualPacket = parser.assemblePacket(frames.get(0));
+		assertArrayEquals(packet, actualPacket);
+
 		packet = TestUtil.createTestData(100);
 		frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
 		assertEquals(3, frames.size());
 		assertEquals(SegmentFlags.FIRST, frames.get(0).getSegmentFlags());
 		assertEquals(SegmentFlags.CONTINUING, frames.get(1).getSegmentFlags());
 		assertEquals(SegmentFlags.LAST, frames.get(2).getSegmentFlags());
+
+		assertNull(parser.assemblePacket(frames.get(0)));
+		assertNull(parser.assemblePacket(frames.get(1)));
+		assertArrayEquals(packet, parser.assemblePacket(frames.get(2)));
+		// multiple LAST won't produce anything
+		assertNull(parser.assemblePacket(frames.get(2)));
+		assertNull(parser.assemblePacket(frames.get(2)));
+
+		int pseudoPacketId = frames.get(0).getPseudoPacketId();
+		assertNull(parser.assemblePacket(frames.get(0)));
+		frames.get(1).setPseudoPacketId(pseudoPacketId + 1);
+		assertNull(parser.assemblePacket(frames.get(1)));
+		assertNull(parser.assemblePacket(frames.get(2)));
+
+		// reset back and test order is important
+		frames.get(1).setPseudoPacketId(pseudoPacketId);
+		assertNull(parser.assemblePacket(frames.get(2)));
+		assertNull(parser.assemblePacket(frames.get(0)));
+		assertNull(parser.assemblePacket(frames.get(1)));
+
+		// good assembly when order is right again
+		assertNull(parser.assemblePacket(frames.get(0)));
+		assertNull(parser.assemblePacket(frames.get(1)));
+		assertArrayEquals(packet, parser.assemblePacket(frames.get(2)));
+
+		// several continue
+		assertNull(parser.assemblePacket(frames.get(0)));
+		assertNull(parser.assemblePacket(frames.get(1)));
+		assertNull(parser.assemblePacket(frames.get(1)));
+		assertNotNull(parser.assemblePacket(frames.get(2)));
+
+		// frst last only
+		assertNull(parser.assemblePacket(frames.get(0)));
+		assertNotNull(parser.assemblePacket(frames.get(2)));
 	}
 
 	@Before

@@ -9,7 +9,7 @@ public class MockUserDataCallback implements UserDataCallback {
 	private final Object lock = new Object();
 
 	@Override
-	public void onUserData(byte[] payload) {
+	public void onUserData(byte[] payload, int portId) {
 		synchronized (lock) {
 			data.add(payload);
 			lock.notifyAll();
@@ -24,7 +24,9 @@ public class MockUserDataCallback implements UserDataCallback {
 				if (data.isEmpty()) {
 					return null;
 				}
-				return data.get(0);
+				byte[] result = data.get(0);
+				data.clear();
+				return result;
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				return null;

@@ -337,4 +337,17 @@ public class FrameSublayer {
 		}
 		return 0;
 	}
+
+	public byte[] assemblePacket(Object frame) {
+		if (uFrameVersion == 2) {
+			return framev2Parser.assemblePacket(frame);
+		}
+		if (uFrameVersion == 3) {
+			return framev3Parser.assemblePacket(frame);
+		}
+		if (uFrameVersion == 4) {
+			return framev4Parser.assemblePacket(frame);
+		}
+		return null;
+	}
 }
