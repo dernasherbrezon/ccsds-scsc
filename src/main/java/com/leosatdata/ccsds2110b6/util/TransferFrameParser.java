@@ -1,6 +1,9 @@
 package com.leosatdata.ccsds2110b6.util;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import com.leosatdata.ccsds2110b6.model.DfcId;
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
@@ -15,8 +18,14 @@ import com.leosatdata.util.Configuration;
 public class TransferFrameParser {
 
 	private final int maxDataLength;
+	private final int localScid;
+	private final int localPcid;
+
+	private int pseudoPacketId = 0;
 
 	public TransferFrameParser(Configuration config) {
+		this.localScid = config.getInteger("local_spacecraft_id", 0);
+		this.localPcid = config.getInteger("local_pcid", 0);
 		int headerLength = TransferFrame.HEADER_LENGTH;
 		headerLength += TransferFrame.SEGMENT_HEADER_LENGTH; // Uframes are segmented
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
@@ -85,6 +94,58 @@ public class TransferFrameParser {
 
 	public int getMaxDataLength() {
 		return maxDataLength;
+	}
+
+	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int vcid) {
+		if (packet.length < maxDataLength) {
+			TransferFrame frame = new TransferFrame();
+			frame.setQualityOfService(qos);
+			frame.setPduTypeId(PduTypeId.USER_DATA);
+			frame.setDfcId(DfcId.SEGMENTED); // support packet outputstream only
+			frame.setSourceOrDestination(SourceDestination.SOURCE);
+			frame.setScid(localScid);
+			frame.setPortId(vcid);
+			frame.setPcid(localPcid);
+			frame.setDataField(packet);
+			frame.setSegmentFlags(SegmentFlags.NO_SEGMENTATION);
+			frame.setPseudoPacketId(pseudoPacketId);
+			pseudoPacketId++;
+			return Collections.singletonList(frame);
+		}
+		List<TransferFrame> result = new ArrayList<>();
+		int toWrite = packet.length;
+		int written = 0;
+		int nextBatch = maxDataLength;
+		SegmentFlags flags = SegmentFlags.FIRST;
+		while (toWrite > 0) {
+			byte[] buffer = new byte[nextBatch];
+			System.arraycopy(packet, written, buffer, 0, buffer.length);
+
+			TransferFrame frame = new TransferFrame();
+			frame.setQualityOfService(qos);
+			frame.setPduTypeId(PduTypeId.USER_DATA);
+			frame.setDfcId(DfcId.SEGMENTED); // support packet outputstream only
+			frame.setSourceOrDestination(SourceDestination.SOURCE);
+			frame.setScid(localScid);
+			frame.setPortId(vcid);
+			frame.setPcid(localPcid);
+			frame.setDataField(buffer);
+			frame.setSegmentFlags(flags);
+			frame.setPseudoPacketId(pseudoPacketId);
+			result.add(frame);
+
+			toWrite -= nextBatch;
+			written += nextBatch;
+			if (toWrite > maxDataLength) {
+				nextBatch = maxDataLength;
+				flags = SegmentFlags.CONTINUING;
+			} else {
+				nextBatch = toWrite;
+				flags = SegmentFlags.LAST;
+			}
+		}
+		pseudoPacketId++;
+		return result;
 	}
 
 }

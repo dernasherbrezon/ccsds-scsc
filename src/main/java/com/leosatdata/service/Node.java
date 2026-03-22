@@ -1,6 +1,6 @@
 package com.leosatdata.service;
 
-import java.io.OutputStream;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,18 +94,16 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
 	}
 
-	void send(byte[] packet, QualityOfService qos, int vcid) {
+	@SuppressWarnings("unchecked")
+	public void send(byte[] packet, QualityOfService qos, int vcid) {
+		List<Object> frames = frameSublayer.createUFrame(packet, qos, vcid);
 		// will lock if no free space available in queues
 		if (qos.equals(QualityOfService.EXPEDITED)) {
-			state.getExpQueue().add(packet);
+			state.getExpQueue().addAll(frames);
 		} else {
-			state.getSeqQueue().add(packet);
+			state.getSeqQueue().addAll(frames);
 		}
 	}
-
-//	public OutputStream getOutputStream(QualityOfService qos, int vcid) {
-//		return new PacketOutputStream(this, config, qos, vcid);
-//	}
 
 	@Override
 	public void onRx(byte[] data) {

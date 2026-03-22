@@ -2,6 +2,8 @@ package com.leosatdata.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,46 +195,54 @@ public class FrameSublayer {
 		return baos.toByteArray();
 	}
 
-	public Object createUFrame(byte[] payload, QualityOfService qos, int vcid) {
-		// FIXME first header pointer
-		// FIXME if payload smaller than expected, then generate random
-		if (uFrameVersion == 2) {
-			com.leosatdata.ccsds7320b4.model.TransferFrame frame = new com.leosatdata.ccsds7320b4.model.TransferFrame();
-			frame.setReplay(false);
-			frame.setScid(localScid);
-			frame.setVcFrameCountCycleUsed(false);
-			frame.setVcid(vcid);
-			frame.setDataField(payload);
-			return frame;
-		}
+	@SuppressWarnings("rawtypes")
+	public List createUFrame(byte[] payload, QualityOfService qos, int vcid) {
 		if (uFrameVersion == 3) {
-			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
-			frame.setQualityOfService(qos);
-			frame.setPduTypeId(PduTypeId.USER_DATA);
-			frame.setDfcId(DfcId.PACKETS); // support packet outputstream only
-			frame.setSourceOrDestination(SourceDestination.SOURCE);
-			frame.setScid(localScid);
-			frame.setPortId(vcid);
-			frame.setPcid(localPcid);
-			frame.setDataField(payload);
-			return frame;
+			return framev3Parser.createUFrame(payload, qos, vcid);
 		}
-		if (uFrameVersion == 4) {
-			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
-			frame.setScid(localScid);
-			frame.setSourceOrDestination(SourceDestination.SOURCE);
-			frame.setVcid(vcid);
-			frame.setMapid(0); // not clear
-			frame.setHeaderTruncated(false);
-			frame.setSequenceControl(qos);
-			frame.setProtocolControl(PduTypeId.USER_DATA);
-			frame.setOcf(false);
-			frame.setDataField(payload);
-			frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
-			return frame;
-		}
-		return null;
+		// FIXME other types
+		return Collections.emptyList();
 	}
+
+//	public Object createUFrame(byte[] payload, QualityOfService qos, int vcid) {
+//		// FIXME first header pointer
+//		if (uFrameVersion == 2) {
+//			com.leosatdata.ccsds7320b4.model.TransferFrame frame = new com.leosatdata.ccsds7320b4.model.TransferFrame();
+//			frame.setReplay(false);
+//			frame.setScid(localScid);
+//			frame.setVcFrameCountCycleUsed(false);
+//			frame.setVcid(vcid);
+//			frame.setDataField(payload);
+//			return frame;
+//		}
+//		if (uFrameVersion == 3) {
+//			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
+//			frame.setQualityOfService(qos);
+//			frame.setPduTypeId(PduTypeId.USER_DATA);
+//			frame.setDfcId(DfcId.PACKETS); // support packet outputstream only
+//			frame.setSourceOrDestination(SourceDestination.SOURCE);
+//			frame.setScid(localScid);
+//			frame.setPortId(vcid);
+//			frame.setPcid(localPcid);
+//			frame.setDataField(payload);
+//			return frame;
+//		}
+//		if (uFrameVersion == 4) {
+//			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
+//			frame.setScid(localScid);
+//			frame.setSourceOrDestination(SourceDestination.SOURCE);
+//			frame.setVcid(vcid);
+//			frame.setMapid(0); // not clear
+//			frame.setHeaderTruncated(false);
+//			frame.setSequenceControl(qos);
+//			frame.setProtocolControl(PduTypeId.USER_DATA);
+//			frame.setOcf(false);
+//			frame.setDataField(payload);
+//			frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
+//			return frame;
+//		}
+//		return null;
+//	}
 
 	private Object createPFrame(byte[] payload) {
 		if (pFrameVersion == 3) {
