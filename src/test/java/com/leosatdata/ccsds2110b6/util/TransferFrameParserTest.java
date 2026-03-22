@@ -1,10 +1,12 @@
 package com.leosatdata.ccsds2110b6.util;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
 import org.junit.Before;
@@ -24,6 +26,7 @@ import com.leosatdata.util.TestUtil;
 public class TransferFrameParserTest {
 
 	private Configuration config;
+	private TransferFrameParser parser;
 
 	@Test
 	public void testSuccess() throws Exception {
@@ -47,6 +50,25 @@ public class TransferFrameParserTest {
 		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
 	}
 
+	@Test
+	public void testCreateUFrame() {
+		config.setProperty("maximum_frame_length", "50");
+		parser = new TransferFrameParser(config);
+
+		byte[] packet = createTestData(5);
+		List<TransferFrame> frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
+		assertEquals(1, frames.size());
+		assertEquals(packet, frames.get(0).getDataField());
+		assertEquals(SegmentFlags.NO_SEGMENTATION, frames.get(0).getSegmentFlags());
+
+		packet = createTestData(100);
+		frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
+		assertEquals(3, frames.size());
+		assertEquals(SegmentFlags.FIRST, frames.get(0).getSegmentFlags());
+		assertEquals(SegmentFlags.CONTINUING, frames.get(1).getSegmentFlags());
+		assertEquals(SegmentFlags.LAST, frames.get(2).getSegmentFlags());
+	}
+
 	@Before
 	public void start() throws Exception {
 		Properties props = new Properties();
@@ -55,6 +77,7 @@ public class TransferFrameParserTest {
 		props.putAll(TestUtil.load("src/main/resources/custom.properties"));
 		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
 		config = new Configuration(props);
+		parser = new TransferFrameParser(config);
 	}
 
 	private static TransferFrame createFrame() {
@@ -91,5 +114,17 @@ public class TransferFrameParserTest {
 
 	private void assertDirectives(TransferFrame expected) throws IOException {
 		TestUtil.assertObjectEqual(expected, encodeDecode(expected));
+	}
+
+	private static byte[] createTestData(int offset, int length) {
+		byte[] result = new byte[length];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = (byte) (offset + i);
+		}
+		return result;
+	}
+
+	private static byte[] createTestData(int length) {
+		return createTestData(0, length);
 	}
 }
