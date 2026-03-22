@@ -1,7 +1,10 @@
 package com.leosatdata.ccsds7320b4.util;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
+import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
@@ -15,8 +18,10 @@ public class TransferFrameParser {
 	private final int dataUnitType;
 	private final boolean ocf;
 	private final boolean frameErrorControl;
+	private final int localScid;
 
 	public TransferFrameParser(Configuration config) {
+		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.insertZoneLength = config.getInteger("aos.insertZoneLength", 0);
 		this.frameHeaderErrorControl = config.getBoolean("aos.frameHeaderErrorControl");
 		this.dataUnitType = config.getInteger("aos.dataUnitType", 1);
@@ -153,6 +158,18 @@ public class TransferFrameParser {
 
 	public int getMaxDataLength() {
 		return maxDataLength;
+	}
+
+	public List createUFrame(byte[] payload, QualityOfService qos, int vcid) {
+		TransferFrame frame = new TransferFrame();
+		frame.setReplay(false);
+		frame.setScid(localScid);
+		frame.setVcFrameCountCycleUsed(false);
+		frame.setVcid(vcid);
+		frame.setDataField(payload);
+		// FIXME v2 doesn't have segments. Fixed-length M_PDU should split incoming
+		// packets
+		return Collections.singletonList(frame);
 	}
 
 }

@@ -1,12 +1,15 @@
 package com.leosatdata.ccsds7321b3.util;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7321b3.model.ConstructionRules;
 import com.leosatdata.ccsds7321b3.model.TransferFrame;
+import com.leosatdata.service.FrameSublayer;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -17,8 +20,10 @@ public class TransferFrameParser {
 	private final boolean frameErrorControl;
 	private final int maxDataLength;
 	private final boolean fixedFrameLength;
+	private final int localScid;
 
 	public TransferFrameParser(Configuration config) {
+		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.insertZoneLength = config.getInteger("framev4.insertZoneLength", 0);
 		this.frameErrorControl = config.getBoolean("framev4.frameErrorControl");
 		this.fixedFrameLength = config.getBoolean("framev4.fixedLength");
@@ -189,6 +194,22 @@ public class TransferFrameParser {
 
 	public int getMaxDataLength() {
 		return maxDataLength;
+	}
+
+	public List createUFrame(byte[] packet, QualityOfService qos, int vcid) {
+		TransferFrame frame = new TransferFrame();
+		frame.setScid(localScid);
+		frame.setSourceOrDestination(SourceDestination.SOURCE);
+		frame.setVcid(vcid);
+		frame.setMapid(0); // not clear
+		frame.setHeaderTruncated(false);
+		frame.setSequenceControl(qos);
+		frame.setProtocolControl(PduTypeId.USER_DATA);
+		frame.setOcf(false);
+		frame.setDataField(packet);
+		frame.setVcfCountLength(1);
+		// FIXME implement variable-length frames
+		return Collections.singletonList(frame);
 	}
 
 }
