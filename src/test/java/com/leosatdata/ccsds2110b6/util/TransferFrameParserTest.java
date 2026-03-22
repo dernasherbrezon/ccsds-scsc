@@ -55,13 +55,13 @@ public class TransferFrameParserTest {
 		config.setProperty("maximum_frame_length", "50");
 		parser = new TransferFrameParser(config);
 
-		byte[] packet = createTestData(5);
+		byte[] packet = TestUtil.createTestData(5);
 		List<TransferFrame> frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
 		assertEquals(1, frames.size());
 		assertEquals(packet, frames.get(0).getDataField());
 		assertEquals(SegmentFlags.NO_SEGMENTATION, frames.get(0).getSegmentFlags());
 
-		packet = createTestData(100);
+		packet = TestUtil.createTestData(100);
 		frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
 		assertEquals(3, frames.size());
 		assertEquals(SegmentFlags.FIRST, frames.get(0).getSegmentFlags());
@@ -116,15 +116,4 @@ public class TransferFrameParserTest {
 		TestUtil.assertObjectEqual(expected, encodeDecode(expected));
 	}
 
-	private static byte[] createTestData(int offset, int length) {
-		byte[] result = new byte[length];
-		for (int i = 0; i < result.length; i++) {
-			result[i] = (byte) (offset + i);
-		}
-		return result;
-	}
-
-	private static byte[] createTestData(int length) {
-		return createTestData(0, length);
-	}
 }

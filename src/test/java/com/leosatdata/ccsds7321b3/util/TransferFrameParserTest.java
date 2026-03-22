@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
 import org.junit.Before;
@@ -57,6 +58,25 @@ public class TransferFrameParserTest {
 		TransferFrame frame = createFrame();
 		TransferFrame actual = encodeDecode(frame);
 		assertEquals(parser.getMaxDataLength(), actual.getDataField().length);
+	}
+
+	@Test
+	public void testCreateUFrame() {
+		config.setProperty("maximum_frame_length", "60");
+		parser = new TransferFrameParser(config);
+
+		byte[] packet = TestUtil.createTestData(5);
+		List<TransferFrame> frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
+		assertEquals(1, frames.size());
+		assertEquals(packet, frames.get(0).getDataField());
+		assertEquals(ConstructionRules.NO_SEGMENTATION, frames.get(0).getConstructionRule());
+
+		packet = TestUtil.createTestData(100);
+		frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
+		assertEquals(3, frames.size());
+		assertEquals(ConstructionRules.STARTING_SEGMENT, frames.get(0).getConstructionRule());
+		assertEquals(ConstructionRules.CONTINUING_SEGMENT, frames.get(1).getConstructionRule());
+		assertEquals(ConstructionRules.LAST_SEGMENT, frames.get(2).getConstructionRule());
 	}
 
 	@Test

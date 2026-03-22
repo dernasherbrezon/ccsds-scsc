@@ -94,15 +94,20 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
 	}
 
+	// TODO pcid parameter? should it be hardcoded local? or specific remote pcid?
 	@SuppressWarnings("unchecked")
-	public void send(byte[] packet, QualityOfService qos, int vcid) {
-		List<Object> frames = frameSublayer.createUFrame(packet, qos, vcid);
+	public void send(byte[] packet, QualityOfService qos, int portId) {
+		if (portId > 0b111) {
+			throw new IllegalArgumentException("port id cannot exceed: " + 0b111);
+		}
+		List<Object> frames = frameSublayer.createUFrame(packet, qos, portId);
 		// will lock if no free space available in queues
 		if (qos.equals(QualityOfService.EXPEDITED)) {
 			state.getExpQueue().addAll(frames);
 		} else {
 			state.getSeqQueue().addAll(frames);
 		}
+		sendEvent(new Event(EventType.UFRAME));
 	}
 
 	@Override
@@ -112,7 +117,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 			return;
 		}
 
-		frameSublayer.debug(true, data);
+		frameSublayer.debug(true, frame);
 
 		PduTypeId type = TransferFrameUtil.getPduTypeId(frame);
 		SourceDestination sourceDestination = TransferFrameUtil.getSourceDestination(frame);

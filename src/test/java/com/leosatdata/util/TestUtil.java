@@ -109,12 +109,24 @@ public class TestUtil {
 			}
 		}
 	}
-	
+
 	public static Properties load(String file) throws Exception {
 		Properties result = new Properties();
 		try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
 			result.load(is);
 		}
 		return result;
+	}
+
+	public static byte[] createTestData(int offset, int length) {
+		byte[] result = new byte[length];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = (byte) (offset + i);
+		}
+		return result;
+	}
+
+	public static byte[] createTestData(int length) {
+		return createTestData(0, length);
 	}
 }

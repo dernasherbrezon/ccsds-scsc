@@ -96,7 +96,7 @@ public class TransferFrameParser {
 		return maxDataLength;
 	}
 
-	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int vcid) {
+	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
 		if (packet.length < maxDataLength) {
 			TransferFrame frame = new TransferFrame();
 			frame.setQualityOfService(qos);
@@ -104,7 +104,7 @@ public class TransferFrameParser {
 			frame.setDfcId(DfcId.SEGMENTED); // support packet outputstream only
 			frame.setSourceOrDestination(SourceDestination.SOURCE);
 			frame.setScid(localScid);
-			frame.setPortId(vcid);
+			frame.setPortId(portId);
 			frame.setPcid(localPcid);
 			frame.setDataField(packet);
 			frame.setSegmentFlags(SegmentFlags.NO_SEGMENTATION);
@@ -127,7 +127,7 @@ public class TransferFrameParser {
 			frame.setDfcId(DfcId.SEGMENTED); // support packet outputstream only
 			frame.setSourceOrDestination(SourceDestination.SOURCE);
 			frame.setScid(localScid);
-			frame.setPortId(vcid);
+			frame.setPortId(portId);
 			frame.setPcid(localPcid);
 			frame.setDataField(buffer);
 			frame.setSegmentFlags(flags);

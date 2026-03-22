@@ -1,5 +1,6 @@
 package com.leosatdata.service;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -12,6 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
@@ -29,17 +31,20 @@ import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.TestUtil;
 
-public class CommTest {
+public class NodeTest {
 
 	private Configuration groundConfig;
 	private NullTransceiver groundTransceiver;
 	private MockNodeCallback groundCallback;
+	private MockUserDataCallback groundDataCallback;
 	private Node ground;
 
 	private Configuration satelliteConfig;
 	private NullTransceiver satelliteTransceiver;
 	private MockNodeCallback satelliteCallback;
+	private MockUserDataCallback satelliteDataCallback;
 	private Node satellite;
 
 	@Test
@@ -50,11 +55,18 @@ public class CommTest {
 	}
 
 	@Test
-	public void testHail() throws Exception {
+	public void testStartSendStop() throws Exception {
 		satellite.waitForSession();
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
 		assertPersistentActivity(groundCallback.waitForEvent(), true);
+
+		byte[] packet = TestUtil.createTestData(20);
+		ground.send(packet, QualityOfService.EXPEDITED, 0);
+
+		byte[] actual = satelliteDataCallback.waitForData();
+		assertNotNull(actual);
+		assertArrayEquals(packet, actual);
 
 		// according to spec extra timeout between callback to vehicle and transitioning
 		// to s40 state (data services)
@@ -77,14 +89,8 @@ public class CommTest {
 		groundTransceiver = new NullTransceiver(groundConfig);
 		groundTransceiver.start();
 		groundCallback = new MockNodeCallback();
-		ground = new Node(groundConfig, groundTransceiver, groundCallback, new UserDataCallback() {
-
-			@Override
-			public void onUserData(byte[] payload) {
-				// TODO Auto-generated method stub
-
-			}
-		});
+		groundDataCallback = new MockUserDataCallback();
+		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
 
 		props = new Properties();
 		props.putAll(load("src/main/resources/mib.properties"));
@@ -95,14 +101,8 @@ public class CommTest {
 		satelliteTransceiver = new NullTransceiver(satelliteConfig);
 		satelliteTransceiver.start();
 		satelliteCallback = new MockNodeCallback();
-		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, new UserDataCallback() {
-
-			@Override
-			public void onUserData(byte[] payload) {
-				// TODO Auto-generated method stub
-
-			}
-		});
+		satelliteDataCallback = new MockUserDataCallback();
+		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
 
 		groundTransceiver.setOtherSide(satelliteTransceiver);
 		satelliteTransceiver.setOtherSide(groundTransceiver);

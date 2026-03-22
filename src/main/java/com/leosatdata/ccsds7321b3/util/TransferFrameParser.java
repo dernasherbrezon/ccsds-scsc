@@ -1,6 +1,7 @@
 package com.leosatdata.ccsds7321b3.util;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -9,7 +10,6 @@ import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7321b3.model.ConstructionRules;
 import com.leosatdata.ccsds7321b3.model.TransferFrame;
-import com.leosatdata.service.FrameSublayer;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -21,6 +21,8 @@ public class TransferFrameParser {
 	private final int maxDataLength;
 	private final boolean fixedFrameLength;
 	private final int localScid;
+
+	private int pseudoPacketId = 0;
 
 	public TransferFrameParser(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
@@ -196,20 +198,60 @@ public class TransferFrameParser {
 		return maxDataLength;
 	}
 
-	public List createUFrame(byte[] packet, QualityOfService qos, int vcid) {
-		TransferFrame frame = new TransferFrame();
-		frame.setScid(localScid);
-		frame.setSourceOrDestination(SourceDestination.SOURCE);
-		frame.setVcid(vcid);
-		frame.setMapid(0); // not clear
-		frame.setHeaderTruncated(false);
-		frame.setSequenceControl(qos);
-		frame.setProtocolControl(PduTypeId.USER_DATA);
-		frame.setOcf(false);
-		frame.setDataField(packet);
-		frame.setVcfCountLength(1);
-		// FIXME implement variable-length frames
-		return Collections.singletonList(frame);
+	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
+		if (packet.length < maxDataLength) {
+			TransferFrame frame = new TransferFrame();
+			frame.setScid(localScid);
+			frame.setSourceOrDestination(SourceDestination.SOURCE);
+			frame.setVcid(0); // TODO bit 21 of vcid is localPcid
+			frame.setMapid(portId);
+			frame.setHeaderTruncated(false);
+			frame.setSequenceControl(qos);
+			frame.setProtocolControl(PduTypeId.USER_DATA);
+			frame.setOcf(false);
+			frame.setDataField(packet);
+			frame.setVcfCountLength(1);
+			frame.setConstructionRule(ConstructionRules.NO_SEGMENTATION);
+			frame.setUpid(pseudoPacketId);
+			pseudoPacketId++;
+			return Collections.singletonList(frame);
+		}
+		List<TransferFrame> result = new ArrayList<>();
+		int toWrite = packet.length;
+		int written = 0;
+		int nextBatch = maxDataLength;
+		ConstructionRules flags = ConstructionRules.STARTING_SEGMENT;
+		while (toWrite > 0) {
+			byte[] buffer = new byte[nextBatch];
+			System.arraycopy(packet, written, buffer, 0, buffer.length);
+
+			TransferFrame frame = new TransferFrame();
+			frame.setScid(localScid);
+			frame.setSourceOrDestination(SourceDestination.SOURCE);
+			frame.setVcid(0); // TODO bit 21 of vcid is localPcid
+			frame.setMapid(portId);
+			frame.setHeaderTruncated(false);
+			frame.setSequenceControl(qos);
+			frame.setProtocolControl(PduTypeId.USER_DATA);
+			frame.setOcf(false);
+			frame.setDataField(buffer);
+			frame.setVcfCountLength(1);
+			frame.setConstructionRule(flags);
+			frame.setUpid(pseudoPacketId);
+			result.add(frame);
+
+			toWrite -= nextBatch;
+			written += nextBatch;
+			if (toWrite > maxDataLength) {
+				nextBatch = maxDataLength;
+				flags = ConstructionRules.CONTINUING_SEGMENT;
+			} else {
+				nextBatch = toWrite;
+				flags = ConstructionRules.LAST_SEGMENT;
+			}
+		}
+		pseudoPacketId++;
+		return result;
 	}
 
 }

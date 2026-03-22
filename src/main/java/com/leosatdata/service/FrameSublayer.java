@@ -133,12 +133,12 @@ public class FrameSublayer {
 			state.setSeqCtrlFsn(nextSeqNumber);
 		}
 
-		debug(false, frame);
-
 		byte[] payload = encode(frame);
 		if (payload == null) {
 			return;
 		}
+
+		debug(false, frame);
 
 		transceiver.send(payload);
 	}
@@ -166,13 +166,13 @@ public class FrameSublayer {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
 			type = frame.getPduTypeId();
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getPortId(), frame.getPduTypeId(), frame.getQualityOfService(), frame.getFrameLength() });
+			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getPortId(), frame.getPduTypeId(), frame.getQualityOfService(), frame.getDataField().length });
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
 			type = frame.getProtocolControl();
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getProtocolControl(), frame.getSequenceControl(), frame.getFrameLength() });
+			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getProtocolControl(), frame.getSequenceControl(), frame.getDataField().length });
 		}
 		if (type != null && data != null && type.equals(PduTypeId.SPDU)) {
 			log.info("\t{}", decodeSpdu(data));
@@ -196,15 +196,15 @@ public class FrameSublayer {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public List createUFrame(byte[] payload, QualityOfService qos, int vcid) {
+	public List createUFrame(byte[] payload, QualityOfService qos, int portId) {
 		if (uFrameVersion == 2) {
-			return framev2Parser.createUFrame(payload, qos, vcid);
+			return framev2Parser.createUFrame(payload, qos, portId);
 		}
 		if (uFrameVersion == 3) {
-			return framev3Parser.createUFrame(payload, qos, vcid);
+			return framev3Parser.createUFrame(payload, qos, portId);
 		}
 		if (uFrameVersion == 4) {
-			return framev4Parser.createUFrame(payload, qos, vcid);
+			return framev4Parser.createUFrame(payload, qos, portId);
 		}
 		return Collections.emptyList();
 	}

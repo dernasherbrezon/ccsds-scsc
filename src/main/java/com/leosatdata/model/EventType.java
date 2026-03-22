@@ -22,6 +22,7 @@ public enum EventType {
 	E26_TAIL_IDLE_TIMEOUT,
 	E28_INACTIVE,
 	
+	UFRAME,
 	SPDU,
 	TX_COMPLETE,
 	STOP
