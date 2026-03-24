@@ -14,6 +14,7 @@ import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.Plcw;
+import com.leosatdata.model.QueueType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
 import com.leosatdata.util.BitInputStream;
@@ -61,7 +62,23 @@ public class FrameSublayer {
 		this.callback = callback;
 	}
 
+	@SuppressWarnings("incomplete-switch")
 	public void handle(Event e) {
+		switch (e.getType()) {
+		case CLEAR_QUEUE:
+			QueueType type = (QueueType) e.getArg();
+			switch (type) {
+			case SENT_QUEUE:
+				state.getSentQueue().clear();
+				return;
+			case SEQ_QUEUE:
+				state.getSeqQueue().clear();
+				return;
+			default:
+				LOG.info("unknown queue type to clear: {}", type);
+			}
+			return;
+		}
 		Object frame = null;
 
 		Spdu spdu = state.getMacQueue().poll();
@@ -115,7 +132,7 @@ public class FrameSublayer {
 		if (qos.equals(QualityOfService.EXPEDITED)) {
 			nextSeqNumber = state.getVes();
 		} else {
-			nextSeqNumber = state.getSeqCtrlFsn();
+			nextSeqNumber = state.getVvs();
 		}
 		if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
 			nextSeqNumber = 0;
@@ -130,7 +147,7 @@ public class FrameSublayer {
 			state.setVes(nextSeqNumber);
 		} else {
 			// TODO notify obc about VS(S)
-			state.setSeqCtrlFsn(nextSeqNumber);
+			state.setVvs(nextSeqNumber);
 		}
 
 		byte[] payload = encode(frame);
@@ -141,6 +158,10 @@ public class FrameSublayer {
 		debug(false, frame);
 
 		transceiver.send(payload);
+
+		if (qos.equals(QualityOfService.SEQUENCE_CONTROLLED)) {
+			state.getSentQueue().add(frame);
+		}
 	}
 
 	public void debug(boolean rx, Object obj) {

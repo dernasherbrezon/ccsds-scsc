@@ -12,6 +12,7 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
+import com.leosatdata.model.QueueType;
 import com.leosatdata.model.State;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.TransferFrameUtil;
@@ -93,6 +94,10 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	public void setCommParameters(Object directive) {
 		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
 	}
+	
+	public void clearQueue(QueueType type) {
+		sendEvent(new Event(EventType.CLEAR_QUEUE, type));
+	}
 
 	// TODO pcid parameter? should it be hardcoded local? or specific remote pcid?
 	@SuppressWarnings("unchecked")
@@ -149,6 +154,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		}
 
 		// TODO discard idle packets?
+		// FIXME sequence controlled should be synched?
 
 		if (type.equals(PduTypeId.SPDU)) {
 			sendEvent(new Event(EventType.SPDU, frameSublayer.decodeSpdu(payload)));
