@@ -3,8 +3,12 @@ package com.leosatdata.util;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Configuration {
 
+	private final static Logger LOG = LoggerFactory.getLogger(Configuration.class);
 	private final static Pattern UNDERSCORE = Pattern.compile("_");
 	private final Properties config;
 
@@ -59,5 +63,15 @@ public class Configuration {
 			return false;
 		}
 		return Boolean.valueOf(result);
+	}
+
+	public boolean validate() {
+		boolean result = true;
+		int transmissionWindow = getInteger("transmission_window", 0);
+		if (transmissionWindow <= 0 || transmissionWindow > 127) {
+			result = false;
+			LOG.error("invalid transmission_window parameter: {}", transmissionWindow);
+		}
+		return result;
 	}
 }

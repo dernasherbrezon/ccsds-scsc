@@ -17,9 +17,14 @@ public class State {
 	private Spdu commParameters;
 	private MacState state = MacState.S1_INACTIVE;
 	private int ves = 0; // sequence number of the next Expedited frame to be sent
-	private int vvs = 0; // sequence number to be assigned to the next Sequence Controlled frame to be sent.
+	private int vvs = 0; // sequence number to be assigned to the next Sequence Controlled frame to be
+							// sent
+	private int vs = 0; // sequence number of the next new Sequence Controlled frame to be sent
+	private int nnr = 0; // copy of the Report Value from the previous valid PLCW
 	private boolean needPlcw = false;
 	private boolean uFrameLastSent = true;
+	private boolean rrr = false; // copy of the Retransmit Flag from the previous valid PLCW
+	private boolean resync = false;
 
 	// FIXME Separate Report Values shall be reported for each physical channel
 	// independent of the I/O port.
@@ -116,5 +121,37 @@ public class State {
 
 	public BlockingQueue<Object> getSentQueue() {
 		return sentQueue;
+	}
+
+	public int getVs() {
+		return vs;
+	}
+
+	public void setVs(int vs) {
+		this.vs = vs;
+	}
+
+	public int getNnr() {
+		return nnr;
+	}
+
+	public void setNnr(int nnr) {
+		this.nnr = nnr;
+	}
+	
+	public boolean isRrr() {
+		return rrr;
+	}
+	
+	public void setRrr(boolean rrr) {
+		this.rrr = rrr;
+	}
+	
+	public boolean isResync() {
+		return resync;
+	}
+	
+	public void setResync(boolean resync) {
+		this.resync = resync;
 	}
 }

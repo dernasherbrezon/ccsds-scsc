@@ -10,7 +10,7 @@ public class Plcw implements Spdu {
 	private boolean retransmit;
 	private int pcid; // See 5.1.2.10, ‘RECEIVING_PCID_BUFFER’.
 	private int expeditedFrameCounter;
-	private int reportValue;
+	private int reportValue; // nr
 
 	public Plcw() {
 		// do nothing

@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +14,10 @@ import com.leosatdata.ccsds2110b6.model.DfcId;
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
+import com.leosatdata.model.ControllerEvent;
+import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
+import com.leosatdata.model.EventType;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.Spdu;
@@ -40,11 +45,15 @@ public class FrameSublayer {
 	private final int spduVersion;
 	private final int localScid;
 	private final int localPcid;
+	private final int transmissionWindow;
 
 	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
 	private final com.leosatdata.ccsds2110b6.util.TransferFrameParser framev3Parser;
 	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
 	private final SpduParser spduParser;
+
+	private Timer synchTimer;
+	private TimerTask synchTimerTask;
 
 	public FrameSublayer(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.state = state;
@@ -55,6 +64,7 @@ public class FrameSublayer {
 		this.spduVersion = config.getInteger("spdu_version", 1);
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.localPcid = config.getInteger("local_pcid", 0);
+		this.transmissionWindow = config.getInteger("transmission_window", 10);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
 		this.framev3Parser = new com.leosatdata.ccsds2110b6.util.TransferFrameParser(config);
 		this.framev4Parser = new com.leosatdata.ccsds7321b3.util.TransferFrameParser(config);
@@ -62,23 +72,19 @@ public class FrameSublayer {
 		this.callback = callback;
 	}
 
-	@SuppressWarnings("incomplete-switch")
-	public void handle(Event e) {
-		switch (e.getType()) {
-		case CLEAR_QUEUE:
-			QueueType type = (QueueType) e.getArg();
-			switch (type) {
-			case SENT_QUEUE:
-				state.getSentQueue().clear();
-				return;
-			case SEQ_QUEUE:
-				state.getSeqQueue().clear();
-				return;
-			default:
-				LOG.info("unknown queue type to clear: {}", type);
-			}
-			return;
+	public void start() {
+		synchTimer = new Timer("synch"); // this will start Thread
+	}
+
+	public void stop() {
+		if (synchTimer != null) {
+			synchTimer.cancel();
 		}
+	}
+
+	public void handle(Event e) {
+		// always attempt to send frame after handling event
+		handleFopp(e);
 		Object frame = null;
 
 		Spdu spdu = state.getMacQueue().poll();
@@ -111,7 +117,7 @@ public class FrameSublayer {
 		}
 
 		if (frame == null) {
-			frame = state.getSeqQueue().poll();
+			frame = selectSeqFrame();
 			if (frame != null) {
 				state.setuFrameLastSent(true);
 			}
@@ -162,6 +168,97 @@ public class FrameSublayer {
 		if (qos.equals(QualityOfService.SEQUENCE_CONTROLLED)) {
 			state.getSentQueue().add(frame);
 		}
+	}
+
+	// FOP-P State Table: SE1
+	private Object selectSeqFrame() {
+		if (state.getVvs() < state.getVs()) {
+			// FIXME select frame to re-send
+			return null;
+		}
+		if (!state.getSeqQueue().isEmpty() && state.getVs() - state.getNnr() < transmissionWindow) {
+			return state.getSeqQueue().poll();
+		}
+		if (state.getNnr() < state.getVs()) {
+			state.setVvs(state.getNnr());
+			// FIXME initiate progressive retransmission
+		}
+		return null;
+	}
+
+	@SuppressWarnings("incomplete-switch")
+	private void handleFopp(Event e) {
+		switch (e.getType()) {
+		case CLEAR_QUEUE:
+			QueueType type = (QueueType) e.getArg();
+			switch (type) {
+			case SENT_QUEUE:
+				state.getSentQueue().clear();
+				break;
+			case SEQ_QUEUE:
+				state.getSeqQueue().clear();
+				break;
+			default:
+				LOG.info("unknown queue type to clear: {}", type);
+			}
+			return;
+		case SPDU:
+			if (!(e.getArg() instanceof Plcw)) {
+				break;
+			}
+			Plcw plcw = (Plcw) e.getArg();
+			if (!validate(plcw)) {
+				state.setVvs(state.getNnr());
+				scheduleWait(EventType.SE4_SYNCH_TIMEOUT, config.getDuration("synch_timeout"));
+			} else {
+				if (state.isResync()) {
+					if (!plcw.isRetransmit() && plcw.getReportValue() == state.getNnr()) {
+						state.setResync(false);
+						// FIXME check mac state machine
+						state.setPersistence(false);
+					}
+				} else {
+					// FIXME remove acked from sent queue
+					if (plcw.isRetransmit() || plcw.getReportValue() > state.getVvs()) {
+						state.setVvs(plcw.getReportValue());
+					}
+					state.setRrr(plcw.isRetransmit());
+					state.setNnr(plcw.getReportValue());
+					if (synchTimerTask != null) {
+						synchTimerTask.cancel();
+					}
+				}
+			}
+			break;
+		case SE4_SYNCH_TIMEOUT:
+			callback.handle(new ControllerEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION));
+			if (config.getBoolean("resync_local")) {
+				state.setRrr(false);
+				// FIXME set v(r) should be initiated somewhere
+				state.setResync(true);
+			}
+			break;
+		}
+		return;
+	}
+
+	// note 5 from 6.2.3.3 FOP-P State Table
+	private boolean validate(Plcw plcw) {
+		if (plcw.getReportValue() < state.getNnr()) {
+			LOG.info("received plcw with nr too small: {}", plcw.getReportValue());
+			return false;
+		}
+		if (plcw.getReportValue() > state.getVs()) {
+			LOG.info("received plcw with nr too large: {}", plcw.getReportValue());
+			return false;
+		}
+		if (plcw.isRetransmit() && plcw.getReportValue() == state.getNnr()) {
+			return false;
+		}
+		if (!plcw.isRetransmit() && state.isRrr() && plcw.getReportValue() == state.getNnr()) {
+			return false;
+		}
+		return true;
 	}
 
 	public void debug(boolean rx, Object obj) {
@@ -370,5 +467,26 @@ public class FrameSublayer {
 			return framev4Parser.assemblePacket(frame);
 		}
 		return null;
+	}
+
+	private void scheduleWait(EventType type, long duration) {
+		synchTimerTask = new TimerTask() {
+
+			@Override
+			public void run() {
+				sendEvent(new Event(type));
+			}
+		};
+		LOG.info("waiting: {} for {} ms", type, duration);
+		synchTimer.schedule(synchTimerTask, duration);
+	}
+
+	private void sendEvent(Event e) {
+		try {
+			state.getQueue().put(e);
+		} catch (InterruptedException e1) {
+			Thread.currentThread().interrupt();
+			LOG.error("can't send event", e1);
+		}
 	}
 }
