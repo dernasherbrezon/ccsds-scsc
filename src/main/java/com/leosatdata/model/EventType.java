@@ -23,11 +23,12 @@ public enum EventType {
 	E28_INACTIVE,
 	
 	SE4_SYNCH_TIMEOUT,
+	SE4_1_RESYNCH_TIMEOUT,
 	CLEAR_QUEUE,
 	UFRAME,
 	SPDU,
 	TX_COMPLETE,
 	STOP
 	// @formatter:on
-	
+
 }

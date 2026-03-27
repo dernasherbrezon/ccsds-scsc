@@ -18,10 +18,15 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
+import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
+import com.leosatdata.model.Type1Directive;
+import com.leosatdata.model.Type4Directive;
+import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Vr;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -54,6 +59,7 @@ public class FrameSublayer {
 
 	private Timer synchTimer;
 	private TimerTask synchTimerTask;
+	private int currentResyncAttempt = 0;
 
 	public FrameSublayer(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.state = state;
@@ -208,14 +214,21 @@ public class FrameSublayer {
 			}
 			Plcw plcw = (Plcw) e.getArg();
 			if (!validate(plcw)) {
-				state.setVvs(state.getNnr());
-				scheduleWait(EventType.SE4_SYNCH_TIMEOUT, config.getDuration("synch_timeout"));
+				if (state.isResync()) {
+					// ignore
+				} else {
+					state.setVvs(state.getNnr());
+					scheduleWait(EventType.SE4_SYNCH_TIMEOUT, config.getDuration("synch_timeout"));
+				}
 			} else {
 				if (state.isResync()) {
 					if (!plcw.isRetransmit() && plcw.getReportValue() == state.getNnr()) {
 						state.setResync(false);
-						// FIXME check mac state machine
 						state.setPersistence(false);
+						if (synchTimerTask != null) {
+							synchTimerTask.cancel();
+						}
+						callback.handle(createNotification("resync", true));
 					}
 				} else {
 					// FIXME remove acked from sent queue
@@ -230,16 +243,47 @@ public class FrameSublayer {
 				}
 			}
 			break;
+		case TX_COMPLETE:
+			if (!state.isResync()) {
+				break;
+			}
+			scheduleWait(EventType.SE4_1_RESYNCH_TIMEOUT, config.getDuration("resync_waiting_period"));
+			break;
 		case SE4_SYNCH_TIMEOUT:
 			callback.handle(new ControllerEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION));
 			if (config.getBoolean("resync_local")) {
 				state.setRrr(false);
-				// FIXME set v(r) should be initiated somewhere
 				state.setResync(true);
+				state.setPersistence(true);
+				currentResyncAttempt = 0;
+				resynch();
+			}
+			break;
+		case SE4_1_RESYNCH_TIMEOUT:
+			// ignore if timer fired but activity already completed
+			if (!state.isResync()) {
+				break;
+			}
+			currentResyncAttempt++;
+			int maxAttempts = config.getInteger("resync_lifetime", 0);
+			if (maxAttempts != 0 && currentResyncAttempt >= maxAttempts) {
+				currentResyncAttempt = 0;
+				callback.handle(createNotification("resync", false));
+			} else {
+				resynch();
 			}
 			break;
 		}
 		return;
+	}
+
+	private void resynch() {
+		Spdu vr = createVr();
+		if (vr == null) {
+			return;
+		}
+		state.getMacQueue().add(vr);
+		LOG.info("attempting resync: {} of {}", (currentResyncAttempt + 1), config.getInteger("resync_lifetime", 0));
 	}
 
 	// note 5 from 6.2.3.3 FOP-P State Table
@@ -311,6 +355,28 @@ public class FrameSublayer {
 			return null;
 		}
 		return baos.toByteArray();
+	}
+
+	private Spdu createVr() {
+		Vr vr = new Vr();
+		vr.setFrameSequenceNumber(state.getNnr());
+		if (spduVersion == Type1Directive.SPDU_VERSION) {
+			Type1Directive result = new Type1Directive();
+			result.setVr(vr);
+			return result;
+		}
+		if (spduVersion == Type4Directive.SPDU_VERSION) {
+			Type4Directive result = new Type4Directive();
+			result.setVr(vr);
+			return result;
+		}
+		if (spduVersion == Type5Directive.SPDU_VERSION) {
+			Type5Directive result = new Type5Directive();
+			result.setVr(vr);
+			return result;
+		}
+		LOG.error("unable to create vr. unknown spdu version: {}", spduVersion);
+		return null;
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -470,6 +536,9 @@ public class FrameSublayer {
 	}
 
 	private void scheduleWait(EventType type, long duration) {
+		if (synchTimerTask != null) {
+			synchTimerTask.cancel();
+		}
 		synchTimerTask = new TimerTask() {
 
 			@Override
@@ -488,5 +557,15 @@ public class FrameSublayer {
 			Thread.currentThread().interrupt();
 			LOG.error("can't send event", e1);
 		}
+	}
+
+	private ControllerEvent createNotification(String prefix, boolean success) {
+		PersistentActivity activity = new PersistentActivity();
+		activity.setSuccess(success);
+		activity.setLifetime(config.getInteger(prefix + "_lifetime", 0));
+		activity.setWaitingPeriod(config.getInteger(prefix + "_wait_duration", 0));
+		activity.setNotification(config.getInteger(prefix + "_notification", 0));
+		activity.setResponse(config.getInteger(prefix + "_response", 0));
+		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}
 }
