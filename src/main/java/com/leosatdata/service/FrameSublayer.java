@@ -231,7 +231,21 @@ public class FrameSublayer {
 						callback.handle(createNotification("resync", true));
 					}
 				} else {
-					// FIXME remove acked from sent queue
+					Object seqMesage = null;
+					// remove acked messages from the sent queue
+					while ((seqMesage = state.getSentQueue().peek()) != null) {
+						int seqNumber = TransferFrameUtil.getSequenceNumber(seqMesage);
+						if (seqNumber <= plcw.getReportValue()) {
+							try {
+								state.getSentQueue().take();
+							} catch (InterruptedException e1) {
+								Thread.currentThread().interrupt();
+								break;
+							}
+						} else {
+							break;
+						}
+					}
 					if (plcw.isRetransmit() || plcw.getReportValue() > state.getVvs()) {
 						state.setVvs(plcw.getReportValue());
 					}

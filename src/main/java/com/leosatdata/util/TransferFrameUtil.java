@@ -98,6 +98,22 @@ public class TransferFrameUtil {
 		}
 	}
 
+	public static int getSequenceNumber(Object obj) {
+		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
+			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
+			return frame.getVcFrameCount();
+		}
+		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
+			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
+			return frame.getFrameSequenceNumber();
+		}
+		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
+			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
+			return frame.getVcfCount();
+		}
+		return 0;
+	}
+
 	public static int getPortId(Object obj) {
 		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
 			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
