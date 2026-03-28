@@ -94,7 +94,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	public void setCommParameters(Object directive) {
 		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
 	}
-	
+
 	public void clearQueue(QueueType type) {
 		sendEvent(new Event(EventType.CLEAR_QUEUE, type));
 	}
@@ -159,6 +159,10 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		if (type.equals(PduTypeId.SPDU)) {
 			sendEvent(new Event(EventType.SPDU, frameSublayer.decodeSpdu(payload)));
 		} else {
+			QualityOfService qos = TransferFrameUtil.getQualityOfService(frame);
+			if (qos.equals(QualityOfService.EXPEDITED)) {
+				sendEvent(new Event(EventType.RE3_EXPEDITED_FRAME));
+			}
 			byte[] packet = frameSublayer.assemblePacket(frame);
 			if (packet != null) {
 				rxCallback.onUserData(packet, TransferFrameUtil.getPortId(frame));

@@ -25,7 +25,10 @@ public class State {
 	private boolean uFrameLastSent = true;
 	private boolean rrr = false; // copy of the Retransmit Flag from the previous valid PLCW
 	private boolean resync = false;
+	private boolean rs = false; // indicating whether or not Sequence Controlled frames need to be
+								// retransmitted;
 
+	private int expeditedFrameCounter; // a modulo-8 counter indicating that Expedited frames have been received.
 	// FIXME Separate Report Values shall be reported for each physical channel
 	// independent of the I/O port.
 	private int vr = 0;
@@ -138,20 +141,36 @@ public class State {
 	public void setNnr(int nnr) {
 		this.nnr = nnr;
 	}
-	
+
 	public boolean isRrr() {
 		return rrr;
 	}
-	
+
 	public void setRrr(boolean rrr) {
 		this.rrr = rrr;
 	}
-	
+
 	public boolean isResync() {
 		return resync;
 	}
-	
+
 	public void setResync(boolean resync) {
 		this.resync = resync;
+	}
+
+	public boolean isRs() {
+		return rs;
+	}
+
+	public void setRs(boolean rs) {
+		this.rs = rs;
+	}
+	
+	public void setExpeditedFrameCounter(int expeditedFrameCounter) {
+		this.expeditedFrameCounter = expeditedFrameCounter;
+	}
+	
+	public int getExpeditedFrameCounter() {
+		return expeditedFrameCounter;
 	}
 }

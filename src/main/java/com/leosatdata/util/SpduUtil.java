@@ -7,6 +7,7 @@ import com.leosatdata.model.Spdu;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Vr;
 
 public class SpduUtil {
 
@@ -88,5 +89,21 @@ public class SpduUtil {
 			return rxRnmd || txRnmd;
 		}
 		return false;
+	}
+
+	public static Vr getVr(Spdu obj) {
+		if (obj instanceof Type1Directive) {
+			Type1Directive directive = (Type1Directive) obj;
+			return directive.getVr();
+		}
+		if (obj instanceof Type4Directive) {
+			Type4Directive directive = (Type4Directive) obj;
+			return directive.getVr();
+		}
+		if (obj instanceof Type5Directive) {
+			Type5Directive directive = (Type5Directive) obj;
+			return directive.getVr();
+		}
+		return null;
 	}
 }

@@ -31,6 +31,7 @@ import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
+import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransferFrameUtil;
 
 public class FrameSublayer {
@@ -89,6 +90,7 @@ public class FrameSublayer {
 	}
 
 	public void handle(Event e) {
+		handleFarmp(e);
 		// always attempt to send frame after handling event
 		handleFopp(e);
 		Object frame = null;
@@ -112,7 +114,7 @@ public class FrameSublayer {
 		if (frame == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
-			frame = createPFrame(createPlcw(false));
+			frame = createPFrame(createPlcw());
 		}
 
 		if (frame == null) {
@@ -132,7 +134,7 @@ public class FrameSublayer {
 		if (frame == null && !state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
-			frame = createPFrame(createPlcw(false));
+			frame = createPFrame(createPlcw());
 		}
 
 		if (frame == null) {
@@ -183,13 +185,38 @@ public class FrameSublayer {
 			return null;
 		}
 		if (!state.getSeqQueue().isEmpty() && state.getVs() - state.getNnr() < transmissionWindow) {
-			return state.getSeqQueue().poll();
+			Object result = state.getSeqQueue().poll();
+			if (result != null) {
+				state.getSentQueue().add(result);
+			}
+			return result;
 		}
 		if (state.getNnr() < state.getVs()) {
 			state.setVvs(state.getNnr());
 			// FIXME initiate progressive retransmission
 		}
 		return null;
+	}
+
+	@SuppressWarnings("incomplete-switch")
+	private void handleFarmp(Event e) {
+		switch (e.getType()) {
+		case SPDU:
+			Vr vr = SpduUtil.getVr((Spdu) e.getArg());
+			if (vr != null) {
+				state.setRs(false);
+				state.setVr(vr.getFrameSequenceNumber());
+				state.setNeedPlcw(true);
+			}
+			break;
+		case RE3_EXPEDITED_FRAME:
+			int nextFrameCounter = state.getExpeditedFrameCounter() + 1;
+			if (nextFrameCounter > 0b111) {
+				nextFrameCounter = 0;
+			}
+			state.setExpeditedFrameCounter(nextFrameCounter);
+			break;
+		}
 	}
 
 	@SuppressWarnings("incomplete-switch")
@@ -355,12 +382,12 @@ public class FrameSublayer {
 		}
 	}
 
-	private byte[] createPlcw(boolean retransmitRequired) {
+	private byte[] createPlcw() {
 		Plcw plcw = new Plcw();
 		plcw.setReportValue(state.getVr());
-		plcw.setExpeditedFrameCounter(state.getVes());
+		plcw.setExpeditedFrameCounter(state.getExpeditedFrameCounter());
 		plcw.setPcid(localPcid);
-		plcw.setRetransmit(retransmitRequired);
+		plcw.setRetransmit(state.isRs());
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (BitOutputStream bos = new BitOutputStream(baos)) {
 			spduParser.encode(plcw, bos);
