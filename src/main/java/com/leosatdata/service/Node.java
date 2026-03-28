@@ -33,6 +33,9 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	private final int localScid;
 	private final boolean testSource;
 	private int remoteScid;
+	// there are 2 vr variables. One is thread-local onRx, the other one is in State
+	// this is done to synchronize the state across 2 threads
+	private int vrFromCallback = 0;
 
 	public Node(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
 		this.config = config;
@@ -154,18 +157,33 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		}
 
 		// TODO discard idle packets?
-		// FIXME sequence controlled should be synched?
 
 		if (type.equals(PduTypeId.SPDU)) {
 			sendEvent(new Event(EventType.SPDU, frameSublayer.decodeSpdu(payload)));
 		} else {
 			QualityOfService qos = TransferFrameUtil.getQualityOfService(frame);
+			boolean acceptFrame = true;
 			if (qos.equals(QualityOfService.EXPEDITED)) {
 				sendEvent(new Event(EventType.RE3_EXPEDITED_FRAME));
+			} else {
+				int ns = TransferFrameUtil.getSequenceNumber(frame);
+				if (vrFromCallback == ns) {
+					vrFromCallback++;
+					sendEvent(new Event(EventType.RE4_SEQUENCE_FRAME, vrFromCallback));
+				} else if (ns > vrFromCallback) {
+					sendEvent(new Event(EventType.RE5_GAP_DETECTED));
+					acceptFrame = false;
+					LOG.info("gap detected. expected: {} got: {}", vrFromCallback, ns);
+				} else if (ns < vrFromCallback) {
+					LOG.info("incoming ns is too small: {} expected: {}", ns, vrFromCallback);
+					acceptFrame = false;
+				}
 			}
-			byte[] packet = frameSublayer.assemblePacket(frame);
-			if (packet != null) {
-				rxCallback.onUserData(packet, TransferFrameUtil.getPortId(frame));
+			if (acceptFrame) {
+				byte[] packet = frameSublayer.assemblePacket(frame);
+				if (packet != null) {
+					rxCallback.onUserData(packet, TransferFrameUtil.getPortId(frame));
+				}
 			}
 		}
 	}
@@ -186,6 +204,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	}
 
 	public void start() {
+		frameSublayer.start();
 		mac.start();
 		t.start();
 	}
@@ -199,6 +218,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 			Thread.currentThread().interrupt();
 		}
 		mac.stop();
+		frameSublayer.stop();
 	}
 
 	private void sendEvent(Event e) {

@@ -148,14 +148,15 @@ public class FrameSublayer {
 		} else {
 			nextSeqNumber = state.getVvs();
 		}
+
+		TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
+
 		if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
 			nextSeqNumber = 0;
 		} else {
 			nextSeqNumber++;
 		}
-
-		TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
-
+		
 		if (qos.equals(QualityOfService.EXPEDITED)) {
 			// TODO notify obc about VE(S)
 			state.setVes(nextSeqNumber);
@@ -185,11 +186,7 @@ public class FrameSublayer {
 			return null;
 		}
 		if (!state.getSeqQueue().isEmpty() && state.getVs() - state.getNnr() < transmissionWindow) {
-			Object result = state.getSeqQueue().poll();
-			if (result != null) {
-				state.getSentQueue().add(result);
-			}
-			return result;
+			return state.getSeqQueue().poll();
 		}
 		if (state.getNnr() < state.getVs()) {
 			state.setVvs(state.getNnr());
@@ -204,6 +201,7 @@ public class FrameSublayer {
 		case SPDU:
 			Vr vr = SpduUtil.getVr((Spdu) e.getArg());
 			if (vr != null) {
+				LOG.info("received set v(r) directive: {}", vr.getFrameSequenceNumber());
 				state.setRs(false);
 				state.setVr(vr.getFrameSequenceNumber());
 				state.setNeedPlcw(true);
@@ -215,6 +213,15 @@ public class FrameSublayer {
 				nextFrameCounter = 0;
 			}
 			state.setExpeditedFrameCounter(nextFrameCounter);
+			break;
+		case RE4_SEQUENCE_FRAME:
+			state.setVr((Integer) e.getArg());
+			state.setRs(false);
+			state.setNeedPlcw(true);
+			break;
+		case RE5_GAP_DETECTED:
+			state.setRs(true);
+			state.setNeedPlcw(true);
 			break;
 		}
 	}
@@ -244,12 +251,14 @@ public class FrameSublayer {
 				if (state.isResync()) {
 					// ignore
 				} else {
+					LOG.info("invalid plcw received. cop-p lost synchronization");
 					state.setVvs(state.getNnr());
 					scheduleWait(EventType.SE4_SYNCH_TIMEOUT, config.getDuration("synch_timeout"));
 				}
 			} else {
 				if (state.isResync()) {
 					if (!plcw.isRetransmit() && plcw.getReportValue() == state.getNnr()) {
+						LOG.info("re-sync completed successfully");
 						state.setResync(false);
 						state.setPersistence(false);
 						if (synchTimerTask != null) {
@@ -363,19 +372,19 @@ public class FrameSublayer {
 			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
 			type = PduTypeId.USER_DATA;
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), PduTypeId.USER_DATA, QualityOfService.EXPEDITED, frame.getDataField().length });
+			log.info("{}:{} /{}/{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getVcFrameCount(), PduTypeId.USER_DATA, QualityOfService.EXPEDITED, frame.getDataField().length });
 		}
 		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
 			type = frame.getPduTypeId();
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getPortId(), frame.getPduTypeId(), frame.getQualityOfService(), frame.getDataField().length });
+			log.info("{}:{} /{}/{}/{} {} bytes", new Object[] { frame.getScid(), frame.getPortId(), frame.getFrameSequenceNumber(), frame.getPduTypeId(), frame.getQualityOfService(), frame.getDataField().length });
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
 			type = frame.getProtocolControl();
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getProtocolControl(), frame.getSequenceControl(), frame.getDataField().length });
+			log.info("{}:{} /{}/{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getVcfCount(), frame.getProtocolControl(), frame.getSequenceControl(), frame.getDataField().length });
 		}
 		if (type != null && data != null && type.equals(PduTypeId.SPDU)) {
 			log.info("\t{}", decodeSpdu(data));

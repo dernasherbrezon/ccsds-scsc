@@ -51,7 +51,7 @@ public class NodeTest {
 	public void testNoConnection() throws Exception {
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
-		assertPersistentActivity(groundCallback.waitForEvent(), false);
+		assertEvent(groundCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, false);
 	}
 
 	@Test
@@ -59,32 +59,10 @@ public class NodeTest {
 		satellite.waitForSession();
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
-		assertPersistentActivity(groundCallback.waitForEvent(), true);
+		assertEvent(groundCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, true);
 
-		// test small packet
-		byte[] packet = TestUtil.createTestData(20);
-		ground.send(packet, QualityOfService.EXPEDITED, 0);
-		byte[] actual = satelliteDataCallback.waitForData();
-		assertNotNull(actual);
-		assertArrayEquals(packet, actual);
-		
-		// send back
-		satellite.send(packet, QualityOfService.EXPEDITED, 0);
-		actual = groundDataCallback.waitForData();
-		assertNotNull(actual);
-		assertArrayEquals(packet, actual);
-
-		// test packet span over several frames
-		packet = TestUtil.createTestData(2 * groundConfig.getInteger("maximum_frame_length", 0));
-		ground.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
-		actual = satelliteDataCallback.waitForData();
-		assertNotNull(actual);
-		assertArrayEquals(packet, actual);
-		
-		satellite.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
-		actual = groundDataCallback.waitForData();
-		assertNotNull(actual);
-		assertArrayEquals(packet, actual);
+		testComm(ground, groundDataCallback, satellite, satelliteDataCallback);
+		testComm(satellite, satelliteDataCallback, ground, groundDataCallback);
 
 		// according to spec extra timeout between callback to vehicle and transitioning
 		// to s40 state (data services)
@@ -94,6 +72,25 @@ public class NodeTest {
 
 		assertEvent(groundCallback.waitForEvent(), ControllerEventType.END_OF_SESSION);
 		assertEvent(satelliteCallback.waitForEvent(), ControllerEventType.END_OF_SESSION);
+	}
+
+	private void testComm(Node from, MockUserDataCallback fromCallback, Node to, MockUserDataCallback toCallback) throws Exception {
+		QualityOfService qos[] = new QualityOfService[] { QualityOfService.EXPEDITED, QualityOfService.SEQUENCE_CONTROLLED };
+		for (QualityOfService curQos : qos) {
+			// test small packet
+			byte[] packet = TestUtil.createTestData(20);
+			from.send(packet, curQos, 0);
+			byte[] actual = toCallback.waitForData();
+			assertNotNull(actual);
+			assertArrayEquals(packet, actual);
+
+			// test packet span over several frames
+			packet = TestUtil.createTestData(2 * groundConfig.getInteger("maximum_frame_length", 0));
+			from.send(packet, curQos, 0);
+			actual = toCallback.waitForData();
+			assertNotNull(actual);
+			assertArrayEquals(packet, actual);
+		}
 	}
 
 	@Before
@@ -188,11 +185,12 @@ public class NodeTest {
 		return result;
 	}
 
-	private static void assertPersistentActivity(ControllerEvent hail, boolean expectedStatus) {
-		assertNotNull(hail);
-		assertEquals(ControllerEventType.PERSISTENT_ACTIVITY, hail.getType());
-		PersistentActivity event = (PersistentActivity) hail.getObj();
-		assertEquals(expectedStatus, event.isSuccess());
+	private static void assertEvent(ControllerEvent hail, ControllerEventType expected, boolean expectedStatus) {
+		assertEvent(hail, expected);
+		if (expected.equals(ControllerEventType.PERSISTENT_ACTIVITY)) {
+			PersistentActivity event = (PersistentActivity) hail.getObj();
+			assertEquals(expectedStatus, event.isSuccess());
+		}
 	}
 
 	private static void assertEvent(ControllerEvent event, ControllerEventType expected) {
