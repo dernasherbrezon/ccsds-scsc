@@ -160,12 +160,12 @@ public class TransferFrameParser {
 		return maxDataLength;
 	}
 
-	public List createUFrame(byte[] payload, QualityOfService qos, int vcid) {
+	public List createUFrame(byte[] payload, QualityOfService qos, int portId) {
 		TransferFrame frame = new TransferFrame();
 		frame.setReplay(false);
 		frame.setScid(localScid);
 		frame.setVcFrameCountCycleUsed(false);
-		frame.setVcid(vcid);
+		frame.setVcid(portId);
 		frame.setDataField(payload);
 		// FIXME v2 doesn't have segments. Fixed-length M_PDU should split incoming
 		// packets

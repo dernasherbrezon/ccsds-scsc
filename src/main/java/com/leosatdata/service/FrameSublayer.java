@@ -2,6 +2,7 @@ package com.leosatdata.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
@@ -156,7 +157,7 @@ public class FrameSublayer {
 		} else {
 			nextSeqNumber++;
 		}
-		
+
 		if (qos.equals(QualityOfService.EXPEDITED)) {
 			// TODO notify obc about VE(S)
 			state.setVes(nextSeqNumber);
@@ -368,27 +369,48 @@ public class FrameSublayer {
 
 		PduTypeId type = null;
 		byte[] data = null;
+		List<Object> logData = new ArrayList<>();
 		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
 			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
 			type = PduTypeId.USER_DATA;
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getVcFrameCount(), PduTypeId.USER_DATA, QualityOfService.EXPEDITED, frame.getDataField().length });
+			logData.add(frame.getScid());
+			logData.add(frame.getVcid());
+			logData.add(frame.getVcFrameCount());
+			logData.add(PduTypeId.USER_DATA);
+			logData.add(QualityOfService.EXPEDITED);
 		}
 		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
 			type = frame.getPduTypeId();
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{}/{} {} bytes", new Object[] { frame.getScid(), frame.getPortId(), frame.getFrameSequenceNumber(), frame.getPduTypeId(), frame.getQualityOfService(), frame.getDataField().length });
+			logData.add(frame.getScid());
+			logData.add(frame.getPortId());
+			logData.add(frame.getFrameSequenceNumber());
+			logData.add(frame.getPduTypeId());
+			logData.add(frame.getQualityOfService());
 		}
 		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
 			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
 			type = frame.getProtocolControl();
 			data = frame.getDataField();
-			log.info("{}:{} /{}/{}/{} {} bytes", new Object[] { frame.getScid(), frame.getVcid(), frame.getVcfCount(), frame.getProtocolControl(), frame.getSequenceControl(), frame.getDataField().length });
+			logData.add(frame.getScid());
+			logData.add(frame.getMapid());
+			logData.add(frame.getVcfCount());
+			logData.add(frame.getProtocolControl());
+			logData.add(frame.getSequenceControl());
 		}
-		if (type != null && data != null && type.equals(PduTypeId.SPDU)) {
-			log.info("\t{}", decodeSpdu(data));
+		if (data == null) {
+			return;
 		}
+		logData.add(data.length);
+
+		String logMessage = "{}:{} /{}/{}/{}/{} bytes";
+		if (type != null && type.equals(PduTypeId.SPDU)) {
+			logMessage += "/{}";
+			logData.add(decodeSpdu(data));
+		}
+		log.info(logMessage, logData.toArray());
 	}
 
 	private byte[] createPlcw() {

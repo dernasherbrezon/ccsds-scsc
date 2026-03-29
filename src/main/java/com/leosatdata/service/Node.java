@@ -64,6 +64,9 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		while (!Thread.currentThread().isInterrupted()) {
 			try {
 				Event event = state.getQueue().take();
+				if (LOG.isDebugEnabled()) {
+					LOG.debug("got event: {} queue size: {}", event.getType(), state.getQueue().size());
+				}
 				if (event.getType().equals(EventType.STOP)) {
 					break;
 				}
