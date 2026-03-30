@@ -100,6 +100,7 @@ public class NodeTest {
 		props.putAll(load("src/main/resources/transceiver.properties"));
 		props.putAll(load("src/main/resources/custom.properties"));
 		props.putAll(load("src/test/resources/ground.properties"));
+		props.putAll(load("src/test/resources/channel.properties"));
 		groundConfig = new Configuration(props);
 		groundTransceiver = new NullTransceiver(groundConfig);
 		groundTransceiver.start();
@@ -112,6 +113,7 @@ public class NodeTest {
 		props.putAll(load("src/main/resources/transceiver.properties"));
 		props.putAll(load("src/main/resources/custom.properties"));
 		props.putAll(load("src/test/resources/satellite.properties"));
+		props.putAll(load("src/test/resources/channel.properties"));
 		satelliteConfig = new Configuration(props);
 		satelliteTransceiver = new NullTransceiver(satelliteConfig);
 		satelliteTransceiver.start();

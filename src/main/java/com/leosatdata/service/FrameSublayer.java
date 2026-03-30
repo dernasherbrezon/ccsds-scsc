@@ -62,6 +62,9 @@ public class FrameSublayer {
 	private Timer synchTimer;
 	private TimerTask synchTimerTask;
 	private int currentResyncAttempt = 0;
+	// wait tx complete before sending next frame
+	// tx is async operation
+	private boolean txReady = true;
 
 	public FrameSublayer(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.state = state;
@@ -94,6 +97,11 @@ public class FrameSublayer {
 		handleFarmp(e);
 		// always attempt to send frame after handling event
 		handleFopp(e);
+
+		if (!txReady) {
+			return;
+		}
+		
 		Object frame = null;
 
 		Spdu spdu = state.getMacQueue().poll();
@@ -164,6 +172,8 @@ public class FrameSublayer {
 		} else {
 			// TODO notify obc about VS(S)
 			state.setVvs(nextSeqNumber);
+			// FIXME re-send should cause different
+			state.setVs(nextSeqNumber);
 		}
 
 		byte[] payload = encode(frame);
@@ -172,6 +182,8 @@ public class FrameSublayer {
 		}
 
 		debug(false, frame);
+
+		txReady = false;
 
 		transceiver.send(payload);
 
@@ -295,6 +307,7 @@ public class FrameSublayer {
 			}
 			break;
 		case TX_COMPLETE:
+			txReady = true;
 			if (!state.isResync()) {
 				break;
 			}

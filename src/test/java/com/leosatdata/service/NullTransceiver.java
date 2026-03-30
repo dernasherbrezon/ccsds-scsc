@@ -56,17 +56,11 @@ public class NullTransceiver implements Transceiver {
 	public void send(byte[] data) {
 		assert (tx == true);
 		assert (symbolRate != 0);
-		try {
-			long millisToWait = (long) ((data.length * 8 * 1000) / symbolRate);
-			Thread.sleep(millisToWait);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			return;
-		}
-		getTxCallback().onTx();
-		// FIXME expected channel timeout
+		long txMillisToWait = (long) ((data.length * 8 * 1000) / symbolRate);
+		// tx should be called by interrupt, i.e. async
+		executor.schedule(new DelayedTxTask(getTxCallback(), data), txMillisToWait, TimeUnit.MILLISECONDS);
 		if (otherSide.rx) {
-			executor.schedule(new DelayedTask(otherSide.getRxCallback(), data), 100, TimeUnit.MILLISECONDS);
+			otherSide.executor.schedule(new DelayedRxTask(otherSide.getRxCallback(), data), txMillisToWait + config.getLong("channel.delayMillis", 0), TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -90,12 +84,12 @@ public class NullTransceiver implements Transceiver {
 		return receiveCallback;
 	}
 
-	private static class DelayedTask implements Runnable {
+	private static class DelayedRxTask implements Runnable {
 
 		private final byte[] data;
 		private final RxCallback callback;
 
-		public DelayedTask(RxCallback callback, byte[] data) {
+		public DelayedRxTask(RxCallback callback, byte[] data) {
 			this.data = data;
 			this.callback = callback;
 		}
@@ -103,6 +97,23 @@ public class NullTransceiver implements Transceiver {
 		@Override
 		public void run() {
 			callback.onRx(data);
+		}
+
+	}
+
+	private static class DelayedTxTask implements Runnable {
+
+		private final TxCallback callback;
+		private final byte[] data;
+
+		public DelayedTxTask(TxCallback callback, byte[] data) {
+			this.callback = callback;
+			this.data = data;
+		}
+
+		@Override
+		public void run() {
+			callback.onTx();
 		}
 
 	}

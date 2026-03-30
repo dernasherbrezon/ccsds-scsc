@@ -34,12 +34,13 @@ public class State {
 	private int vr = 0;
 
 	public State(Configuration config) {
-		this.seqQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10));
-		this.expQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10)); // use the same parameter for expedited and sequenced
-		this.macQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10));
-		this.sentQueue = new ArrayBlockingQueue<>(config.getInteger("transmission_window", 10));
-		// if all message queues filled up, have +1 for event queue to process
-		this.queue = new ArrayBlockingQueue<>(seqQueue.size() + expQueue.size() + macQueue.size() + 1);
+		int capacity = config.getInteger("transmission_window", 10);
+		this.seqQueue = new ArrayBlockingQueue<>(capacity);
+		this.expQueue = new ArrayBlockingQueue<>(capacity); // use the same parameter for expedited and sequenced
+		this.macQueue = new ArrayBlockingQueue<>(capacity);
+		this.sentQueue = new ArrayBlockingQueue<>(capacity);
+		// if all message queues filled up, have +2 for event queue to process
+		this.queue = new ArrayBlockingQueue<>(capacity + capacity + capacity + 2);
 	}
 
 	public int getVr() {
@@ -165,11 +166,11 @@ public class State {
 	public void setRs(boolean rs) {
 		this.rs = rs;
 	}
-	
+
 	public void setExpeditedFrameCounter(int expeditedFrameCounter) {
 		this.expeditedFrameCounter = expeditedFrameCounter;
 	}
-	
+
 	public int getExpeditedFrameCounter() {
 		return expeditedFrameCounter;
 	}
