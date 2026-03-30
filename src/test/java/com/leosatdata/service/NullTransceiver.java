@@ -27,7 +27,8 @@ public class NullTransceiver implements Transceiver {
 
 	private float symbolRate;
 	private DataModulation dataModulation;
-	private float frequency;
+	private float rxFrequency;
+	private float txFrequency;
 	private Coding dataEncoding;
 	private Polarization polarization;
 	private Modulation modulation;
@@ -177,7 +178,7 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setRxFrequency(float frequency) {
-		this.frequency = frequency;
+		this.rxFrequency = frequency;
 	}
 
 	@Override
@@ -209,8 +210,7 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setTxFrequency(float frequency) {
-		// TODO Auto-generated method stub
-
+		this.txFrequency = frequency;
 	}
 
 	@Override

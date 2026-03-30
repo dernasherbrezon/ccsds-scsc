@@ -101,7 +101,7 @@ public class FrameSublayer {
 		if (!txReady) {
 			return;
 		}
-		
+
 		Object frame = null;
 
 		Spdu spdu = state.getMacQueue().poll();
@@ -150,30 +150,17 @@ public class FrameSublayer {
 			return;
 		}
 
-		int nextSeqNumber;
 		QualityOfService qos = TransferFrameUtil.getQualityOfService(frame);
 		if (qos.equals(QualityOfService.EXPEDITED)) {
-			nextSeqNumber = state.getVes();
-		} else {
-			nextSeqNumber = state.getVvs();
-		}
-
-		TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
-
-		if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
-			nextSeqNumber = 0;
-		} else {
-			nextSeqNumber++;
-		}
-
-		if (qos.equals(QualityOfService.EXPEDITED)) {
+			int nextSeqNumber = state.getVes();
+			TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
+			if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
+				nextSeqNumber = 0;
+			} else {
+				nextSeqNumber++;
+			}
 			// TODO notify obc about VE(S)
 			state.setVes(nextSeqNumber);
-		} else {
-			// TODO notify obc about VS(S)
-			state.setVvs(nextSeqNumber);
-			// FIXME re-send should cause different
-			state.setVs(nextSeqNumber);
 		}
 
 		byte[] payload = encode(frame);
@@ -199,7 +186,18 @@ public class FrameSublayer {
 			return null;
 		}
 		if (!state.getSeqQueue().isEmpty() && state.getVs() - state.getNnr() < transmissionWindow) {
-			return state.getSeqQueue().poll();
+			Object frame = state.getSeqQueue().poll();
+			int nextSeqNumber = state.getVs();
+			TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
+			if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
+				nextSeqNumber = 0;
+			} else {
+				nextSeqNumber++;
+			}
+			// TODO notify obc about VS(S)
+			state.setVs(nextSeqNumber);
+			state.setVvs(nextSeqNumber);
+			return frame;
 		}
 		if (state.getNnr() < state.getVs()) {
 			state.setVvs(state.getNnr());
