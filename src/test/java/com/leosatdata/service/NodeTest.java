@@ -8,6 +8,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
@@ -61,8 +62,8 @@ public class NodeTest {
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, true);
 
-		testComm(ground, groundDataCallback, satellite, satelliteDataCallback);
-		testComm(satellite, satelliteDataCallback, ground, groundDataCallback);
+		testComm(ground, groundDataCallback, groundTransceiver, satellite, satelliteDataCallback, satelliteTransceiver);
+		testComm(satellite, satelliteDataCallback, satelliteTransceiver, ground, groundDataCallback, groundTransceiver);
 
 		// according to spec extra timeout between callback to vehicle and transitioning
 		// to s40 state (data services)
@@ -74,7 +75,8 @@ public class NodeTest {
 		assertEvent(satelliteCallback.waitForEvent(), ControllerEventType.END_OF_SESSION);
 	}
 
-	private void testComm(Node from, MockUserDataCallback fromCallback, Node to, MockUserDataCallback toCallback) throws Exception {
+	private void testComm(Node from, MockUserDataCallback fromCallback, NullTransceiver fromTransceiver, Node to, MockUserDataCallback toCallback, NullTransceiver toTransceiver) throws Exception {
+		int maxFrameLength = groundConfig.getInteger("maximum_frame_length", 0);
 		QualityOfService qos[] = new QualityOfService[] { QualityOfService.EXPEDITED, QualityOfService.SEQUENCE_CONTROLLED };
 		for (QualityOfService curQos : qos) {
 			// test small packet
@@ -85,12 +87,24 @@ public class NodeTest {
 			assertArrayEquals(packet, actual);
 
 			// test packet span over several frames
-			packet = TestUtil.createTestData(2 * groundConfig.getInteger("maximum_frame_length", 0));
+			packet = TestUtil.createTestData(2 * maxFrameLength);
 			from.send(packet, curQos, 0);
 			actual = toCallback.waitForData();
 			assertNotNull(actual);
 			assertArrayEquals(packet, actual);
 		}
+
+		// test recovery
+		byte[] packet = TestUtil.createTestData(3 * maxFrameLength);
+		String payload = UUID.randomUUID().toString();
+		byte[] payloadBytes = payload.getBytes();
+		fromTransceiver.setFrameFilter(new FrameFilterOnce(payload));
+		System.arraycopy(payloadBytes, 0, packet, maxFrameLength, payloadBytes.length);
+		from.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
+
+		byte[] actual = toCallback.waitForData(15000);
+		assertNotNull(actual);
+		assertArrayEquals(packet, actual);
 	}
 
 	@Before

@@ -31,7 +31,7 @@ public class State {
 	private int expeditedFrameCounter; // a modulo-8 counter indicating that Expedited frames have been received.
 	// FIXME Separate Report Values shall be reported for each physical channel
 	// independent of the I/O port.
-	private int vr = 0;
+	private int vr = 0; // sequence number plus one	(modulo 256) of the last Sequence Controlled frame acknowledged by the receiver
 
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);

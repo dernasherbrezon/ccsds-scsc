@@ -17,10 +17,14 @@ public class MockUserDataCallback implements UserDataCallback {
 	}
 
 	public byte[] waitForData() {
+		return waitForData(10000);
+	}
+
+	public byte[] waitForData(long timeout) {
 		synchronized (lock) {
 			try {
 				// TODO ignore spurious wake-ups
-				lock.wait(10000);
+				lock.wait(timeout);
 				if (data.isEmpty()) {
 					return null;
 				}

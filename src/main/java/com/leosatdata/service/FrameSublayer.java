@@ -283,7 +283,7 @@ public class FrameSublayer {
 					// remove acked messages from the sent queue
 					while ((seqMesage = state.getSentQueue().peek()) != null) {
 						int seqNumber = TransferFrameUtil.getSequenceNumber(seqMesage);
-						if (seqNumber <= plcw.getReportValue()) {
+						if (seqNumber < plcw.getReportValue()) {
 							try {
 								state.getSentQueue().take();
 							} catch (InterruptedException e1) {
@@ -359,7 +359,7 @@ public class FrameSublayer {
 			LOG.info("received plcw with nr too large: {}", plcw.getReportValue());
 			return false;
 		}
-		if (plcw.isRetransmit() && plcw.getReportValue() == state.getNnr()) {
+		if (plcw.isRetransmit() && plcw.getReportValue() == state.getVs()) {
 			return false;
 		}
 		if (!plcw.isRetransmit() && state.isRrr() && plcw.getReportValue() == state.getNnr()) {

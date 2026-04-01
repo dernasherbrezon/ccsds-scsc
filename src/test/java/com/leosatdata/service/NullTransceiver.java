@@ -12,6 +12,7 @@ import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.TransceiverUtil;
 
 public class NullTransceiver implements Transceiver {
 
@@ -22,6 +23,8 @@ public class NullTransceiver implements Transceiver {
 	private RxCallback receiveCallback;
 	private NullTransceiver otherSide;
 	private ScheduledExecutorService executor;
+	private FrameFilter frameFilter;
+
 	private boolean rx = false;
 	private boolean tx = false;
 
@@ -61,6 +64,9 @@ public class NullTransceiver implements Transceiver {
 		// tx should be called by interrupt, i.e. async
 		executor.schedule(new DelayedTxTask(getTxCallback(), data), txMillisToWait, TimeUnit.MILLISECONDS);
 		if (otherSide.rx) {
+			if (frameFilter != null && !frameFilter.accept(data)) {
+				return;
+			}
 			otherSide.executor.schedule(new DelayedRxTask(otherSide.getRxCallback(), data), txMillisToWait + config.getLong("channel.delayMillis", 0), TimeUnit.MILLISECONDS);
 		}
 	}
@@ -231,4 +237,7 @@ public class NullTransceiver implements Transceiver {
 
 	}
 
+	public void setFrameFilter(FrameFilter frameFilter) {
+		this.frameFilter = frameFilter;
+	}
 }
