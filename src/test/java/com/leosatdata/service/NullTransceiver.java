@@ -64,6 +64,10 @@ public class NullTransceiver implements Transceiver {
 		// tx should be called by interrupt, i.e. async
 		executor.schedule(new DelayedTxTask(getTxCallback(), data), txMillisToWait, TimeUnit.MILLISECONDS);
 		if (otherSide.rx) {
+			if( txFrequency != otherSide.rxFrequency) {
+				LOG.error("tx frequency doesn't match rx");
+				return;
+			}
 			if (frameFilter != null && !frameFilter.accept(data)) {
 				return;
 			}
