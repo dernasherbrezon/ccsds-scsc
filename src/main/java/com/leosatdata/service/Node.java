@@ -178,7 +178,8 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 					acceptFrame = false;
 					LOG.info("gap detected. expected: {} got: {}", vrFromCallback, ns);
 				} else if (ns < vrFromCallback) {
-					LOG.info("incoming ns is too small: {} expected: {}", ns, vrFromCallback);
+					// progressive retransmission will re-send frames until corresponding PLCW
+					// received
 					acceptFrame = false;
 				}
 			}

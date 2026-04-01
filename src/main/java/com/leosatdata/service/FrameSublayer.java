@@ -174,16 +174,14 @@ public class FrameSublayer {
 
 		transceiver.send(payload);
 
-		if (qos.equals(QualityOfService.SEQUENCE_CONTROLLED)) {
-			state.getSentQueue().add(frame);
-		}
 	}
 
 	// FOP-P State Table: SE1
 	private Object selectSeqFrame() {
 		if (state.getVvs() < state.getVs()) {
-			// FIXME select frame to re-send
-			return null;
+			Object frame = findSentFrameByVs(state.getVvs());
+			state.setVvs(state.getVvs() + 1);
+			return frame;
 		}
 		if (!state.getSeqQueue().isEmpty() && state.getVs() - state.getNnr() < transmissionWindow) {
 			Object frame = state.getSeqQueue().poll();
@@ -195,13 +193,16 @@ public class FrameSublayer {
 				nextSeqNumber++;
 			}
 			// TODO notify obc about VS(S)
+			state.getSentQueue().add(frame);
 			state.setVs(nextSeqNumber);
 			state.setVvs(nextSeqNumber);
 			return frame;
 		}
 		if (state.getNnr() < state.getVs()) {
 			state.setVvs(state.getNnr());
-			// FIXME initiate progressive retransmission
+			Object frame = findSentFrameByVs(state.getVvs());
+			state.setVvs(state.getVvs() + 1);
+			return frame;
 		}
 		return null;
 	}
@@ -650,5 +651,14 @@ public class FrameSublayer {
 		activity.setNotification(config.getInteger(prefix + "_notification", 0));
 		activity.setResponse(config.getInteger(prefix + "_response", 0));
 		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
+	}
+
+	private Object findSentFrameByVs(int seq) {
+		for (Object cur : state.getSentQueue()) {
+			if (TransferFrameUtil.getSequenceNumber(cur) == seq) {
+				return cur;
+			}
+		}
+		return null;
 	}
 }
