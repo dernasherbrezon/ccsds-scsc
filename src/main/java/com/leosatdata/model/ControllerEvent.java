@@ -22,4 +22,9 @@ public class ControllerEvent {
 		return type;
 	}
 
+	@Override
+	public String toString() {
+		return "ControllerEvent [type=" + type + ", obj=" + obj + "]";
+	}
+
 }

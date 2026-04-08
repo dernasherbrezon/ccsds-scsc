@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
+import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
@@ -46,6 +47,12 @@ public class NodeTest {
 	private MockUserDataCallback groundDataCallback;
 	private Node ground;
 
+	private Configuration ground2Config;
+	private NullTransceiver ground2Transceiver;
+	private MockNodeCallback ground2Callback;
+	private MockUserDataCallback ground2DataCallback;
+	private Node ground2;
+
 	private Configuration satelliteConfig;
 	private NullTransceiver satelliteTransceiver;
 	private MockNodeCallback satelliteCallback;
@@ -54,6 +61,48 @@ public class NodeTest {
 
 	@Test
 	public void testNoConnection() throws Exception {
+		ground.setCommParameters(createType1CommParameters());
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
+	}
+
+	@Test
+	public void testValiteSourceFrame() throws Exception {
+		// remote_spacecraft_id is configured
+		establishSession();
+
+		ground2.setCommParameters(createType1CommParameters());
+		ground2Transceiver.setFrameFilter(null); // ignore rx/tx mismatch
+		ground2.startSession();
+		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
+		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.INVALID_FRAME_SOURCE));
+	}
+
+	@Test
+	public void testValiteSourceFrame2() throws Exception {
+		// remote_spacecraft_id will be taken from the first message
+		satelliteConfig.removeProperty("remote_spacecraft_id");
+		satellite.stop();
+		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
+		satellite.start();
+		establishSession();
+
+		ground2.setCommParameters(createType1CommParameters());
+		ground2Transceiver.setFrameFilter(null); // ignore rx/tx mismatch
+		ground2.startSession();
+		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
+		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.INVALID_FRAME_SOURCE));
+	}
+
+	@Test
+	public void testDestinationFiltering() throws Exception {
+		groundConfig.setProperty("remote_spacecraft_id", "5"); // not supported
+		groundConfig.setProperty("source_destination_id", String.valueOf(SourceDestination.DESTINATION.getCode()));
+		ground.stop();
+		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
+		ground.start();
+
+		satellite.waitForSession();
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
@@ -71,11 +120,22 @@ public class NodeTest {
 		ground.onCarrierAcquired();
 		satellite.onCarrierAcquired();
 
-		byte[] packet = TestUtil.createTestData(20);
-		ground.send(packet, QualityOfService.EXPEDITED, 0);
-		byte[] actual = satelliteDataCallback.waitForData();
-		assertNotNull(actual);
-		assertArrayEquals(packet, actual);
+		assertTestPacket();
+	}
+
+	@Test
+	public void testReconnectAfterCarrierLoss() throws Exception {
+		establishSession();
+
+		ground.onCarrierLost();
+		satellite.onCarrierLost();
+
+		Thread.sleep(2 * groundConfig.getDuration("carrier_loss_timer_duration"));
+
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+
+		assertTestPacket();
 	}
 
 	@Test
@@ -142,6 +202,19 @@ public class NodeTest {
 		props.putAll(load("src/main/resources/mib.properties"));
 		props.putAll(load("src/main/resources/transceiver.properties"));
 		props.putAll(load("src/main/resources/custom.properties"));
+		props.putAll(load("src/test/resources/ground2.properties"));
+		props.putAll(load("src/test/resources/channel.properties"));
+		ground2Config = new Configuration(props);
+		ground2Transceiver = new NullTransceiver(ground2Config);
+		ground2Transceiver.start();
+		ground2Callback = new MockNodeCallback();
+		ground2DataCallback = new MockUserDataCallback();
+		ground2 = new Node(ground2Config, ground2Transceiver, ground2Callback, ground2DataCallback);
+
+		props = new Properties();
+		props.putAll(load("src/main/resources/mib.properties"));
+		props.putAll(load("src/main/resources/transceiver.properties"));
+		props.putAll(load("src/main/resources/custom.properties"));
 		props.putAll(load("src/test/resources/satellite.properties"));
 		props.putAll(load("src/test/resources/channel.properties"));
 		satelliteConfig = new Configuration(props);
@@ -152,9 +225,11 @@ public class NodeTest {
 		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
 
 		groundTransceiver.setOtherSide(satelliteTransceiver);
+		ground2Transceiver.setOtherSide(satelliteTransceiver);
 		satelliteTransceiver.setOtherSide(groundTransceiver);
 
 		ground.start();
+		ground2.start();
 		satellite.start();
 	}
 
@@ -163,7 +238,16 @@ public class NodeTest {
 		groundTransceiver.stop();
 		satelliteTransceiver.stop();
 		satellite.stop();
+		ground2.stop();
 		ground.stop();
+	}
+
+	private void assertTestPacket() {
+		byte[] packet = TestUtil.createTestData(20);
+		ground.send(packet, QualityOfService.EXPEDITED, 0);
+		byte[] actual = satelliteDataCallback.waitForData();
+		assertNotNull(actual);
+		assertArrayEquals(packet, actual);
 	}
 
 	private void establishSession() throws InterruptedException {
@@ -177,7 +261,7 @@ public class NodeTest {
 		// to s40 state (data services)
 		Thread.sleep(2 * (groundConfig.getDuration("carrier_only_duration") + groundConfig.getDuration("acquisition_idle_duration")));
 	}
-	
+
 	private static Properties load(String file) throws Exception {
 		Properties result = new Properties();
 		try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {

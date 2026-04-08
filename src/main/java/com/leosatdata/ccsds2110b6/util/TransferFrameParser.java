@@ -25,7 +25,9 @@ public class TransferFrameParser {
 
 	private final int maxDataLength;
 	private final int localScid;
+	private final int remoteScid;
 	private final int localPcid;
+	private final SourceDestination sourceDestination;
 
 	private int pseudoPacketId = 0;
 
@@ -36,6 +38,8 @@ public class TransferFrameParser {
 	public TransferFrameParser(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.localPcid = config.getInteger("local_pcid", 0);
+		this.remoteScid = config.getInteger("remote_spacecraft_id", 0);
+		this.sourceDestination = SourceDestination.valueOfCode(config.getInteger("source_destination_id", 0));
 		int headerLength = TransferFrame.HEADER_LENGTH;
 		headerLength += TransferFrame.SEGMENT_HEADER_LENGTH; // Uframes are segmented
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
@@ -106,14 +110,35 @@ public class TransferFrameParser {
 		return maxDataLength;
 	}
 
+	public TransferFrame createPFrame(byte[] payload) {
+		com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
+		frame.setQualityOfService(QualityOfService.EXPEDITED);
+		frame.setPduTypeId(PduTypeId.SPDU);
+		frame.setDfcId(DfcId.PACKETS);
+		frame.setSourceOrDestination(sourceDestination);
+		if (sourceDestination.equals(SourceDestination.SOURCE)) {
+			frame.setScid(localScid);
+		} else {
+			frame.setScid(remoteScid);
+		}
+		frame.setPortId(0); // not used in P frames
+		frame.setPcid(localPcid);
+		frame.setDataField(payload);
+		return frame;
+	}
+
 	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
 		if (packet.length < maxDataLength) {
 			TransferFrame frame = new TransferFrame();
 			frame.setQualityOfService(qos);
 			frame.setPduTypeId(PduTypeId.USER_DATA);
 			frame.setDfcId(DfcId.SEGMENTED); // support packet outputstream only
-			frame.setSourceOrDestination(SourceDestination.SOURCE);
-			frame.setScid(localScid);
+			frame.setSourceOrDestination(sourceDestination);
+			if (sourceDestination.equals(SourceDestination.SOURCE)) {
+				frame.setScid(localScid);
+			} else {
+				frame.setScid(remoteScid);
+			}
 			frame.setPortId(portId);
 			frame.setPcid(localPcid);
 			frame.setDataField(packet);
@@ -135,8 +160,12 @@ public class TransferFrameParser {
 			frame.setQualityOfService(qos);
 			frame.setPduTypeId(PduTypeId.USER_DATA);
 			frame.setDfcId(DfcId.SEGMENTED); // support packet outputstream only
-			frame.setSourceOrDestination(SourceDestination.SOURCE);
-			frame.setScid(localScid);
+			frame.setSourceOrDestination(sourceDestination);
+			if (sourceDestination.equals(SourceDestination.SOURCE)) {
+				frame.setScid(localScid);
+			} else {
+				frame.setScid(remoteScid);
+			}
 			frame.setPortId(portId);
 			frame.setPcid(localPcid);
 			frame.setDataField(buffer);

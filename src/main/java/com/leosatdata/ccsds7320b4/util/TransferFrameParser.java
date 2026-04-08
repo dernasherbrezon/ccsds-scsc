@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
+import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
@@ -19,9 +20,13 @@ public class TransferFrameParser {
 	private final boolean ocf;
 	private final boolean frameErrorControl;
 	private final int localScid;
+	private final int remoteScid;
+	private final SourceDestination sourceDestination;
 
 	public TransferFrameParser(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
+		this.remoteScid = config.getInteger("remote_spacecraft_id", 0);
+		this.sourceDestination = SourceDestination.valueOfCode(config.getInteger("source_destination_id", 0));
 		this.insertZoneLength = config.getInteger("aos.insertZoneLength", 0);
 		this.frameHeaderErrorControl = config.getBoolean("aos.frameHeaderErrorControl");
 		this.dataUnitType = config.getInteger("aos.dataUnitType", 1);
@@ -163,7 +168,11 @@ public class TransferFrameParser {
 	public List createUFrame(byte[] payload, QualityOfService qos, int portId) {
 		TransferFrame frame = new TransferFrame();
 		frame.setReplay(false);
-		frame.setScid(localScid);
+		if (sourceDestination.equals(SourceDestination.SOURCE)) {
+			frame.setScid(localScid);
+		} else {
+			frame.setScid(remoteScid);
+		}
 		frame.setVcFrameCountCycleUsed(false);
 		frame.setVcid(portId);
 		frame.setDataField(payload);

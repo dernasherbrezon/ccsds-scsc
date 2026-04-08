@@ -16,16 +16,22 @@ import com.leosatdata.util.Configuration;
 
 public class TransferFrameParser {
 
+	private final static int MAX_SEQUENCE_NUMBER_BYTES = 1; // 2^8
+
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
 	private final int maxDataLength;
 	private final boolean fixedFrameLength;
 	private final int localScid;
+	private final int remoteScid;
+	private final SourceDestination sourceDestination;
 
 	private int pseudoPacketId = 0;
 
 	public TransferFrameParser(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
+		this.remoteScid = config.getInteger("remote_spacecraft_id", 0);
+		this.sourceDestination = SourceDestination.valueOfCode(config.getInteger("source_destination_id", 0));
 		this.insertZoneLength = config.getInteger("framev4.insertZoneLength", 0);
 		this.frameErrorControl = config.getBoolean("framev4.frameErrorControl");
 		this.fixedFrameLength = config.getBoolean("framev4.fixedLength");
@@ -198,11 +204,34 @@ public class TransferFrameParser {
 		return maxDataLength;
 	}
 
+	public TransferFrame createPFrame(byte[] payload) {
+		com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
+		frame.setSourceOrDestination(sourceDestination);
+		if (sourceDestination.equals(SourceDestination.SOURCE)) {
+			frame.setScid(localScid);
+		} else {
+			frame.setScid(remoteScid);
+		}
+		frame.setVcid(0); // not clear
+		frame.setMapid(0); // not clear
+		frame.setHeaderTruncated(false);
+		frame.setSequenceControl(QualityOfService.EXPEDITED);
+		frame.setProtocolControl(PduTypeId.SPDU);
+		frame.setOcf(false);
+		frame.setDataField(payload);
+		frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
+		return frame;
+	}
+
 	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
 		if (packet.length < maxDataLength) {
 			TransferFrame frame = new TransferFrame();
-			frame.setScid(localScid);
-			frame.setSourceOrDestination(SourceDestination.SOURCE);
+			frame.setSourceOrDestination(sourceDestination);
+			if (sourceDestination.equals(SourceDestination.SOURCE)) {
+				frame.setScid(localScid);
+			} else {
+				frame.setScid(remoteScid);
+			}
 			frame.setVcid(0); // TODO bit 21 of vcid is localPcid
 			frame.setMapid(portId);
 			frame.setHeaderTruncated(false);
@@ -226,8 +255,12 @@ public class TransferFrameParser {
 			System.arraycopy(packet, written, buffer, 0, buffer.length);
 
 			TransferFrame frame = new TransferFrame();
-			frame.setScid(localScid);
-			frame.setSourceOrDestination(SourceDestination.SOURCE);
+			frame.setSourceOrDestination(sourceDestination);
+			if (sourceDestination.equals(SourceDestination.SOURCE)) {
+				frame.setScid(localScid);
+			} else {
+				frame.setScid(remoteScid);
+			}
 			frame.setVcid(0); // TODO bit 21 of vcid is localPcid
 			frame.setMapid(portId);
 			frame.setHeaderTruncated(false);

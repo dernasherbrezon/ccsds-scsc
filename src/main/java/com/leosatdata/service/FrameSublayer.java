@@ -11,10 +11,8 @@ import java.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.leosatdata.ccsds2110b6.model.DfcId;
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
-import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
@@ -35,12 +33,11 @@ import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransferFrameUtil;
 
-public class FrameSublayer {
+class FrameSublayer {
 
 	private final static Logger LOG = LoggerFactory.getLogger(FrameSublayer.class);
 	private final static Logger RX = LoggerFactory.getLogger("rx");
 	private final static Logger TX = LoggerFactory.getLogger("tx");
-	private final static int MAX_SEQUENCE_NUMBER_BYTES = 1; // 2^8
 	private final static int MAX_SEQUENCE_NUMBER = 256; // 2^8
 
 	private final State state;
@@ -50,7 +47,6 @@ public class FrameSublayer {
 	private final int uFrameVersion;
 	private final int pFrameVersion;
 	private final int spduVersion;
-	private final int localScid;
 	private final int localPcid;
 	private final int transmissionWindow;
 
@@ -66,14 +62,13 @@ public class FrameSublayer {
 	// tx is async operation
 	private boolean txReady = true;
 
-	public FrameSublayer(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
+	FrameSublayer(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.state = state;
 		this.config = config;
 		this.transceiver = transceiver;
 		this.uFrameVersion = config.getInteger("u_frame_version", -1);
 		this.pFrameVersion = config.getInteger("frame_version", -1);
 		this.spduVersion = config.getInteger("spdu_version", 1);
-		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.localPcid = config.getInteger("local_pcid", 0);
 		this.transmissionWindow = config.getInteger("transmission_window", 10);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
@@ -104,7 +99,7 @@ public class FrameSublayer {
 		if (!state.isTransmit()) {
 			return;
 		}
-		
+
 		Object frame = null;
 
 		Spdu spdu = state.getMacQueue().poll();
@@ -477,35 +472,16 @@ public class FrameSublayer {
 		if (uFrameVersion == 4) {
 			return framev4Parser.createUFrame(payload, qos, portId);
 		}
+		LOG.error("unknown u frame version: {}", uFrameVersion);
 		return Collections.emptyList();
 	}
 
 	private Object createPFrame(byte[] payload) {
 		if (pFrameVersion == 3) {
-			com.leosatdata.ccsds2110b6.model.TransferFrame frame = new com.leosatdata.ccsds2110b6.model.TransferFrame();
-			frame.setQualityOfService(QualityOfService.EXPEDITED);
-			frame.setPduTypeId(PduTypeId.SPDU);
-			frame.setDfcId(DfcId.PACKETS);
-			frame.setSourceOrDestination(SourceDestination.SOURCE);
-			frame.setScid(localScid);
-			frame.setPortId(0); // not used in P frames
-			frame.setPcid(localPcid);
-			frame.setDataField(payload);
-			return frame;
+			return framev3Parser.createPFrame(payload);
 		}
 		if (pFrameVersion == 4) {
-			com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
-			frame.setScid(localScid);
-			frame.setSourceOrDestination(SourceDestination.SOURCE);
-			frame.setVcid(0); // not clear
-			frame.setMapid(0); // not clear
-			frame.setHeaderTruncated(false);
-			frame.setSequenceControl(QualityOfService.EXPEDITED);
-			frame.setProtocolControl(PduTypeId.SPDU);
-			frame.setOcf(false);
-			frame.setDataField(payload);
-			frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
-			return frame;
+			return framev4Parser.createPFrame(payload);
 		}
 		LOG.error("unknown p frame version: {}", pFrameVersion);
 		return null;

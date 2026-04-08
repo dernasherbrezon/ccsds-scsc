@@ -1,6 +1,6 @@
 package com.leosatdata.service;
 
-public class FrameFilterOnce implements FrameFilter {
+public class FrameFilterOnce extends DefaultFrameFilter {
 
 	private final String message;
 	private boolean filtered = false;
@@ -10,7 +10,11 @@ public class FrameFilterOnce implements FrameFilter {
 	}
 
 	@Override
-	public boolean accept(byte[] data) {
+	public boolean accept(NullTransceiver tx, NullTransceiver rx, byte[] data) {
+		boolean result = super.accept(tx, rx, data);
+		if (!result) {
+			return result;
+		}
 		if (filtered) {
 			return true;
 		}

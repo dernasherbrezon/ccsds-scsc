@@ -24,6 +24,10 @@ public class Configuration {
 		config.setProperty(name, value);
 	}
 
+	public Object removeProperty(String name) {
+		return config.remove(name);
+	}
+
 	public long getLong(String name, long defaultValue) {
 		String result = config.getProperty(name);
 		if (result == null || result.trim().length() == 0) {

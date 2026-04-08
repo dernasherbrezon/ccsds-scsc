@@ -13,7 +13,6 @@ import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
-import com.leosatdata.util.TransceiverUtil;
 
 public class NullTransceiver implements Transceiver {
 
@@ -39,6 +38,7 @@ public class NullTransceiver implements Transceiver {
 
 	public NullTransceiver(Configuration config) {
 		this.config = config;
+		this.frameFilter = new DefaultFrameFilter();
 	}
 
 	public void setOtherSide(NullTransceiver otherSide) {
@@ -65,11 +65,7 @@ public class NullTransceiver implements Transceiver {
 		// tx should be called by interrupt, i.e. async
 		executor.schedule(new DelayedTxTask(getTxCallback(), data), txMillisToWait, TimeUnit.MILLISECONDS);
 		if (otherSide.rx) {
-			if (txFrequency != otherSide.rxFrequency) {
-				LOG.error("tx frequency doesn't match rx");
-				return;
-			}
-			if (frameFilter != null && !frameFilter.accept(data)) {
+			if (frameFilter != null && !frameFilter.accept(this, otherSide, data)) {
 				return;
 			}
 			otherSide.executor.schedule(new DelayedRxTask(otherSide.getRxCallback(), data), txMillisToWait + config.getLong("channel.delayMillis", 0), TimeUnit.MILLISECONDS);
@@ -192,6 +188,10 @@ public class NullTransceiver implements Transceiver {
 		this.rxFrequency = frequency;
 	}
 
+	public float getRxFrequency() {
+		return rxFrequency;
+	}
+
 	@Override
 	public void setRxDataEncoding(Coding dataEncoding) {
 		this.dataEncoding = dataEncoding;
@@ -222,6 +222,10 @@ public class NullTransceiver implements Transceiver {
 	@Override
 	public void setTxFrequency(float frequency) {
 		this.txFrequency = frequency;
+	}
+
+	public float getTxFrequency() {
+		return txFrequency;
 	}
 
 	@Override
