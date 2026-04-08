@@ -12,6 +12,7 @@ import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.NamingThreadFactory;
 import com.leosatdata.util.TransceiverUtil;
 
 public class NullTransceiver implements Transceiver {
@@ -45,7 +46,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	public void start() {
-		executor = Executors.newScheduledThreadPool(1);
+		executor = Executors.newScheduledThreadPool(1, new NamingThreadFactory("transceiver-" + config.getInteger("local_spacecraft_id", 0)));
 	}
 
 	public void stop() {
@@ -64,7 +65,7 @@ public class NullTransceiver implements Transceiver {
 		// tx should be called by interrupt, i.e. async
 		executor.schedule(new DelayedTxTask(getTxCallback(), data), txMillisToWait, TimeUnit.MILLISECONDS);
 		if (otherSide.rx) {
-			if( txFrequency != otherSide.rxFrequency) {
+			if (txFrequency != otherSide.rxFrequency) {
 				LOG.error("tx frequency doesn't match rx");
 				return;
 			}

@@ -56,20 +56,12 @@ public class NodeTest {
 	public void testNoConnection() throws Exception {
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, false);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
 	}
 
 	@Test
 	public void testTemporaryCarrierLoss() throws Exception {
-		satellite.waitForSession();
-		ground.setCommParameters(createType1CommParameters());
-		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, true);
-		assertEvent(satelliteCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, true);
-
-		// according to spec extra timeout between callback to vehicle and transitioning
-		// to s40 state (data services)
-		Thread.sleep(2 * (groundConfig.getDuration("carrier_only_duration") + groundConfig.getDuration("acquisition_idle_duration")));
+		establishSession();
 
 		ground.onCarrierLost();
 		satellite.onCarrierLost();
@@ -88,18 +80,15 @@ public class NodeTest {
 
 	@Test
 	public void testStartSendStop() throws Exception {
-		satellite.waitForSession();
-		ground.setCommParameters(createType1CommParameters());
-		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, true);
+		establishSession();
 
 		testComm(ground, groundDataCallback, groundTransceiver, satellite, satelliteDataCallback, satelliteTransceiver);
 		testComm(satellite, satelliteDataCallback, satelliteTransceiver, ground, groundDataCallback, groundTransceiver);
 
 		satellite.stopSession();
 
-		assertEvent(groundCallback.waitForEvent(), ControllerEventType.END_OF_SESSION);
-		assertEvent(satelliteCallback.waitForEvent(), ControllerEventType.END_OF_SESSION);
+		assertNotNull(groundCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
+		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
 	}
 
 	private void testComm(Node from, MockUserDataCallback fromCallback, NullTransceiver fromTransceiver, Node to, MockUserDataCallback toCallback, NullTransceiver toTransceiver) throws Exception {
@@ -177,6 +166,18 @@ public class NodeTest {
 		ground.stop();
 	}
 
+	private void establishSession() throws InterruptedException {
+		satellite.waitForSession();
+		ground.setCommParameters(createType1CommParameters());
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+
+		// according to spec extra timeout between callback to vehicle and transitioning
+		// to s40 state (data services)
+		Thread.sleep(2 * (groundConfig.getDuration("carrier_only_duration") + groundConfig.getDuration("acquisition_idle_duration")));
+	}
+	
 	private static Properties load(String file) throws Exception {
 		Properties result = new Properties();
 		try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
@@ -228,16 +229,11 @@ public class NodeTest {
 		return result;
 	}
 
-	private static void assertEvent(ControllerEvent hail, ControllerEventType expected, boolean expectedStatus) {
-		assertEvent(hail, expected);
-		if (expected.equals(ControllerEventType.PERSISTENT_ACTIVITY)) {
+	private static void assertEvent(ControllerEvent hail, boolean expectedStatus) {
+		assertNotNull(hail);
+		if (hail.getType().equals(ControllerEventType.PERSISTENT_ACTIVITY)) {
 			PersistentActivity event = (PersistentActivity) hail.getObj();
 			assertEquals(expectedStatus, event.isSuccess());
 		}
-	}
-
-	private static void assertEvent(ControllerEvent event, ControllerEventType expected) {
-		assertNotNull(event);
-		assertEquals(expected, event.getType());
 	}
 }

@@ -4,9 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.ControllerEvent;
+import com.leosatdata.model.ControllerEventType;
 
 public class MockNodeCallback implements NodeCallback {
-	
+
 	private final static Logger LOG = LoggerFactory.getLogger(MockNodeCallback.class);
 
 	private final Object lock = new Object();
@@ -15,31 +16,46 @@ public class MockNodeCallback implements NodeCallback {
 	@Override
 	public void handle(ControllerEvent event) {
 		synchronized (lock) {
-			LOG.info("got event " + event.getType() + " old event: ", this.event);
+			if (this.event != null) {
+				LOG.info("replacing: {} with {}", this.event, event);
+			}
 			this.event = event;
 			lock.notifyAll();
 		}
 	}
 
-	public ControllerEvent waitForEvent() {
+	public ControllerEvent waitForEvent(ControllerEventType type) {
+		return waitForEvent(15000, type);
+	}
+
+	public ControllerEvent waitForEvent(long timeout, ControllerEventType type) {
 		synchronized (lock) {
-			try {
-				if (event != null) {
+			long remaining = timeout;
+			while (remaining > 0) {
+				long start = System.currentTimeMillis();
+				try {
+					if (event != null && event.getType().equals(type)) {
+						ControllerEvent result = event;
+						event = null;
+						return result;
+					}
+					lock.wait(remaining);
+					remaining = System.currentTimeMillis() - start;
+					if (remaining > 0) {
+						continue;
+					}
 					ControllerEvent result = event;
 					event = null;
-					return result;
+					if (result != null && result.getType().equals(type)) {
+						return result;
+					}
+					return null;
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return null;
 				}
-				LOG.info("waiting");
-				// ignore spurious wake-ups
-				lock.wait(15000);
-				LOG.info("unlocked");
-				ControllerEvent result = event;
-				event = null;
-				return result;
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				return null;
 			}
+			return null;
 		}
 	}
 

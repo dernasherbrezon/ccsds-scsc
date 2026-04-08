@@ -50,7 +50,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		this.state = new State(config);
 		this.mac = new Mac(state, config, transceiver, callback);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
-		t = new Thread(this, "node-thread-" + localScid);
+		t = new Thread(this, "node-" + localScid);
 		t.setDaemon(true);
 	}
 
