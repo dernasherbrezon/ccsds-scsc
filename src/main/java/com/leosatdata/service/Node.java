@@ -50,7 +50,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		this.state = new State(config);
 		this.mac = new Mac(state, config, transceiver, callback);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
-		t = new Thread(this, "node-thread");
+		t = new Thread(this, "node-thread-" + localScid);
 		t.setDaemon(true);
 	}
 
@@ -200,6 +200,11 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 	@Override
 	public void onCarrierAcquired() {
 		sendEvent(new Event(EventType.E8_1_CARRIER_RECEIVED));
+	}
+
+	@Override
+	public void onCarrierLost() {
+		sendEvent(new Event(EventType.E8_1_CARRIER_LOST));
 	}
 
 	@Override

@@ -8,6 +8,7 @@ import com.leosatdata.util.Configuration;
 public class State {
 
 	private boolean persistence;
+	private boolean transmit;
 	private final BlockingQueue<Event> queue;
 	private final BlockingQueue<Spdu> macQueue;
 	private final BlockingQueue<Object> seqQueue;
@@ -173,5 +174,13 @@ public class State {
 
 	public int getExpeditedFrameCounter() {
 		return expeditedFrameCounter;
+	}
+
+	public boolean isTransmit() {
+		return transmit;
+	}
+
+	public void setTransmit(boolean transmit) {
+		this.transmit = transmit;
 	}
 }

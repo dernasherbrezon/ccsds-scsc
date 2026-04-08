@@ -13,6 +13,8 @@ import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.model.CarrierModulation;
@@ -36,6 +38,8 @@ import com.leosatdata.util.TestUtil;
 
 public class NodeTest {
 
+	private final static Logger LOG = LoggerFactory.getLogger(NodeTest.class);
+
 	private Configuration groundConfig;
 	private NullTransceiver groundTransceiver;
 	private MockNodeCallback groundCallback;
@@ -56,6 +60,33 @@ public class NodeTest {
 	}
 
 	@Test
+	public void testTemporaryCarrierLoss() throws Exception {
+		satellite.waitForSession();
+		ground.setCommParameters(createType1CommParameters());
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, true);
+		assertEvent(satelliteCallback.waitForEvent(), ControllerEventType.PERSISTENT_ACTIVITY, true);
+
+		// according to spec extra timeout between callback to vehicle and transitioning
+		// to s40 state (data services)
+		Thread.sleep(2 * (groundConfig.getDuration("carrier_only_duration") + groundConfig.getDuration("acquisition_idle_duration")));
+
+		ground.onCarrierLost();
+		satellite.onCarrierLost();
+
+		Thread.sleep(groundConfig.getDuration("carrier_loss_timer_duration") / 2);
+
+		ground.onCarrierAcquired();
+		satellite.onCarrierAcquired();
+
+		byte[] packet = TestUtil.createTestData(20);
+		ground.send(packet, QualityOfService.EXPEDITED, 0);
+		byte[] actual = satelliteDataCallback.waitForData();
+		assertNotNull(actual);
+		assertArrayEquals(packet, actual);
+	}
+
+	@Test
 	public void testStartSendStop() throws Exception {
 		satellite.waitForSession();
 		ground.setCommParameters(createType1CommParameters());
@@ -64,10 +95,6 @@ public class NodeTest {
 
 		testComm(ground, groundDataCallback, groundTransceiver, satellite, satelliteDataCallback, satelliteTransceiver);
 		testComm(satellite, satelliteDataCallback, satelliteTransceiver, ground, groundDataCallback, groundTransceiver);
-
-		// according to spec extra timeout between callback to vehicle and transitioning
-		// to s40 state (data services)
-		Thread.sleep(2 * groundConfig.getDuration("acquisition_idle_duration"));
 
 		satellite.stopSession();
 

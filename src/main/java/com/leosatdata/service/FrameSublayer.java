@@ -101,7 +101,10 @@ public class FrameSublayer {
 		if (!txReady) {
 			return;
 		}
-
+		if (!state.isTransmit()) {
+			return;
+		}
+		
 		Object frame = null;
 
 		Spdu spdu = state.getMacQueue().poll();

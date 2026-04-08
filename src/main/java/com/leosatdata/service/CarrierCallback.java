@@ -4,4 +4,6 @@ public interface CarrierCallback {
 
 	void onCarrierAcquired();
 	
+	void onCarrierLost();
+	
 }

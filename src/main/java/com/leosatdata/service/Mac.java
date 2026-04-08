@@ -17,6 +17,7 @@ import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
+import com.leosatdata.model.TransceiverOperationMode;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
@@ -39,9 +40,11 @@ public class Mac {
 
 	private Timer waitTimer;
 	private TimerTask waitTimerTask;
+	private TimerTask carrierLossTask;
 	private int currentHailAttempt = 0;
 	private boolean hailCarrierReceived;
 	private boolean symbolInLock;
+	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
 
 	public Mac(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.state = state;
@@ -73,9 +76,11 @@ public class Mac {
 		case E1_CONNECTING_L:
 			LOG.info("waiting for hail");
 			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
+			transceiverMode = TransceiverOperationMode.RESPONDER;
 			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
 			transceiver.startTx();
 			transceiver.startRx();
+			state.setTransmit(true);
 			break;
 		case E2_CONNECTING_T:
 			if (state.getCommParameters() == null) {
@@ -89,10 +94,12 @@ public class Mac {
 				return;
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
+			transceiverMode = TransceiverOperationMode.CALLER;
 			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
 			transceiver.startTx();
 			transceiver.startRx();
 			state.setPersistence(true);
+			state.setTransmit(true);
 			state.setState(MacState.S31_START_HAIL);
 			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
@@ -124,7 +131,40 @@ public class Mac {
 			scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
 		case E8_1_CARRIER_RECEIVED:
-			hailCarrierReceived = true;
+			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE)) {
+				hailCarrierReceived = true;
+			}
+			if (carrierLossTask != null) {
+				LOG.info("carrier recovered");
+				carrierLossTask.cancel();
+				carrierLossTask = null;
+			}
+			break;
+		case E8_1_CARRIER_LOST:
+			// CARRIER_LOSS_TIMER value is ‘0’ and MODE = active;
+			LOG.info("carrier lost state is: {}", state.getState());
+			if (carrierLossTask == null && state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+				scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
+			}
+			break;
+		case E80_CARRIER_LOST_TIMEOUT:
+			LOG.info("carrier loss recovery timeout");
+			callback.handle(new ControllerEvent(ControllerEventType.CARRIER_LOSS));
+			state.setTransmit(false);
+			scheduleWait(EventType.E81_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
+			break;
+		case E81_RECONNECT_WAIT_TIMEOUT:
+			switch (transceiverMode) {
+			case CALLER:
+				sendEvent(new Event(EventType.E2_CONNECTING_T));
+				break;
+			case RESPONDER:
+				sendEvent(new Event(EventType.E1_CONNECTING_L));
+				break;
+			default:
+				LOG.error("unsupported transceiver operating mode: {}", transceiverMode);
+				break;
+			}
 			break;
 		case E8_2_SYMBOL_IN_LOCK:
 			symbolInLock = true;
@@ -160,6 +200,7 @@ public class Mac {
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			state.setPersistence(false);
 			state.setState(MacState.S40_0_DATA_SERVICES);
+			LOG.info("session established");
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {
@@ -310,6 +351,18 @@ public class Mac {
 		};
 		LOG.info("waiting: {} for {} ms", type, duration);
 		waitTimer.schedule(waitTimerTask, duration);
+	}
+
+	private void scheduleCarrierLossTimeout(EventType type, long duration) {
+		carrierLossTask = new TimerTask() {
+
+			@Override
+			public void run() {
+				sendEvent(new Event(type));
+			}
+		};
+		LOG.info("carrier loss: {} for {} ms", type, duration);
+		waitTimer.schedule(carrierLossTask, duration);
 	}
 
 	private void sendEvent(Event e) {
