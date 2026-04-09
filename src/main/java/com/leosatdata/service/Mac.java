@@ -42,6 +42,7 @@ public class Mac {
 	private TimerTask waitTimerTask;
 	private TimerTask carrierLossTask;
 	private int currentHailAttempt = 0;
+	private int currentCommChangeAttempt = 0;
 	private boolean hailCarrierReceived;
 	private boolean symbolInLock;
 	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
@@ -124,6 +125,14 @@ public class Mac {
 				callback.handle(createNotification("hail", true));
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
+			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE)) {
+				state.setState(MacState.S48_3_COMM_CHANGE_WAIT);
+				scheduleWait(EventType.E18_COMM_CHANGE_WAIT_TIMEOUT, config.getDuration("comm_change_waiting_period"));
+			}
+			if (state.getState().equals(MacState.S48_4_REMOTE_COMM_CHANGE)) {
+				state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
+				scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
+			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
 			hailCarrierReceived = false;
@@ -145,6 +154,11 @@ public class Mac {
 			LOG.info("carrier lost state is: {}", state.getState());
 			if (carrierLossTask == null && state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
 				scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
+			}
+			// comm change routine
+			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE) || state.getState().equals(MacState.S48_3_COMM_CHANGE_WAIT)) {
+				transceiverUtil.applyRxParameters(state.getCommParameters());
+				state.setState(MacState.S48__1_RX_COMM_CHANGE);
 			}
 			break;
 		case E80_CARRIER_LOST_TIMEOUT:
@@ -183,6 +197,7 @@ public class Mac {
 				transceiverUtil.applyParameters(state.getCommParameters());
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				LOG.info("session established");
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
 				if (!validateSpdu((Spdu) e.getArg())) {
@@ -190,6 +205,29 @@ public class Mac {
 				}
 				state.setCommParameters((Spdu) e.getArg());
 				state.setNeedPlcw(true);
+			}
+			if (state.getState().equals(MacState.S48__1_RX_COMM_CHANGE)) {
+				waitTimerTask.cancel();
+				callback.handle(createNotification("comm_change", true));
+				state.setPersistence(false);
+				transceiverUtil.applyTxParameters(state.getCommParameters());
+				currentCommChangeAttempt = 0;
+				state.setState(MacState.S41_RADIATE_CARRIER);
+				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+			}
+			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+				if (SpduUtil.isCommChange((Spdu) e.getArg())) {
+					LOG.info("remote comm change parameters requested: {}", e.getArg());
+					state.setPersistence(true);
+					SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg());
+					// no pending frames on transceiver
+					if (state.isTxReady()) {
+						state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
+						scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
+					} else {
+						state.setState(MacState.S48_4_REMOTE_COMM_CHANGE);
+					}
+				}
 			}
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
@@ -200,7 +238,7 @@ public class Mac {
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			state.setPersistence(false);
 			state.setState(MacState.S40_0_DATA_SERVICES);
-			LOG.info("session established");
+			LOG.info("data services ready");
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (hailCarrierReceived) {
@@ -220,6 +258,7 @@ public class Mac {
 				LOG.error("received comm change without payload");
 				return;
 			}
+			// FIXME move to mergeCommParameters
 			if (e.getArg() instanceof Type1Directive) {
 				// FIXME default duplex mode
 				ControlParameters controlParameters = new ControlParameters();
@@ -252,9 +291,33 @@ public class Mac {
 				LOG.error("unknown arg type: {}", e.getArg());
 				return;
 			}
-//			if (state.getMode().equals(MacMode.ACTIVE)) {
-//				// FIXME send remote change
-//			}
+			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+				sendEvent(new Event(EventType.E14_COMM_CHANGE));
+			}
+			break;
+		case E14_COMM_CHANGE:
+			LOG.info("attempting comm_change: {} of {}", (currentCommChangeAttempt + 1), config.getInteger("comm_change_lifetime", 0));
+			state.setPersistence(true);
+			state.getMacQueue().add(state.getCommParameters());
+			state.setState(MacState.S48_2_SEND_COMM_CHANGE);
+			break;
+		case E18_COMM_CHANGE_WAIT_TIMEOUT:
+			currentCommChangeAttempt++;
+			maxAttempts = config.getInteger("comm_change_lifetime", 0);
+			if (maxAttempts != 0 && currentCommChangeAttempt >= maxAttempts) {
+				currentCommChangeAttempt = 0;
+				callback.handle(createNotification("comm_change", false));
+			} else {
+				sendEvent(new Event(EventType.E14_COMM_CHANGE));
+			}
+			break;
+		case E20_COMM_CHANGE_TAIL_TIMEOUT:
+			state.setPersistence(false);
+			state.setState(MacState.S41_RADIATE_CARRIER);
+			scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+			transceiverUtil.applyParameters(state.getCommParameters());
+			state.setNeedPlcw(true);
+			LOG.info("comm parameters changed: {}", state.getCommParameters());
 			break;
 		}
 	}

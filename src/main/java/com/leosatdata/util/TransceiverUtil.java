@@ -24,6 +24,7 @@ import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
+import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
@@ -48,7 +49,7 @@ public class TransceiverUtil {
 		this.channel = config.getInteger("hailing_channel", -1);
 	}
 
-	public Object createHailTxRx() {
+	public Spdu createHailTxRx() {
 		if (spduVersion == Type1Directive.SPDU_VERSION) {
 			return createHailType1();
 		} else if (spduVersion == Type4Directive.SPDU_VERSION) {
@@ -103,17 +104,32 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	public void applyParameters(Object params) {
+	public void applyParameters(Spdu params) {
+		applyRxParameters(params);
+		applyTxParameters(params);
+	}
+
+	public void applyRxParameters(Spdu params) {
 		if (params instanceof Type1Directive) {
-			applyType1Parameters((Type1Directive) params);
+			applyType1RxParameters((Type1Directive) params);
 		} else if (params instanceof Type4Directive) {
-			applyType4Parameters((Type4Directive) params);
+			applyType4RxParameters((Type4Directive) params);
 		} else if (params instanceof Type5Directive) {
-			applyType5Parameters((Type5Directive) params);
+			applyType5RxParameters((Type5Directive) params);
 		}
 	}
 
-	private void applyType1Parameters(Type1Directive params) {
+	public void applyTxParameters(Spdu params) {
+		if (params instanceof Type1Directive) {
+			applyType1TxParameters((Type1Directive) params);
+		} else if (params instanceof Type4Directive) {
+			applyType4TxParameters((Type4Directive) params);
+		} else if (params instanceof Type5Directive) {
+			applyType5TxParameters((Type5Directive) params);
+		}
+	}
+
+	private void applyType1RxParameters(Type1Directive params) {
 		int symbolRate = params.getRxParams().getDataRate().getRate();
 		if (params.getRxPlExtensions().isUseExtendedDataRate()) {
 			symbolRate = params.getRxParams().getDataRate().getExtendedRate();
@@ -127,14 +143,16 @@ public class TransceiverUtil {
 		transceiver.setRxFrequency(config.getLong("frequency.3.ch" + channelId + "r", 0));
 		transceiver.setRxDataEncoding(convertDataEncoding(params.getRxParams().getDataEncoding()));
 		transceiver.setRxModulation(params.getRxParams().getModulation());
+	}
 
-		symbolRate = params.getTxParams().getDataRate().getRate();
+	private void applyType1TxParameters(Type1Directive params) {
+		int symbolRate = params.getTxParams().getDataRate().getRate();
 		if (params.getTxPlExtensions().isUseExtendedDataRate()) {
 			symbolRate = params.getTxParams().getDataRate().getExtendedRate();
 		}
 		transceiver.setTxSymbolRate(symbolRate);
 		transceiver.setTxDataModulation(params.getTxPlExtensions().getDataModulation());
-		channelId = params.getTxParams().getFrequency().getCode();
+		int channelId = params.getTxParams().getFrequency().getCode();
 		if (params.getTxPlExtensions().isUseExtendedFreqSet()) {
 			channelId += 8;
 		}
@@ -210,7 +228,7 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	private void applyType4Parameters(Type4Directive directive) {
+	private void applyType4RxParameters(Type4Directive directive) {
 		LinkEstablishment params = directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
@@ -219,8 +237,10 @@ public class TransceiverUtil {
 		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setRxDataEncoding(params.getCoding());
 		transceiver.setRxPolarization(params.getPolarization());
+	}
 
-		params = directive.getTxLink();
+	private void applyType4TxParameters(Type4Directive directive) {
+		LinkEstablishment params = directive.getTxLink();
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxDataModulation(DataModulation.MANCHESTER);
@@ -230,7 +250,7 @@ public class TransceiverUtil {
 		transceiver.setTxPolarization(params.getPolarization());
 	}
 
-	private void applyType5Parameters(Type5Directive directive) {
+	private void applyType5RxParameters(Type5Directive directive) {
 		Link2Establishment params = directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
@@ -240,8 +260,10 @@ public class TransceiverUtil {
 		transceiver.setRxDataEncoding(params.getCoding());
 		transceiver.setRxPolarization(params.getPolarization());
 		transceiver.setRxModulation(params.getCoherency());
+	}
 
-		params = directive.getTxLink();
+	private void applyType5TxParameters(Type5Directive directive) {
+		Link2Establishment params = directive.getTxLink();
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxDataModulation(DataModulation.MANCHESTER);

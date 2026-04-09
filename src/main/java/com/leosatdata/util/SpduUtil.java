@@ -91,6 +91,22 @@ public class SpduUtil {
 		return false;
 	}
 
+	public static boolean isCommChange(Spdu obj) {
+		if (obj instanceof Type1Directive) {
+			Type1Directive directive = (Type1Directive) obj;
+			return directive.getRxParams() != null || directive.getTxParams() != null;
+		}
+		if (obj instanceof Type4Directive) {
+			Type4Directive directive = (Type4Directive) obj;
+			return directive.getRxLink() != null || directive.getTxLink() != null;
+		}
+		if (obj instanceof Type5Directive) {
+			Type5Directive directive = (Type5Directive) obj;
+			return directive.getRxLink() != null || directive.getTxLink() != null;
+		}
+		return false;
+	}
+
 	public static Vr getVr(Spdu obj) {
 		if (obj instanceof Type1Directive) {
 			Type1Directive directive = (Type1Directive) obj;
@@ -105,5 +121,10 @@ public class SpduUtil {
 			return directive.getVr();
 		}
 		return null;
+	}
+
+	public static void mergeCommParameters(Spdu oldParams, Spdu newParams) {
+		// TODO Auto-generated method stub
+
 	}
 }

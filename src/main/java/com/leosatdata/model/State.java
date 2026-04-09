@@ -34,6 +34,10 @@ public class State {
 	// independent of the I/O port.
 	private int vr = 0; // sequence number plus one	(modulo 256) of the last Sequence Controlled frame acknowledged by the receiver
 
+	// wait tx complete before sending next frame
+	// tx is async operation
+	private boolean txReady = true;
+	
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);
 		this.seqQueue = new ArrayBlockingQueue<>(capacity);
@@ -182,5 +186,13 @@ public class State {
 
 	public void setTransmit(boolean transmit) {
 		this.transmit = transmit;
+	}
+	
+	public void setTxReady(boolean txReady) {
+		this.txReady = txReady;
+	}
+	
+	public boolean isTxReady() {
+		return txReady;
 	}
 }

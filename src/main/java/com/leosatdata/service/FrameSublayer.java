@@ -58,9 +58,6 @@ class FrameSublayer {
 	private Timer synchTimer;
 	private TimerTask synchTimerTask;
 	private int currentResyncAttempt = 0;
-	// wait tx complete before sending next frame
-	// tx is async operation
-	private boolean txReady = true;
 
 	FrameSublayer(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
 		this.state = state;
@@ -93,7 +90,7 @@ class FrameSublayer {
 		// always attempt to send frame after handling event
 		handleFopp(e);
 
-		if (!txReady) {
+		if (!state.isTxReady()) {
 			return;
 		}
 		if (!state.isTransmit()) {
@@ -168,7 +165,7 @@ class FrameSublayer {
 
 		debug(false, frame);
 
-		txReady = false;
+		state.setTxReady(false);
 
 		transceiver.send(payload);
 
@@ -304,7 +301,8 @@ class FrameSublayer {
 			}
 			break;
 		case TX_COMPLETE:
-			txReady = true;
+			state.setTxReady(true);
+			
 			if (!state.isResync()) {
 				break;
 			}
