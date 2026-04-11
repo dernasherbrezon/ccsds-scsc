@@ -67,6 +67,27 @@ public class NodeTest {
 	}
 
 	@Test
+	public void testCommChange() throws Exception {
+		establishSession();
+
+		// switch to the different tx channel. rx stays the same
+		TxRxParameters tx = new TxRxParameters();
+		tx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
+		tx.setDataRate(DataRate.R8C);
+		tx.setFrequency(Frequency.CH5);
+		tx.setMode(Mode.PROXIMITY1);
+		tx.setModulation(Modulation.COHERENT_PSK);
+		Type1Directive result = new Type1Directive();
+		result.setTxParams(tx);
+
+		ground.setCommParameters(result);
+
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		waitPersistenceActivityComletion();
+		assertTestPacket();
+	}
+
+	@Test
 	public void testValiteSourceFrame() throws Exception {
 		// remote_spacecraft_id is configured
 		establishSession();
@@ -257,6 +278,10 @@ public class NodeTest {
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 
+		waitPersistenceActivityComletion();
+	}
+
+	private void waitPersistenceActivityComletion() throws InterruptedException {
 		// according to spec extra timeout between callback to vehicle and transitioning
 		// to s40 state (data services)
 		Thread.sleep(2 * (groundConfig.getDuration("carrier_only_duration") + groundConfig.getDuration("acquisition_idle_duration")));

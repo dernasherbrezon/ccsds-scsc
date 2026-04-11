@@ -6,10 +6,8 @@ import java.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
-import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacState;
@@ -78,10 +76,10 @@ public class Mac {
 			LOG.info("waiting for hail");
 			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
 			transceiverMode = TransceiverOperationMode.RESPONDER;
-			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
-			transceiver.startTx();
-			transceiver.startRx();
-			state.setTransmit(true);
+			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+			transceiver.setTxState(TransceiverTxState.MODULATION);
+			state.setTxState(TransceiverTxState.MODULATION);
+			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			break;
 		case E2_CONNECTING_T:
 			if (state.getCommParameters() == null) {
@@ -89,23 +87,24 @@ public class Mac {
 				callback.handle(createNotification("hail", false));
 				return;
 			}
-			if (!validateSpdu(state.getCommParameters())) {
+			if (!SpduUtil.isValidDirective(spduVersion, state.getCommParameters())) {
 				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
 				callback.handle(createNotification("hail", false));
 				return;
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
 			transceiverMode = TransceiverOperationMode.CALLER;
-			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx());
-			transceiver.startTx();
-			transceiver.startRx();
+			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+			state.setTxState(TransceiverTxState.CARRIER_ONLY);
+			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			state.setPersistence(true);
-			state.setTransmit(true);
 			state.setState(MacState.S31_START_HAIL);
 			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
 		case E4_CARRIER_ONLY_TIMEOUT:
-			transceiver.startIdle();
+			transceiver.setTxState(TransceiverTxState.MODULATION);
+			state.setTxState(TransceiverTxState.MODULATION);
 			state.setState(MacState.S32_SEND_HAIL_ACQUISITION);
 			scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
@@ -121,7 +120,8 @@ public class Mac {
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				// switch over to the agreed link once plcw sent
-				transceiverUtil.applyParameters(state.getCommParameters());
+				// assume
+				transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 				callback.handle(createNotification("hail", true));
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
@@ -139,7 +139,7 @@ public class Mac {
 			state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
 			scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
-		case E8_1_CARRIER_RECEIVED:
+		case CARRIER_ACQUIRED:
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE)) {
 				hailCarrierReceived = true;
 			}
@@ -149,22 +149,18 @@ public class Mac {
 				carrierLossTask = null;
 			}
 			break;
-		case E8_1_CARRIER_LOST:
+		case CARRIER_LOST:
 			// CARRIER_LOSS_TIMER value is ‘0’ and MODE = active;
-			LOG.info("carrier lost state is: {}", state.getState());
 			if (carrierLossTask == null && state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
 				scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
-			}
-			// comm change routine
-			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE) || state.getState().equals(MacState.S48_3_COMM_CHANGE_WAIT)) {
-				transceiverUtil.applyRxParameters(state.getCommParameters());
-				state.setState(MacState.S48__1_RX_COMM_CHANGE);
 			}
 			break;
 		case E80_CARRIER_LOST_TIMEOUT:
 			LOG.info("carrier loss recovery timeout");
 			callback.handle(new ControllerEvent(ControllerEventType.CARRIER_LOSS));
-			state.setTransmit(false);
+			// stop sending any data, but keep carrier for remote to detect it
+			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+			state.setTxState(TransceiverTxState.CARRIER_ONLY);
 			scheduleWait(EventType.E81_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
 			break;
 		case E81_RECONNECT_WAIT_TIMEOUT:
@@ -180,13 +176,22 @@ public class Mac {
 				break;
 			}
 			break;
-		case E8_2_SYMBOL_IN_LOCK:
+		case SYMBOL_UNLOCK:
+			// comm change routine
+			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE) || state.getState().equals(MacState.S48_3_COMM_CHANGE_WAIT)) {
+				LOG.info("rx comm parameters changed: {}", state.getCommParameters());
+				transceiverUtil.applyRxParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+				state.setState(MacState.S48__1_RX_COMM_CHANGE);
+			}
+			break;
+		case SYMBOL_LOCK:
 			symbolInLock = true;
 			if (config.getInteger("hail_response", 0) != HAIL_RESPONSE_SYMBOL_IN_LOCK) {
 				break;
 			}
 			// no break clause here because should proceed as valid frame
 		case SPDU:
+			Spdu spdu = (Spdu) e.getArg();
 			// check several states because responder can send response faster than extra
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
@@ -194,32 +199,35 @@ public class Mac {
 				callback.handle(createNotification("hail", true));
 				currentHailAttempt = 0;
 				// switch over to the agreed link
-				transceiverUtil.applyParameters(state.getCommParameters());
+				transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 				state.setState(MacState.S41_RADIATE_CARRIER);
+				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+				state.setTxState(TransceiverTxState.CARRIER_ONLY);
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("session established");
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
-				if (!validateSpdu((Spdu) e.getArg())) {
+				if (!SpduUtil.isValidDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
 					break;
 				}
-				state.setCommParameters((Spdu) e.getArg());
+				state.setCommParameters(spdu);
 				state.setNeedPlcw(true);
 			}
 			if (state.getState().equals(MacState.S48__1_RX_COMM_CHANGE)) {
 				waitTimerTask.cancel();
 				callback.handle(createNotification("comm_change", true));
 				state.setPersistence(false);
-				transceiverUtil.applyTxParameters(state.getCommParameters());
+				transceiverUtil.applyTxParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 				currentCommChangeAttempt = 0;
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
 			}
 			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
-				if (SpduUtil.isCommChange((Spdu) e.getArg())) {
-					LOG.info("remote comm change parameters requested: {}", e.getArg());
+				if (SpduUtil.isCommChange(spdu)) {
+					LOG.info("remote comm change parameters requested: {}", spdu);
 					state.setPersistence(true);
-					SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg());
+					state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), spdu));
 					// no pending frames on transceiver
 					if (state.isTxReady()) {
 						state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
@@ -231,7 +239,8 @@ public class Mac {
 			}
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
-			transceiver.startIdle();
+			transceiver.setTxState(TransceiverTxState.MODULATION);
+			state.setTxState(TransceiverTxState.MODULATION);
 			state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
 			scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
@@ -258,39 +267,7 @@ public class Mac {
 				LOG.error("received comm change without payload");
 				return;
 			}
-			// FIXME move to mergeCommParameters
-			if (e.getArg() instanceof Type1Directive) {
-				// FIXME default duplex mode
-				ControlParameters controlParameters = new ControlParameters();
-				controlParameters.setDuplex(Duplex.FULL_DUPLEX);
-				controlParameters.setRnmd(false);
-				controlParameters.setTimeSampleField(0);
-				controlParameters.setTransmitToken(false);
-				Type1Directive obj = (Type1Directive) e.getArg();
-				obj.setControlParams(controlParameters);
-				if (state.getCommParameters() == null) {
-					state.setCommParameters(obj);
-				} else {
-					((Type1Directive) state.getCommParameters()).merge(obj);
-				}
-			} else if (e.getArg() instanceof Type4Directive) {
-				Type4Directive obj = (Type4Directive) e.getArg();
-				if (state.getCommParameters() == null) {
-					state.setCommParameters(obj);
-				} else {
-					((Type4Directive) state.getCommParameters()).merge(obj);
-				}
-			} else if (e.getArg() instanceof Type5Directive) {
-				Type5Directive obj = (Type5Directive) e.getArg();
-				if (state.getCommParameters() == null) {
-					state.setCommParameters(obj);
-				} else {
-					((Type5Directive) state.getCommParameters()).merge(obj);
-				}
-			} else {
-				LOG.error("unknown arg type: {}", e.getArg());
-				return;
-			}
+			state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg()));
 			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
 				sendEvent(new Event(EventType.E14_COMM_CHANGE));
 			}
@@ -315,9 +292,9 @@ public class Mac {
 			state.setPersistence(false);
 			state.setState(MacState.S41_RADIATE_CARRIER);
 			scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
-			transceiverUtil.applyParameters(state.getCommParameters());
+			transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 			state.setNeedPlcw(true);
-			LOG.info("comm parameters changed: {}", state.getCommParameters());
+			LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
 			break;
 		}
 	}
@@ -376,21 +353,6 @@ public class Mac {
 				scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
 			break;
-		}
-	}
-
-	private boolean validateSpdu(Spdu obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (obj instanceof Type1Directive) {
-			return spduVersion == Type1Directive.SPDU_VERSION;
-		} else if (obj instanceof Type4Directive) {
-			return spduVersion == Type4Directive.SPDU_VERSION;
-		} else if (obj instanceof Type5Directive) {
-			return spduVersion == Type5Directive.SPDU_VERSION;
-		} else {
-			return false;
 		}
 	}
 

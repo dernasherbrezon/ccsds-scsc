@@ -1,6 +1,10 @@
 package com.leosatdata.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.leosatdata.model.ControlParameters;
+import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.Spdu;
@@ -10,6 +14,23 @@ import com.leosatdata.model.Type5Directive;
 import com.leosatdata.model.Vr;
 
 public class SpduUtil {
+
+	private final static Logger LOG = LoggerFactory.getLogger(SpduUtil.class);
+
+	public static boolean isValidDirective(int spduVersion, Spdu obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (obj instanceof Type1Directive) {
+			return spduVersion == Type1Directive.SPDU_VERSION;
+		} else if (obj instanceof Type4Directive) {
+			return spduVersion == Type4Directive.SPDU_VERSION;
+		} else if (obj instanceof Type5Directive) {
+			return spduVersion == Type5Directive.SPDU_VERSION;
+		} else {
+			return false;
+		}
+	}
 
 	public static Spdu createRnmdDirective(Spdu obj, boolean rnmd) {
 		if (obj instanceof Type1Directive) {
@@ -64,6 +85,7 @@ public class SpduUtil {
 			result.setRxLink(rx);
 			return result;
 		}
+		LOG.error("unknown spdu for createRnmdDirective: {}", obj);
 		return null;
 	}
 
@@ -88,10 +110,14 @@ public class SpduUtil {
 			boolean txRnmd = directive.getTxLink() != null && directive.getTxLink().isRnmd();
 			return rxRnmd || txRnmd;
 		}
+		LOG.error("unknown spdu for isRnmd: {}", obj);
 		return false;
 	}
 
 	public static boolean isCommChange(Spdu obj) {
+		if (obj == null) {
+			return false;
+		}
 		if (obj instanceof Type1Directive) {
 			Type1Directive directive = (Type1Directive) obj;
 			return directive.getRxParams() != null || directive.getTxParams() != null;
@@ -104,6 +130,7 @@ public class SpduUtil {
 			Type5Directive directive = (Type5Directive) obj;
 			return directive.getRxLink() != null || directive.getTxLink() != null;
 		}
+		LOG.error("unknown spdu for isCommChange: {}", obj);
 		return false;
 	}
 
@@ -120,11 +147,44 @@ public class SpduUtil {
 			Type5Directive directive = (Type5Directive) obj;
 			return directive.getVr();
 		}
+		// PLCW won't have vr
 		return null;
 	}
 
-	public static void mergeCommParameters(Spdu oldParams, Spdu newParams) {
-		// TODO Auto-generated method stub
+	public static Spdu mergeCommParameters(Spdu oldParams, Spdu newParams) {
+		if (newParams instanceof Type1Directive) {
+			// FIXME default duplex mode
+			ControlParameters controlParameters = new ControlParameters();
+			controlParameters.setDuplex(Duplex.FULL_DUPLEX);
+			controlParameters.setRnmd(false);
+			controlParameters.setTimeSampleField(0);
+			controlParameters.setTransmitToken(false);
+			Type1Directive obj = (Type1Directive) newParams;
+			obj.setControlParams(controlParameters);
+			if (oldParams == null) {
+				return obj;
+			}
+			((Type1Directive) oldParams).merge(obj);
+			return oldParams;
+		}
+		if (newParams instanceof Type4Directive) {
+			Type4Directive obj = (Type4Directive) newParams;
+			if (oldParams == null) {
+				return obj;
+			}
+			((Type4Directive) oldParams).merge(obj);
+			return oldParams;
+		}
 
+		if (newParams instanceof Type5Directive) {
+			Type5Directive obj = (Type5Directive) newParams;
+			if (oldParams == null) {
+				return obj;
+			}
+			((Type5Directive) oldParams).merge(obj);
+			return oldParams;
+		}
+		LOG.error("unknown spdu for mergeCommParameters: {}", newParams);
+		return null;
 	}
 }

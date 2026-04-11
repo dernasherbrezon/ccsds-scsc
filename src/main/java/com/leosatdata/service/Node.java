@@ -17,7 +17,7 @@ import com.leosatdata.model.State;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.TransferFrameUtil;
 
-public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallback, CarrierCallback {
+public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallback, CarrierCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Node.class);
 
@@ -42,6 +42,8 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 		this.transceiver = transceiver;
 		this.transceiver.setRxCallback(this);
 		this.transceiver.setTxCallback(this);
+		this.transceiver.setCarrierCallback(this);
+		this.transceiver.setSymbolLockCallback(this);
 		this.callback = callback;
 		this.rxCallback = rxCallback;
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
@@ -199,17 +201,22 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolInLockCallb
 
 	@Override
 	public void onCarrierAcquired() {
-		sendEvent(new Event(EventType.E8_1_CARRIER_RECEIVED));
+		sendEvent(new Event(EventType.CARRIER_ACQUIRED));
 	}
 
 	@Override
 	public void onCarrierLost() {
-		sendEvent(new Event(EventType.E8_1_CARRIER_LOST));
+		sendEvent(new Event(EventType.CARRIER_LOST));
 	}
 
 	@Override
-	public void onSymbolInLock() {
-		sendEvent(new Event(EventType.E8_2_SYMBOL_IN_LOCK));
+	public void onSymbolLock() {
+		sendEvent(new Event(EventType.SYMBOL_LOCK));
+	}
+
+	@Override
+	public void onSymbolUnlock() {
+		sendEvent(new Event(EventType.SYMBOL_UNLOCK));
 	}
 
 	public void start() {

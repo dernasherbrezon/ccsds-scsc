@@ -22,9 +22,6 @@ public interface Transceiver {
 	void setRxCallback(RxCallback callback);
 	RxCallback getRxCallback();
 
-	void startRx();
-	void stopRx();
-
 	// TX parameters
 	void setTxSymbolRate(float baud);
 	void setTxDataModulation(DataModulation modulation);
@@ -35,10 +32,14 @@ public interface Transceiver {
 	
 	void setTxCallback(TxCallback callback);
 	TxCallback getTxCallback();
+	void setCarrierCallback(CarrierCallback callback);
+	CarrierCallback getCarrierCallback();
+	void setSymbolLockCallback(SymbolLockCallback callback);
+	SymbolLockCallback getSymbolLockCallback();
 
-	void startTx();
-	void startIdle();
-	void stopIdle();
-	void stopTx();
+	void setTxState(TransceiverTxState state);
+	TransceiverTxState getTxState();
+	void setRxState(TransceiverRxState state);
+	TransceiverRxState getRxState();
 
 }

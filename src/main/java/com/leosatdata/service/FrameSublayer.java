@@ -93,7 +93,8 @@ class FrameSublayer {
 		if (!state.isTxReady()) {
 			return;
 		}
-		if (!state.isTransmit()) {
+		// support transceivers without extra "to be modulated" buffer
+		if (!state.getTxState().equals(TransceiverTxState.MODULATION)) {
 			return;
 		}
 
@@ -302,7 +303,7 @@ class FrameSublayer {
 			break;
 		case TX_COMPLETE:
 			state.setTxReady(true);
-			
+
 			if (!state.isResync()) {
 				break;
 			}

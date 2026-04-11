@@ -3,12 +3,12 @@ package com.leosatdata.model;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import com.leosatdata.service.TransceiverTxState;
 import com.leosatdata.util.Configuration;
 
 public class State {
 
 	private boolean persistence;
-	private boolean transmit;
 	private final BlockingQueue<Event> queue;
 	private final BlockingQueue<Spdu> macQueue;
 	private final BlockingQueue<Object> seqQueue;
@@ -32,12 +32,14 @@ public class State {
 	private int expeditedFrameCounter; // a modulo-8 counter indicating that Expedited frames have been received.
 	// FIXME Separate Report Values shall be reported for each physical channel
 	// independent of the I/O port.
-	private int vr = 0; // sequence number plus one	(modulo 256) of the last Sequence Controlled frame acknowledged by the receiver
+	private int vr = 0; // sequence number plus one (modulo 256) of the last Sequence Controlled frame
+						// acknowledged by the receiver
 
 	// wait tx complete before sending next frame
 	// tx is async operation
 	private boolean txReady = true;
-	
+	private TransceiverTxState txState = TransceiverTxState.OFF;
+
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);
 		this.seqQueue = new ArrayBlockingQueue<>(capacity);
@@ -180,19 +182,19 @@ public class State {
 		return expeditedFrameCounter;
 	}
 
-	public boolean isTransmit() {
-		return transmit;
-	}
-
-	public void setTransmit(boolean transmit) {
-		this.transmit = transmit;
-	}
-	
 	public void setTxReady(boolean txReady) {
 		this.txReady = txReady;
 	}
-	
+
 	public boolean isTxReady() {
 		return txReady;
+	}
+
+	public void setTxState(TransceiverTxState txState) {
+		this.txState = txState;
+	}
+
+	public TransceiverTxState getTxState() {
+		return txState;
 	}
 }
