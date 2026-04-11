@@ -219,6 +219,8 @@ public class Mac {
 				state.setPersistence(false);
 				transceiverUtil.applyTxParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 				currentCommChangeAttempt = 0;
+				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+				state.setTxState(TransceiverTxState.CARRIER_ONLY);
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
@@ -291,6 +293,8 @@ public class Mac {
 		case E20_COMM_CHANGE_TAIL_TIMEOUT:
 			state.setPersistence(false);
 			state.setState(MacState.S41_RADIATE_CARRIER);
+			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+			state.setTxState(TransceiverTxState.CARRIER_ONLY);
 			scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 			state.setNeedPlcw(true);
