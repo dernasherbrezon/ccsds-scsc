@@ -71,7 +71,7 @@ TBD
 
 | Check | Pass/Fail | Evidence |
 | ----- | ------- | ----- |
-| Type F1 PLCW encodes/decodes correctly | (/) | SpduParserTest.testPlcw |
+| Type F1 PLCW encodes/decodes correctly | :heavy_check_mark: | SpduParserTest.testPlcw |
 | Type F2 PLCW encodes/decodes correctly | | |
 | Variable-length SPDUs (Types 1–5) encode/decode | | |
 | PLCWs generated from FARM-P state | | |
