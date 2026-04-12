@@ -26,8 +26,9 @@ public class NullTransceiver implements Transceiver {
 	private NullTransceiver otherSide;
 	private ScheduledExecutorService executor;
 	private FrameFilter frameFilter;
-	private TransceiverTxState txState;
-	private TransceiverRxState rxState;
+	private TransceiverTxState txState = TransceiverTxState.OFF;
+	private TransceiverRxState rxState = TransceiverRxState.OFF;
+	private boolean skipCallbacks = false;
 
 	private float symbolRate;
 	private float rxFrequency;
@@ -133,7 +134,7 @@ public class NullTransceiver implements Transceiver {
 	@Override
 	public void setRxFrequency(float frequency) {
 		boolean notifyChange = this.rxFrequency != frequency;
-		if (notifyChange) {
+		if (notifyChange && !skipCallbacks) {
 			if (symbolLockCallback != null) {
 				symbolLockCallback.onSymbolUnlock();
 			}
@@ -142,7 +143,7 @@ public class NullTransceiver implements Transceiver {
 			}
 		}
 		this.rxFrequency = frequency;
-		if (notifyChange) {
+		if (notifyChange && !skipCallbacks) {
 			if (carrierCallback != null) {
 				carrierCallback.onCarrierAcquired();
 			}
@@ -187,7 +188,7 @@ public class NullTransceiver implements Transceiver {
 	public void setTxFrequency(float frequency) {
 		// assume change frequency when symbol lock/unlock is required
 		boolean notifyChange = this.rxFrequency != frequency;
-		if (notifyChange) {
+		if (notifyChange && !skipCallbacks) {
 			if (otherSide.symbolLockCallback != null) {
 				otherSide.symbolLockCallback.onSymbolUnlock();
 			}
@@ -196,7 +197,7 @@ public class NullTransceiver implements Transceiver {
 			}
 		}
 		this.txFrequency = frequency;
-		if (notifyChange) {
+		if (notifyChange && !skipCallbacks) {
 			if (otherSide.carrierCallback != null) {
 				otherSide.carrierCallback.onCarrierAcquired();
 			}
@@ -254,7 +255,7 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setTxState(TransceiverTxState state) {
-		if (this.txState != null) {
+		if (this.txState != null && !skipCallbacks) {
 			if (this.txState.equals(TransceiverTxState.MODULATION)) {
 				if (state.equals(TransceiverTxState.CARRIER_ONLY) || state.equals(TransceiverTxState.OFF)) {
 					otherSide.symbolLockCallback.onSymbolUnlock();
@@ -298,4 +299,11 @@ public class NullTransceiver implements Transceiver {
 		return rxState;
 	}
 
+	public void setSkipCallbacks(boolean skipCallbacks) {
+		this.skipCallbacks = skipCallbacks;
+	}
+
+	public boolean isSkipCallbacks() {
+		return skipCallbacks;
+	}
 }

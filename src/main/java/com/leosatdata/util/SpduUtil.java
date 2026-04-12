@@ -110,7 +110,6 @@ public class SpduUtil {
 			boolean txRnmd = directive.getTxLink() != null && directive.getTxLink().isRnmd();
 			return rxRnmd || txRnmd;
 		}
-		LOG.error("unknown spdu for isRnmd: {}", obj);
 		return false;
 	}
 
@@ -130,7 +129,6 @@ public class SpduUtil {
 			Type5Directive directive = (Type5Directive) obj;
 			return directive.getRxLink() != null || directive.getTxLink() != null;
 		}
-		LOG.error("unknown spdu for isCommChange: {}", obj);
 		return false;
 	}
 

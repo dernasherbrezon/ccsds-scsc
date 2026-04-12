@@ -94,6 +94,7 @@ public class NodeTest {
 
 		ground2.setCommParameters(createType1CommParameters());
 		ground2Transceiver.setFrameFilter(null); // ignore rx/tx mismatch
+		ground2Transceiver.setSkipCallbacks(true);
 		ground2.startSession();
 		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
 		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.INVALID_FRAME_SOURCE));
@@ -110,6 +111,7 @@ public class NodeTest {
 
 		ground2.setCommParameters(createType1CommParameters());
 		ground2Transceiver.setFrameFilter(null); // ignore rx/tx mismatch
+		ground2Transceiver.setSkipCallbacks(true);
 		ground2.startSession();
 		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
 		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.INVALID_FRAME_SOURCE));
