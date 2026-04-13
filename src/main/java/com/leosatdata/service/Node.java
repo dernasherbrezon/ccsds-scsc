@@ -129,12 +129,10 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 
 	@Override
 	public void onRx(byte[] data) {
-		Object frame = frameSublayer.decode(data);
+		Object frame = frameSublayer.onRx(data);
 		if (frame == null) {
 			return;
 		}
-
-		frameSublayer.debug(true, frame);
 
 		PduTypeId type = TransferFrameUtil.getPduTypeId(frame);
 		SourceDestination sourceDestination = TransferFrameUtil.getSourceDestination(frame);

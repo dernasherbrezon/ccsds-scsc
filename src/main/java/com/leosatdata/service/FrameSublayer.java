@@ -365,7 +365,7 @@ class FrameSublayer {
 		return true;
 	}
 
-	public void debug(boolean rx, Object obj) {
+	private void debug(boolean rx, Object obj) {
 		Logger log;
 		if (rx) {
 			log = RX;
@@ -487,7 +487,13 @@ class FrameSublayer {
 	}
 
 	// can be called on a separate thread, shouldn't share any state with encode
-	public Object decode(byte[] data) {
+	public Object onRx(byte[] data) {
+		Object result = onRxInternal(data);
+		debug(true, result);
+		return result;
+	}
+
+	private Object onRxInternal(byte[] data) {
 		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data)) {
 			if (uFrameVersion != 2) {
 				return null;
