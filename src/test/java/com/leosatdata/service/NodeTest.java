@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -162,6 +163,37 @@ public class NodeTest {
 	}
 
 	@Test
+	public void testPrioritization() throws Exception {
+		establishSession();
+
+		PausingFrameFilter pausingFilter = new PausingFrameFilter();
+		satelliteTransceiver.setFrameFilter(pausingFilter);
+
+		byte[] expedited = new byte[1];
+		expedited[0] = (byte) QualityOfService.EXPEDITED.getCode();
+
+		byte[] sequenced = new byte[1];
+		sequenced[0] = (byte) QualityOfService.SEQUENCE_CONTROLLED.getCode();
+
+		satellite.send(expedited, QualityOfService.EXPEDITED, 0);
+		satellite.send(sequenced, QualityOfService.SEQUENCE_CONTROLLED, 0);
+		satellite.send(expedited, QualityOfService.EXPEDITED, 0);
+
+		groundDataCallback.setCollectMulti(true);
+
+		pausingFilter.resume();
+
+		int numberOfPackets = 3;
+		List<byte[]> packets = groundDataCallback.waitForData(numberOfPackets, 15000);
+		assertEquals(numberOfPackets, packets.size());
+		// skip first packet, because its order is dependant on the current state of
+		// state machine
+		// check only 2 remaining packets, because they must be re-ordered
+		assertEquals((byte) QualityOfService.EXPEDITED.getCode(), packets.get(1)[0]);
+		assertEquals((byte) QualityOfService.SEQUENCE_CONTROLLED.getCode(), packets.get(2)[0]);
+	}
+
+	@Test
 	public void testStartSendStop() throws Exception {
 		establishSession();
 
@@ -258,11 +290,11 @@ public class NodeTest {
 
 	@After
 	public void stop() {
-		groundTransceiver.stop();
-		satelliteTransceiver.stop();
 		satellite.stop();
 		ground2.stop();
 		ground.stop();
+		satelliteTransceiver.stop();
+		groundTransceiver.stop();
 	}
 
 	private void assertTestPacket() {
