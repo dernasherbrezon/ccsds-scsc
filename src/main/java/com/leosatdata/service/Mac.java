@@ -1,5 +1,6 @@
 package com.leosatdata.service;
 
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -56,6 +57,14 @@ public class Mac {
 
 	public void start() {
 		waitTimer = new Timer("wt"); // this will start Thread
+		long plcwPeriod = config.getDuration("plcw_repeat_interval");
+		waitTimer.schedule(new TimerTask() {
+
+			@Override
+			public void run() {
+				sendEvent(new Event(EventType.REQUEST_PLCW));
+			}
+		}, new Date(System.currentTimeMillis() + plcwPeriod), plcwPeriod);
 	}
 
 	public void stop() {
@@ -299,6 +308,9 @@ public class Mac {
 			transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 			state.setNeedPlcw(true);
 			LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
+			break;
+		case REQUEST_PLCW:
+			state.setNeedPlcw(true);
 			break;
 		}
 	}

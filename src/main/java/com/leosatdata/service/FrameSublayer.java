@@ -155,7 +155,6 @@ class FrameSublayer {
 			} else {
 				nextSeqNumber++;
 			}
-			// TODO notify obc about VE(S)
 			state.setVes(nextSeqNumber);
 		}
 
@@ -188,7 +187,6 @@ class FrameSublayer {
 			} else {
 				nextSeqNumber++;
 			}
-			// TODO notify obc about VS(S)
 			state.getSentQueue().add(frame);
 			state.setVs(nextSeqNumber);
 			state.setVvs(nextSeqNumber);

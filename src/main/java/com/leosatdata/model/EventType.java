@@ -37,6 +37,7 @@ public enum EventType {
 	UFRAME,
 	SPDU,
 	STOP,
+	REQUEST_PLCW,
 
 	// transceiver events
 	TX_COMPLETE,
