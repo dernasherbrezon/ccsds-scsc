@@ -5,11 +5,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
 import org.junit.Before;
@@ -31,11 +33,15 @@ import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PlExtensions;
+import com.leosatdata.model.Plcw;
 import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
+import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
+import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.TestUtil;
 
 public class NodeTest {
@@ -59,6 +65,56 @@ public class NodeTest {
 	private MockNodeCallback satelliteCallback;
 	private MockUserDataCallback satelliteDataCallback;
 	private Node satellite;
+
+	@Test
+	public void testResync1() throws Exception {
+		establishSession();
+
+		CountDownLatch latch = new CountDownLatch(1);
+		groundTransceiver.setRxFrameFilter(new ParsedFrameFilter(groundConfig) {
+			@Override
+			boolean onSpdu(Spdu spdu) {
+				if (!(spdu instanceof Plcw)) {
+					return true;
+				}
+				Plcw plcw = (Plcw) spdu;
+				if (plcw.getReportValue() == 1) {
+					latch.countDown();
+				}
+				return true;
+			}
+
+			@Override
+			boolean onUserData(Object frame) {
+				return true;
+			}
+		});
+		assertTestSeqPacket();
+		latch.await();
+
+		com.leosatdata.ccsds2110b6.util.TransferFrameParser framev3Parser = new com.leosatdata.ccsds2110b6.util.TransferFrameParser(satelliteConfig);
+		SpduParser spduParser = new SpduParser(satelliteConfig);
+
+		Plcw plcw = new Plcw();
+		// smaller report value
+		plcw.setReportValue(0);
+		plcw.setRetransmit(false);
+		plcw.setExpeditedFrameCounter(0);
+		plcw.setPcid(0);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			spduParser.encode(plcw, bos);
+		}
+		com.leosatdata.ccsds2110b6.model.TransferFrame frame = framev3Parser.createPFrame(baos.toByteArray());
+		baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
+		}
+		ground.onRx(baos.toByteArray());
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
+
+		assertTestSeqPacket();
+	}
 
 	@Test
 	public void testNoConnection() throws Exception {
@@ -85,7 +141,7 @@ public class NodeTest {
 
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 		waitPersistenceActivityComletion();
-		assertTestPacket();
+		assertTestExpPacket();
 	}
 
 	@Test
@@ -94,7 +150,7 @@ public class NodeTest {
 		establishSession();
 
 		ground2.setCommParameters(createType1CommParameters());
-		ground2Transceiver.setFrameFilter(null); // ignore rx/tx mismatch
+		ground2Transceiver.setTxFrameFilter(null); // ignore rx/tx mismatch
 		ground2Transceiver.setSkipCallbacks(true);
 		ground2.startSession();
 		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
@@ -111,7 +167,7 @@ public class NodeTest {
 		establishSession();
 
 		ground2.setCommParameters(createType1CommParameters());
-		ground2Transceiver.setFrameFilter(null); // ignore rx/tx mismatch
+		ground2Transceiver.setTxFrameFilter(null); // ignore rx/tx mismatch
 		ground2Transceiver.setSkipCallbacks(true);
 		ground2.startSession();
 		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
@@ -144,7 +200,7 @@ public class NodeTest {
 		ground.onCarrierAcquired();
 		satellite.onCarrierAcquired();
 
-		assertTestPacket();
+		assertTestExpPacket();
 	}
 
 	@Test
@@ -159,7 +215,7 @@ public class NodeTest {
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 
-		assertTestPacket();
+		assertTestExpPacket();
 	}
 
 	@Test
@@ -167,7 +223,7 @@ public class NodeTest {
 		establishSession();
 
 		PausingFrameFilter pausingFilter = new PausingFrameFilter();
-		satelliteTransceiver.setFrameFilter(pausingFilter);
+		satelliteTransceiver.setTxFrameFilter(pausingFilter);
 
 		byte[] expedited = new byte[1];
 		expedited[0] = (byte) QualityOfService.EXPEDITED.getCode();
@@ -229,7 +285,7 @@ public class NodeTest {
 		byte[] packet = TestUtil.createTestData(3 * maxFrameLength);
 		String payload = UUID.randomUUID().toString();
 		byte[] payloadBytes = payload.getBytes();
-		fromTransceiver.setFrameFilter(new FrameFilterOnce(payload));
+		fromTransceiver.setTxFrameFilter(new FrameFilterOnce(payload));
 		System.arraycopy(payloadBytes, 0, packet, maxFrameLength, payloadBytes.length);
 		from.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
 
@@ -297,9 +353,17 @@ public class NodeTest {
 		groundTransceiver.stop();
 	}
 
-	private void assertTestPacket() {
+	private void assertTestExpPacket() {
 		byte[] packet = TestUtil.createTestData(20);
 		ground.send(packet, QualityOfService.EXPEDITED, 0);
+		byte[] actual = satelliteDataCallback.waitForData();
+		assertNotNull(actual);
+		assertArrayEquals(packet, actual);
+	}
+
+	private void assertTestSeqPacket() {
+		byte[] packet = TestUtil.createTestData(20);
+		ground.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
 		byte[] actual = satelliteDataCallback.waitForData();
 		assertNotNull(actual);
 		assertArrayEquals(packet, actual);

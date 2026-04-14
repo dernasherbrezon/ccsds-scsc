@@ -25,7 +25,8 @@ public class NullTransceiver implements Transceiver {
 	private SymbolLockCallback symbolLockCallback;
 	private NullTransceiver otherSide;
 	private ScheduledExecutorService executor;
-	private FrameFilter frameFilter;
+	private FrameFilter txFrameFilter;
+	private FrameFilter rxFrameFilter;
 	private TransceiverTxState txState = TransceiverTxState.OFF;
 	private TransceiverRxState rxState = TransceiverRxState.OFF;
 	private boolean skipCallbacks = false;
@@ -36,7 +37,7 @@ public class NullTransceiver implements Transceiver {
 
 	public NullTransceiver(Configuration config) {
 		this.config = config;
-		this.frameFilter = new DefaultFrameFilter();
+		this.txFrameFilter = new DefaultFrameFilter();
 	}
 
 	public void setOtherSide(NullTransceiver otherSide) {
@@ -61,10 +62,10 @@ public class NullTransceiver implements Transceiver {
 		long txMillisToWait = (long) ((data.length * 8 * 1000) / symbolRate);
 		// tx should be called by interrupt, i.e. async
 		executor.schedule(new DelayedTxTask(getTxCallback(), data), txMillisToWait, TimeUnit.MILLISECONDS);
-		if (frameFilter != null && !frameFilter.accept(this, otherSide, data)) {
+		if (txFrameFilter != null && !txFrameFilter.accept(this, otherSide, data)) {
 			return;
 		}
-		otherSide.executor.schedule(new DelayedRxTask(otherSide.getRxCallback(), data), txMillisToWait + config.getLong("channel.delayMillis", 0), TimeUnit.MILLISECONDS);
+		otherSide.executor.schedule(new DelayedRxTask(otherSide.getRxCallback(), data, otherSide.rxFrameFilter), txMillisToWait + config.getLong("channel.delayMillis", 0), TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -91,15 +92,19 @@ public class NullTransceiver implements Transceiver {
 
 		private final byte[] data;
 		private final RxCallback callback;
+		private final FrameFilter filter;
 
-		public DelayedRxTask(RxCallback callback, byte[] data) {
+		public DelayedRxTask(RxCallback callback, byte[] data, FrameFilter filter) {
 			this.data = data;
 			this.callback = callback;
+			this.filter = filter;
 		}
 
 		@Override
 		public void run() {
-			callback.onRx(data);
+			if (filter == null || filter.accept(null, null, data)) {
+				callback.onRx(data);
+			}
 		}
 
 	}
@@ -229,8 +234,8 @@ public class NullTransceiver implements Transceiver {
 
 	}
 
-	public void setFrameFilter(FrameFilter frameFilter) {
-		this.frameFilter = frameFilter;
+	public void setTxFrameFilter(FrameFilter frameFilter) {
+		this.txFrameFilter = frameFilter;
 	}
 
 	@Override
@@ -305,5 +310,9 @@ public class NullTransceiver implements Transceiver {
 
 	public boolean isSkipCallbacks() {
 		return skipCallbacks;
+	}
+
+	public void setRxFrameFilter(FrameFilter rxFrameFilter) {
+		this.rxFrameFilter = rxFrameFilter;
 	}
 }

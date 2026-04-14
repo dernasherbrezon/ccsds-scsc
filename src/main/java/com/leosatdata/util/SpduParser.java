@@ -78,7 +78,7 @@ public class SpduParser {
 		bos.writeFully(payloadData);
 	}
 
-	public Object decode(BitInputStream bis) throws IOException {
+	public Spdu decode(BitInputStream bis) throws IOException {
 		SpduHeader header = new SpduHeader();
 		header.setFormat(bis.readUnsignedInt(1));
 		if (header.getFormat() == FIXED_SPDU) {
