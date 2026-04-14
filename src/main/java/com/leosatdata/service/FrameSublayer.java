@@ -355,6 +355,7 @@ class FrameSublayer {
 			return false;
 		}
 		if (plcw.isRetransmit() && plcw.getReportValue() == state.getVs()) {
+			LOG.info("received retransmit plcw when not needed");
 			return false;
 		}
 		if (!plcw.isRetransmit() && state.isRrr() && plcw.getReportValue() == state.getNnr()) {

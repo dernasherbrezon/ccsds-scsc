@@ -7,11 +7,13 @@ import static org.junit.Assert.assertNotNull;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
@@ -70,50 +72,36 @@ public class NodeTest {
 	public void testResync1() throws Exception {
 		establishSession();
 
-		CountDownLatch latch = new CountDownLatch(1);
-		groundTransceiver.setRxFrameFilter(new ParsedFrameFilter(groundConfig) {
-			@Override
-			boolean onSpdu(Spdu spdu) {
-				if (!(spdu instanceof Plcw)) {
-					return true;
-				}
-				Plcw plcw = (Plcw) spdu;
-				if (plcw.getReportValue() == 1) {
-					latch.countDown();
-				}
-				return true;
-			}
+		assertTestSeqPacket(1);
 
-			@Override
-			boolean onUserData(Object frame) {
-				return true;
-			}
-		});
-		assertTestSeqPacket();
-		latch.await();
-
-		com.leosatdata.ccsds2110b6.util.TransferFrameParser framev3Parser = new com.leosatdata.ccsds2110b6.util.TransferFrameParser(satelliteConfig);
-		SpduParser spduParser = new SpduParser(satelliteConfig);
-
-		Plcw plcw = new Plcw();
-		// smaller report value
-		plcw.setReportValue(0);
-		plcw.setRetransmit(false);
-		plcw.setExpeditedFrameCounter(0);
-		plcw.setPcid(0);
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (BitOutputStream bos = new BitOutputStream(baos)) {
-			spduParser.encode(plcw, bos);
-		}
-		com.leosatdata.ccsds2110b6.model.TransferFrame frame = framev3Parser.createPFrame(baos.toByteArray());
-		baos = new ByteArrayOutputStream();
-		try (BitOutputStream bos = new BitOutputStream(baos)) {
-			com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
-		}
-		ground.onRx(baos.toByteArray());
+		ground.onRx(createPlcw(false, 0));
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 
-		assertTestSeqPacket();
+		assertTestSeqPacket(2);
+	}
+
+	@Test
+	public void testResync2() throws Exception {
+		establishSession();
+
+		assertTestSeqPacket(1);
+
+		ground.onRx(createPlcw(false, 3));
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
+
+		assertTestSeqPacket(2);
+	}
+
+	@Test
+	public void testResync3() throws Exception {
+		establishSession();
+
+		assertTestSeqPacket(1);
+
+		ground.onRx(createPlcw(true, 1));
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
+
+		assertTestSeqPacket(2);
 	}
 
 	@Test
@@ -140,7 +128,7 @@ public class NodeTest {
 		ground.setCommParameters(result);
 
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		waitPersistenceActivityComletion();
+		waitPersistenceActivityCompletion();
 		assertTestExpPacket();
 	}
 
@@ -361,12 +349,38 @@ public class NodeTest {
 		assertArrayEquals(packet, actual);
 	}
 
-	private void assertTestSeqPacket() {
+	private void assertTestSeqPacket(int vr) {
+		CountDownLatch latch = new CountDownLatch(1);
+		groundTransceiver.setRxFrameFilter(new ParsedFrameFilter(groundConfig) {
+			@Override
+			boolean onSpdu(Spdu spdu) {
+				if (!(spdu instanceof Plcw)) {
+					return true;
+				}
+				Plcw plcw = (Plcw) spdu;
+				if (plcw.getReportValue() == vr) {
+					latch.countDown();
+				}
+				return true;
+			}
+
+			@Override
+			boolean onUserData(Object frame) {
+				return true;
+			}
+		});
 		byte[] packet = TestUtil.createTestData(20);
 		ground.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
-		byte[] actual = satelliteDataCallback.waitForData();
+		int timeoutMillis = 10000;
+		byte[] actual = satelliteDataCallback.waitForData(timeoutMillis);
 		assertNotNull(actual);
 		assertArrayEquals(packet, actual);
+		// wait for ack
+		try {
+			latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	private void establishSession() throws InterruptedException {
@@ -376,11 +390,12 @@ public class NodeTest {
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 
-		waitPersistenceActivityComletion();
+		waitPersistenceActivityCompletion();
 	}
 
-	private void waitPersistenceActivityComletion() throws InterruptedException {
-		// according to spec extra timeout between callback to vehicle and transitioning
+	private void waitPersistenceActivityCompletion() throws InterruptedException {
+		// according to the spec extra timeout between callback to vehicle and
+		// transitioning
 		// to s40 state (data services)
 		Thread.sleep(2 * (groundConfig.getDuration("carrier_only_duration") + groundConfig.getDuration("acquisition_idle_duration")));
 	}
@@ -434,6 +449,28 @@ public class NodeTest {
 		result.setRxParams(rx);
 		result.setRxPlExtensions(rxExt);
 		return result;
+	}
+
+	private byte[] createPlcw(boolean retransmit, int reportValue) throws IOException {
+		com.leosatdata.ccsds2110b6.util.TransferFrameParser framev3Parser = new com.leosatdata.ccsds2110b6.util.TransferFrameParser(satelliteConfig);
+		SpduParser spduParser = new SpduParser(satelliteConfig);
+
+		Plcw plcw = new Plcw();
+		// smaller report value
+		plcw.setReportValue(reportValue);
+		plcw.setRetransmit(retransmit);
+		plcw.setExpeditedFrameCounter(0);
+		plcw.setPcid(0);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			spduParser.encode(plcw, bos);
+		}
+		com.leosatdata.ccsds2110b6.model.TransferFrame frame = framev3Parser.createPFrame(baos.toByteArray());
+		baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
+		}
+		return baos.toByteArray();
 	}
 
 	private static void assertEvent(ControllerEvent hail, boolean expectedStatus) {
