@@ -199,10 +199,10 @@ public class NodeTest {
 		satellite.onCarrierLost();
 
 		Thread.sleep(2 * groundConfig.getDuration("carrier_loss_timer_duration"));
-		
+
 		assertNotNull(groundCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
 		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
-		
+
 		// then automatic recover
 
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
@@ -240,6 +240,39 @@ public class NodeTest {
 		// check only 2 remaining packets, because they must be re-ordered
 		assertEquals((byte) QualityOfService.EXPEDITED.getCode(), packets.get(1)[0]);
 		assertEquals((byte) QualityOfService.SEQUENCE_CONTROLLED.getCode(), packets.get(2)[0]);
+	}
+
+	// TODO test v4 and 2 byte seq length
+	@Test
+	public void testSequenceOverflow() throws Exception {
+		// make test a little bit faster
+		groundConfig.setProperty("maximum_frame_length", "255");
+		ground.stop();
+		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
+		ground.start();
+
+		satelliteConfig.setProperty("maximum_frame_length", "255");
+		satellite.stop();
+		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
+		satellite.start();
+
+		establishSession(DataRate.R256C);
+
+		int maxFrameLength = groundConfig.getInteger("maximum_frame_length", 0);
+		// test sequence reset
+		// 3 is important here, it will ensure packet will be partially transffered
+		// across sequence overflow
+		int rate = 3;
+		byte[] packet = TestUtil.createTestData(rate * maxFrameLength);
+		int maxNumber = groundConfig.getInteger("maximum_frame_sequence_length", 1) == 1 ? 0xFF : 0xFFFF;
+		int totalPackets = maxNumber / rate;
+		LOG.info("sending {} packets. each ~ {} frames", totalPackets, rate);
+		for (int i = 0; i < totalPackets; i++) {
+			ground.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
+			byte[] actual = satelliteDataCallback.waitForData();
+			assertNotNull(actual);
+			assertArrayEquals(packet, actual);
+		}
 	}
 
 	@Test
@@ -389,8 +422,12 @@ public class NodeTest {
 	}
 
 	private void establishSession() throws InterruptedException {
+		establishSession(DataRate.R8C);
+	}
+
+	private void establishSession(DataRate dataRate) throws InterruptedException {
 		satellite.waitForSession();
-		ground.setCommParameters(createType1CommParameters());
+		ground.setCommParameters(createType1CommParameters(dataRate));
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
@@ -414,9 +451,13 @@ public class NodeTest {
 	}
 
 	private static Type1Directive createType1CommParameters() {
+		return createType1CommParameters(DataRate.R8C);
+	}
+
+	private static Type1Directive createType1CommParameters(DataRate dataRate) {
 		TxRxParameters tx = new TxRxParameters();
 		tx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
-		tx.setDataRate(DataRate.R8C);
+		tx.setDataRate(dataRate);
 		tx.setFrequency(Frequency.CH3);
 		tx.setMode(Mode.PROXIMITY1);
 		tx.setModulation(Modulation.COHERENT_PSK);
@@ -433,7 +474,7 @@ public class NodeTest {
 
 		TxRxParameters rx = new TxRxParameters();
 		rx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
-		rx.setDataRate(DataRate.R8C);
+		rx.setDataRate(dataRate);
 		rx.setFrequency(Frequency.CH3);
 		rx.setMode(Mode.PROXIMITY1);
 		rx.setModulation(Modulation.COHERENT_PSK);

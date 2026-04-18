@@ -170,12 +170,14 @@ class FrameSublayer {
 
 	// FOP-P State Table: SE1
 	private Object selectSeqFrame() {
-		if (state.getVvs() < state.getVs()) {
+		if (modCompare(state.getVvs(), state.getVs()) < 0) {
 			Object frame = findSentFrameByVs(state.getVvs());
-			state.setVvs(state.getVvs() + 1);
+			int nextVvs = (state.getVvs() + 1) & maxSequenceNumber;
+			state.setVvs(nextVvs);
 			return frame;
 		}
-		if (!state.getSeqQueue().isEmpty() && state.getVs() - state.getNnr() < transmissionWindow) {
+		int modDiff = (state.getVs() - state.getNnr()) & maxSequenceNumber;
+		if (!state.getSeqQueue().isEmpty() && modDiff < transmissionWindow) {
 			Object frame = state.getSeqQueue().poll();
 			int nextSeqNumber = state.getVs();
 			TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
@@ -185,13 +187,25 @@ class FrameSublayer {
 			state.setVvs(nextSeqNumber);
 			return frame;
 		}
-		if (state.getNnr() < state.getVs()) {
+		if (modCompare(state.getNnr(), state.getVs()) < 0) {
 			state.setVvs(state.getNnr());
 			Object frame = findSentFrameByVs(state.getVvs());
-			state.setVvs(state.getVvs() + 1);
+			int nextVvs = (state.getVvs() + 1) & maxSequenceNumber;
+			state.setVvs(nextVvs);
 			return frame;
 		}
 		return null;
+	}
+
+	public int modCompare(int a, int b) {
+		int modDiff = (a - b) & maxSequenceNumber;
+		if (1 <= modDiff && modDiff <= 127) {
+			return 1;
+		}
+		if (128 <= modDiff && modDiff <= 255) {
+			return -1;
+		}
+		return 0;
 	}
 
 	@SuppressWarnings("incomplete-switch")
@@ -207,11 +221,7 @@ class FrameSublayer {
 			}
 			break;
 		case RE3_EXPEDITED_FRAME:
-			int nextFrameCounter = state.getExpeditedFrameCounter() + 1;
-			if (nextFrameCounter > 0b111) {
-				nextFrameCounter = 0;
-			}
-			state.setExpeditedFrameCounter(nextFrameCounter);
+			state.setExpeditedFrameCounter((state.getExpeditedFrameCounter() + 1) & 0b111);
 			break;
 		case RE4_SEQUENCE_FRAME:
 			state.setVr((Integer) e.getArg());
@@ -270,7 +280,7 @@ class FrameSublayer {
 					// remove acked messages from the sent queue
 					while ((seqMesage = state.getSentQueue().peek()) != null) {
 						int seqNumber = TransferFrameUtil.getSequenceNumber(seqMesage);
-						if (seqNumber < plcw.getReportValue()) {
+						if (modCompare(seqNumber, plcw.getReportValue()) < 0) {
 							try {
 								state.getSentQueue().take();
 							} catch (InterruptedException e1) {
@@ -281,7 +291,7 @@ class FrameSublayer {
 							break;
 						}
 					}
-					if (plcw.isRetransmit() || plcw.getReportValue() > state.getVvs()) {
+					if (plcw.isRetransmit() || modCompare(plcw.getReportValue(), state.getVvs()) > 0) {
 						state.setVvs(plcw.getReportValue());
 					}
 					state.setRrr(plcw.isRetransmit());
@@ -339,11 +349,11 @@ class FrameSublayer {
 
 	// note 5 from 6.2.3.3 FOP-P State Table
 	private boolean validate(Plcw plcw) {
-		if (plcw.getReportValue() < state.getNnr()) {
+		if (modCompare(plcw.getReportValue(), state.getNnr()) < 0) {
 			LOG.info("received plcw with nr too small: {}", plcw.getReportValue());
 			return false;
 		}
-		if (plcw.getReportValue() > state.getVs()) {
+		if (modCompare(plcw.getReportValue(), state.getVs()) > 0) {
 			LOG.info("received plcw with nr too large: {}", plcw.getReportValue());
 			return false;
 		}

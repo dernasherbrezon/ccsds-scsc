@@ -1,6 +1,7 @@
 package com.leosatdata.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MockUserDataCallback implements UserDataCallback {
@@ -36,20 +37,29 @@ public class MockUserDataCallback implements UserDataCallback {
 				long start = System.currentTimeMillis();
 				try {
 					lock.wait(remaining);
-					if (data.size() == size) {
+					if (data.size() >= size) {
 						break;
 					}
-					remaining = System.currentTimeMillis() - start;
+					remaining -= System.currentTimeMillis() - start;
 					if (remaining > 0) {
 						continue;
 					}
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
-					break;
+					return Collections.emptyList();
 				}
 			}
-			List<byte[]> result = new ArrayList<>(data);
+			List<byte[]> result = new ArrayList<>(size);
+			int i = 0;
+			for (; i < size; i++) {
+				result.add(data.get(i));
+			}
+			List<byte[]> remainder = new ArrayList<>();
+			for (; i < data.size(); i++) {
+				remainder.add(data.get(i));
+			}
 			data.clear();
+			data.addAll(remainder);
 			return result;
 		}
 	}

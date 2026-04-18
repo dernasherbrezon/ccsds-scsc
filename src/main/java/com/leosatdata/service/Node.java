@@ -32,6 +32,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	private final Thread t;
 	private final int localScid;
 	private final boolean testSource;
+	private final int maxSequenceNumber;
 	private int remoteScid;
 	// there are 2 vr variables. One is thread-local onRx, the other one is in State
 	// this is done to synchronize the state across 2 threads
@@ -49,6 +50,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.testSource = config.getBoolean("test_source");
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
+		this.maxSequenceNumber = (config.getInteger("maximum_frame_sequence_length", 0) == 1) ? 0xFF : 0xFFFF;
 		this.state = new State(config);
 		this.mac = new Mac(state, config, transceiver, callback);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
@@ -116,9 +118,23 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		List<Object> frames = frameSublayer.createUFrame(packet, qos, portId);
 		// will lock if no free space available in queues
 		if (qos.equals(QualityOfService.EXPEDITED)) {
-			state.getExpQueue().addAll(frames);
+			for (Object cur : frames) {
+				try {
+					state.getExpQueue().put(cur);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+			}
 		} else {
-			state.getSeqQueue().addAll(frames);
+			for (Object cur : frames) {
+				try {
+					state.getSeqQueue().put(cur);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+			}
 		}
 		// event queue might be polluted by these events
 		// when persistent activity is ongoing and queues not processed
@@ -171,9 +187,9 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 			} else {
 				int ns = TransferFrameUtil.getSequenceNumber(frame);
 				if (vrFromCallback == ns) {
-					vrFromCallback++;
+					vrFromCallback = (vrFromCallback + 1) & maxSequenceNumber;
 					sendEvent(new Event(EventType.RE4_SEQUENCE_FRAME, vrFromCallback));
-				} else if (ns > vrFromCallback) {
+				} else if (frameSublayer.modCompare(ns, vrFromCallback) > 0) {
 					sendEvent(new Event(EventType.RE5_GAP_DETECTED));
 					acceptFrame = false;
 					LOG.info("gap detected. expected: {} got: {}", vrFromCallback, ns);
