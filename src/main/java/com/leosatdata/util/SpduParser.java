@@ -28,17 +28,22 @@ public class SpduParser {
 	public final static int TYPE4_DIRECTIVE = 0b011;
 	public final static int TYPE5_DIRECTIVE = 0b100;
 
-	private final int spduVersion;
+	private final int maximumFrameSequenceLength;
+	
+	private final Type4DirectiveParser type4Parser;
+	private final Type5DirectiveParser type5Parser;
 
 	public SpduParser(Configuration config) {
-		this.spduVersion = config.getInteger("spdu_version", 1);
+		this.maximumFrameSequenceLength = config.getInteger("maximum_frame_sequence_length", 1);
+		this.type4Parser = new Type4DirectiveParser(config);
+		this.type5Parser = new Type5DirectiveParser(config);
 	}
 
 	public void encode(Spdu message, BitOutputStream bos) throws IOException {
 		if (message instanceof Plcw) {
 			bos.writeUnsignedInt(1, FIXED_SPDU);
 			int type;
-			if (spduVersion == Type1Directive.SPDU_VERSION) {
+			if (maximumFrameSequenceLength == 1) {
 				type = Plcw.SHORT_PLCW;
 			} else {
 				type = Plcw.LONG_PLCW;
@@ -63,10 +68,10 @@ public class SpduParser {
 				StatusReportParser.encode((StatusReport) message, payload);
 			} else if (message instanceof Type4Directive) {
 				bos.writeUnsignedInt(3, TYPE4_DIRECTIVE);
-				Type4DirectiveParser.encode((Type4Directive) message, payload);
+				type4Parser.encode((Type4Directive) message, payload);
 			} else if (message instanceof Type5Directive) {
 				bos.writeUnsignedInt(3, TYPE5_DIRECTIVE);
-				Type5DirectiveParser.encode((Type5Directive) message, payload);
+				type5Parser.encode((Type5Directive) message, payload);
 			} else {
 				throw new IOException("unknown message type: " + message);
 			}
@@ -97,9 +102,9 @@ public class SpduParser {
 		case TYPE3_DIRECTIVE:
 			return StatusReportParser.decode(header, bis);
 		case TYPE4_DIRECTIVE:
-			return Type4DirectiveParser.decode(header, bis);
+			return type4Parser.decode(header, bis);
 		case TYPE5_DIRECTIVE:
-			return Type5DirectiveParser.decode(header, bis);
+			return type5Parser.decode(header, bis);
 		default:
 			LOG.error("unknown directive type: {}", header.getType());
 			return null;

@@ -24,7 +24,13 @@ public class Type4DirectiveParser {
 	private final static int LINK_SET_VR = 0b010;
 	private final static int LINK_REPORT_SOURCE_SCID = 0b011;
 
-	public static Type4Directive decode(SpduHeader header, BitInputStream bis) throws IOException {
+	private final int maximumFrameSequenceLengthBits;
+
+	public Type4DirectiveParser(Configuration config) {
+		this.maximumFrameSequenceLengthBits = config.getInteger("maximum_frame_sequence_length", 1) * 8;
+	}
+
+	public Type4Directive decode(SpduHeader header, BitInputStream bis) throws IOException {
 		Type4Directive result = new Type4Directive();
 		result.setHeader(header);
 		while (bis.available() > 0) {
@@ -63,7 +69,7 @@ public class Type4DirectiveParser {
 			case LINK_SET_VR:
 				Vr vr = new Vr();
 				bis.skipBits(5);
-				vr.setFrameSequenceNumber(bis.readUnsignedInt(8));
+				vr.setFrameSequenceNumber(bis.readUnsignedInt(maximumFrameSequenceLengthBits));
 				result.setVr(vr);
 				break;
 			case LINK_REPORT_SOURCE_SCID:
@@ -77,7 +83,7 @@ public class Type4DirectiveParser {
 		return result;
 	}
 
-	public static void encode(Type4Directive message, BitOutputStream bos) throws IOException {
+	public void encode(Type4Directive message, BitOutputStream bos) throws IOException {
 		if (message.getRxLink() != null) {
 			encodeLink(message.getRxLink(), bos);
 		}
@@ -95,7 +101,7 @@ public class Type4DirectiveParser {
 		if (message.getVr() != null) {
 			bos.writeUnsignedInt(3, LINK_SET_VR);
 			bos.writeUnsignedInt(5, 0); // unused
-			bos.writeUnsignedInt(8, message.getVr().getFrameSequenceNumber());
+			bos.writeUnsignedInt(maximumFrameSequenceLengthBits, message.getVr().getFrameSequenceNumber());
 		}
 		if (message.getSourceSpacecraftId() != null) {
 			bos.writeUnsignedInt(3, LINK_REPORT_SOURCE_SCID);

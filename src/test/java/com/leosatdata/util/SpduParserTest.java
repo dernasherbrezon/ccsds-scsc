@@ -73,7 +73,7 @@ public class SpduParserTest {
 
 	@Test
 	public void testPlcw() throws Exception {
-		config.setProperty("spdu_version", "1");
+		config.setProperty("maximum_frame_sequence_length", "1");
 		parser = new SpduParser(config);
 		SpduHeader header = new SpduHeader();
 		header.setFormat(SpduParser.FIXED_SPDU);
@@ -88,7 +88,7 @@ public class SpduParserTest {
 
 		assertDirectives(plcw);
 
-		config.setProperty("spdu_version", "2");
+		config.setProperty("maximum_frame_sequence_length", "2");
 		parser = new SpduParser(config);
 		header = new SpduHeader();
 		header.setFormat(SpduParser.FIXED_SPDU);

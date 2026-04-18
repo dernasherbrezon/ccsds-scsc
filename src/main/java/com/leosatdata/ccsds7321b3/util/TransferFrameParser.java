@@ -16,8 +16,6 @@ import com.leosatdata.util.Configuration;
 
 public class TransferFrameParser {
 
-	private final static int MAX_SEQUENCE_NUMBER_BYTES = 1; // 2^8
-
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
 	private final int maxDataLength;
@@ -25,6 +23,7 @@ public class TransferFrameParser {
 	private final int localScid;
 	private final int remoteScid;
 	private final SourceDestination sourceDestination;
+	private final int vcfCountLength;
 
 	private int pseudoPacketId = 0;
 
@@ -35,10 +34,11 @@ public class TransferFrameParser {
 		this.insertZoneLength = config.getInteger("framev4.insertZoneLength", 0);
 		this.frameErrorControl = config.getBoolean("framev4.frameErrorControl");
 		this.fixedFrameLength = config.getBoolean("framev4.fixedLength");
+		this.vcfCountLength = config.getInteger("maximum_frame_sequence_length", 0);
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
 		int headerLength = 32 / 8;
 		headerLength += 24 / 8; // not truncated header
-		headerLength += 1; // VcfCountLength=1 byte
+		headerLength += vcfCountLength;
 		headerLength += insertZoneLength;
 		headerLength += 16; // segmented SDU
 		headerLength += com.leosatdata.ccsds7321b3.model.TransferFrame.TFDF_HEADER_LENGTH;
@@ -219,7 +219,7 @@ public class TransferFrameParser {
 		frame.setProtocolControl(PduTypeId.SPDU);
 		frame.setOcf(false);
 		frame.setDataField(payload);
-		frame.setVcfCountLength(MAX_SEQUENCE_NUMBER_BYTES);
+		frame.setVcfCountLength(vcfCountLength);
 		return frame;
 	}
 
@@ -239,7 +239,7 @@ public class TransferFrameParser {
 			frame.setProtocolControl(PduTypeId.USER_DATA);
 			frame.setOcf(false);
 			frame.setDataField(packet);
-			frame.setVcfCountLength(1);
+			frame.setVcfCountLength(vcfCountLength);
 			frame.setConstructionRule(ConstructionRules.NO_SEGMENTATION);
 			frame.setUpid(pseudoPacketId);
 			pseudoPacketId++;
@@ -268,7 +268,7 @@ public class TransferFrameParser {
 			frame.setProtocolControl(PduTypeId.USER_DATA);
 			frame.setOcf(false);
 			frame.setDataField(buffer);
-			frame.setVcfCountLength(1);
+			frame.setVcfCountLength(vcfCountLength);
 			frame.setConstructionRule(flags);
 			frame.setUpid(pseudoPacketId);
 			result.add(frame);

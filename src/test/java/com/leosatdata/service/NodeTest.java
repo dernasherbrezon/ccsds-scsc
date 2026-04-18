@@ -375,7 +375,7 @@ public class NodeTest {
 		byte[] actual = satelliteDataCallback.waitForData(timeoutMillis);
 		assertNotNull(actual);
 		assertArrayEquals(packet, actual);
-		// wait for ack
+		// wait for ack to the sender
 		try {
 			latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException e) {

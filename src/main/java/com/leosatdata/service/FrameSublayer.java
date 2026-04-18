@@ -38,7 +38,6 @@ class FrameSublayer {
 	private final static Logger LOG = LoggerFactory.getLogger(FrameSublayer.class);
 	private final static Logger RX = LoggerFactory.getLogger("rx");
 	private final static Logger TX = LoggerFactory.getLogger("tx");
-	private final static int MAX_SEQUENCE_NUMBER = 256; // 2^8
 
 	private final State state;
 	private final Configuration config;
@@ -49,6 +48,7 @@ class FrameSublayer {
 	private final int spduVersion;
 	private final int localPcid;
 	private final int transmissionWindow;
+	private final int maxSequenceNumber;
 
 	private final com.leosatdata.ccsds7320b4.util.TransferFrameParser framev2Parser;
 	private final com.leosatdata.ccsds2110b6.util.TransferFrameParser framev3Parser;
@@ -66,6 +66,7 @@ class FrameSublayer {
 		this.uFrameVersion = config.getInteger("u_frame_version", -1);
 		this.pFrameVersion = config.getInteger("frame_version", -1);
 		this.spduVersion = config.getInteger("spdu_version", 1);
+		this.maxSequenceNumber = (config.getInteger("maximum_frame_sequence_length", 0) == 1) ? 0xFF : 0xFFFF;
 		this.localPcid = config.getInteger("local_pcid", 0);
 		this.transmissionWindow = config.getInteger("transmission_window", 10);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
@@ -150,11 +151,7 @@ class FrameSublayer {
 		if (qos.equals(QualityOfService.EXPEDITED)) {
 			int nextSeqNumber = state.getVes();
 			TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
-			if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
-				nextSeqNumber = 0;
-			} else {
-				nextSeqNumber++;
-			}
+			nextSeqNumber = (nextSeqNumber + 1) & maxSequenceNumber;
 			state.setVes(nextSeqNumber);
 		}
 
@@ -182,11 +179,7 @@ class FrameSublayer {
 			Object frame = state.getSeqQueue().poll();
 			int nextSeqNumber = state.getVs();
 			TransferFrameUtil.setSequenceNumber(frame, nextSeqNumber);
-			if (nextSeqNumber > MAX_SEQUENCE_NUMBER) {
-				nextSeqNumber = 0;
-			} else {
-				nextSeqNumber++;
-			}
+			nextSeqNumber = (nextSeqNumber + 1) & maxSequenceNumber;
 			state.getSentQueue().add(frame);
 			state.setVs(nextSeqNumber);
 			state.setVvs(nextSeqNumber);
