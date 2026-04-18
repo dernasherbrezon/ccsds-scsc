@@ -40,6 +40,7 @@ public class Mac {
 	private Timer waitTimer;
 	private TimerTask waitTimerTask;
 	private TimerTask carrierLossTask;
+	private TimerTask plcwTask;
 	private int currentHailAttempt = 0;
 	private int currentCommChangeAttempt = 0;
 	private boolean hailCarrierReceived;
@@ -57,14 +58,6 @@ public class Mac {
 
 	public void start() {
 		waitTimer = new Timer("wt"); // this will start Thread
-		long plcwPeriod = config.getDuration("plcw_repeat_interval");
-		waitTimer.schedule(new TimerTask() {
-
-			@Override
-			public void run() {
-				sendEvent(new Event(EventType.REQUEST_PLCW));
-			}
-		}, new Date(System.currentTimeMillis() + plcwPeriod), plcwPeriod);
 	}
 
 	public void stop() {
@@ -166,6 +159,7 @@ public class Mac {
 			break;
 		case E80_CARRIER_LOST_TIMEOUT:
 			LOG.info("carrier loss recovery timeout");
+			carrierLossTask = null;
 			callback.handle(new ControllerEvent(ControllerEventType.CARRIER_LOSS));
 			// stop sending any data, but keep carrier for remote to detect it
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
@@ -173,6 +167,8 @@ public class Mac {
 			scheduleWait(EventType.E81_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
 			break;
 		case E81_RECONNECT_WAIT_TIMEOUT:
+			LOG.info("carrier didn't come back. start hailing");
+			stopPeriodicPlcw();
 			switch (transceiverMode) {
 			case CALLER:
 				sendEvent(new Event(EventType.E2_CONNECTING_T));
@@ -258,6 +254,7 @@ public class Mac {
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			state.setPersistence(false);
 			state.setState(MacState.S40_0_DATA_SERVICES);
+			startPeriodicPlcw();
 			LOG.info("data services ready");
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
@@ -413,5 +410,25 @@ public class Mac {
 			Thread.currentThread().interrupt();
 			LOG.error("can't send event", e1);
 		}
+	}
+
+	private void stopPeriodicPlcw() {
+		if (plcwTask == null) {
+			return;
+		}
+		plcwTask.cancel();
+		plcwTask = null;
+	}
+
+	private void startPeriodicPlcw() {
+		long plcwPeriod = config.getDuration("plcw_repeat_interval");
+		plcwTask = new TimerTask() {
+
+			@Override
+			public void run() {
+				sendEvent(new Event(EventType.REQUEST_PLCW));
+			}
+		};
+		waitTimer.schedule(plcwTask, new Date(System.currentTimeMillis() + plcwPeriod), plcwPeriod);
 	}
 }

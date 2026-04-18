@@ -47,4 +47,11 @@ public class PersistentActivity {
 	public void setResponse(int response) {
 		this.response = response;
 	}
+
+	@Override
+	public String toString() {
+		return "PersistentActivity [notification=" + notification + ", waitingPeriod=" + waitingPeriod + ", lifetime=" + lifetime + ", response=" + response + ", success=" + success + "]";
+	}
+	
+	
 }

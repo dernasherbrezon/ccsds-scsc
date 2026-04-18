@@ -199,6 +199,11 @@ public class NodeTest {
 		satellite.onCarrierLost();
 
 		Thread.sleep(2 * groundConfig.getDuration("carrier_loss_timer_duration"));
+		
+		assertNotNull(groundCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
+		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
+		
+		// then automatic recover
 
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
