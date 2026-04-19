@@ -50,6 +50,11 @@ public class MockUserDataCallback implements UserDataCallback {
 				}
 			}
 			List<byte[]> result = new ArrayList<>(size);
+			if (data.size() < size) {
+				result.addAll(data);
+				data.clear();
+				return result;
+			}
 			int i = 0;
 			for (; i < size; i++) {
 				result.add(data.get(i));

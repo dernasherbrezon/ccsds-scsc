@@ -193,7 +193,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 					sendEvent(new Event(EventType.RE5_GAP_DETECTED));
 					acceptFrame = false;
 					LOG.info("gap detected. expected: {} got: {}", vrFromCallback, ns);
-				} else if (ns < vrFromCallback) {
+				} else if (frameSublayer.modCompare(ns, vrFromCallback) < 0) {
 					// progressive retransmission will re-send frames until corresponding PLCW
 					// received
 					acceptFrame = false;
@@ -258,6 +258,15 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 			Thread.currentThread().interrupt();
 			LOG.error("can't send event", e1);
 		}
+	}
+
+	// used on tests only
+	State getState() {
+		return state;
+	}
+	
+	void setVrFromCallback(int vrFromCallback) {
+		this.vrFromCallback = vrFromCallback;
 	}
 
 }

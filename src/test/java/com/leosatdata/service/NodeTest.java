@@ -41,6 +41,7 @@ import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
+import com.leosatdata.model.Vr;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
@@ -260,13 +261,14 @@ public class NodeTest {
 
 		int maxFrameLength = groundConfig.getInteger("maximum_frame_length", 0);
 		// test sequence reset
-		// 3 is important here, it will ensure packet will be partially transffered
+		// 2 is important here, it will ensure packet will be partially transffered
 		// across sequence overflow
-		int rate = 3;
+		int rate = 2;
 		byte[] packet = TestUtil.createTestData(rate * maxFrameLength);
 		int maxNumber = groundConfig.getInteger("maximum_frame_sequence_length", 1) == 1 ? 0xFF : 0xFFFF;
-		int totalPackets = maxNumber / rate;
-		LOG.info("sending {} packets. each ~ {} frames", totalPackets, rate);
+		resetSequences(maxNumber - 10);
+		int totalPackets = 10;
+		LOG.info("sending {} packets. each ~ {} frames", totalPackets, (rate + 1));
 		for (int i = 0; i < totalPackets; i++) {
 			ground.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
 			byte[] actual = satelliteDataCallback.waitForData();
@@ -433,6 +435,19 @@ public class NodeTest {
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 
 		waitPersistenceActivityCompletion();
+	}
+
+	private void resetSequences(int seq) {
+		ground.getState().setVs(seq);
+		ground.getState().setVvs(seq);
+		ground.getState().setNnr(seq);
+		ground.getState().setVr(seq);
+		ground.setVrFromCallback(seq);
+		satellite.getState().setVs(seq);
+		satellite.getState().setVvs(seq);
+		satellite.getState().setNnr(seq);
+		satellite.getState().setVr(seq);
+		satellite.setVrFromCallback(seq);
 	}
 
 	private void waitPersistenceActivityCompletion() throws InterruptedException {
