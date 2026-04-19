@@ -498,6 +498,7 @@ class FrameSublayer {
 	private Object onRxInternal(byte[] data) {
 		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data)) {
 			if (uFrameVersion != 2) {
+				LOG.info("version mismatch. expected: {} got {}", uFrameVersion, 2);
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
@@ -509,6 +510,7 @@ class FrameSublayer {
 		}
 		if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data)) {
 			if (uFrameVersion != 3) {
+				LOG.info("version mismatch. expected: {} got {}", uFrameVersion, 3);
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
@@ -520,6 +522,7 @@ class FrameSublayer {
 		}
 		if (com.leosatdata.ccsds7321b3.util.TransferFrameParser.accept(data)) {
 			if (uFrameVersion != 4) {
+				LOG.info("version mismatch. expected: {} got {}", uFrameVersion, 4);
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {

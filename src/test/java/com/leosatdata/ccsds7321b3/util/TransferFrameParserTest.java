@@ -29,15 +29,19 @@ public class TransferFrameParserTest {
 
 	@Test
 	public void testSuccess() throws Exception {
-		TransferFrame frame = createFrame();
-		assertDirectives(frame);
+		assertDirectives(createTestFrame());
+	}
+
+	@Test
+	public void testPFrame() throws Exception {
+		assertDirectives(parser.createPFrame(new byte[] { 0 }));
 	}
 
 	@Test
 	public void testInsertZone() throws Exception {
 		config.setProperty("framev4.insertZoneLength", "10");
 		parser = new TransferFrameParser(config);
-		TransferFrame frame = createFrame();
+		TransferFrame frame = createTestFrame();
 		frame.setInsertZone(new byte[10]);
 		assertDirectives(frame);
 	}
@@ -46,7 +50,7 @@ public class TransferFrameParserTest {
 	public void testFec() throws Exception {
 		config.setProperty("framev4.frameErrorControl", "true");
 		parser = new TransferFrameParser(config);
-		TransferFrame frame = createFrame();
+		TransferFrame frame = createTestFrame();
 		frame.setFrameErrorControl(new byte[2]);
 		assertDirectives(frame);
 	}
@@ -55,7 +59,7 @@ public class TransferFrameParserTest {
 	public void testFixedLength() throws Exception {
 		config.setProperty("framev4.fixedLength", "true");
 		parser = new TransferFrameParser(config);
-		TransferFrame frame = createFrame();
+		TransferFrame frame = createTestFrame();
 		TransferFrame actual = encodeDecode(frame);
 		assertEquals(parser.getMaxDataLength(), actual.getDataField().length);
 	}
@@ -107,7 +111,7 @@ public class TransferFrameParserTest {
 		TestUtil.assertObjectEqual(expected, encodeDecode(expected));
 	}
 
-	private static TransferFrame createFrame() {
+	private static TransferFrame createTestFrame() {
 		byte[] payload = new byte[] { 1, 2, 3 };
 		TransferFrame result = new TransferFrame();
 		result.setScid(1);

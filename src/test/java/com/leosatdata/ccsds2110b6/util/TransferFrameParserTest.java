@@ -33,10 +33,14 @@ public class TransferFrameParserTest {
 
 	@Test
 	public void testSuccess() throws Exception {
-		TransferFrame frame = createFrame();
-		assertDirectives(frame);
+		assertDirectives(createFrame());
 	}
 
+	@Test
+	public void testPFrame() throws Exception {
+		assertDirectives(parser.createPFrame(new byte[] { 0 }));
+	}
+	
 	@Test
 	public void testSegmented() throws Exception {
 		TransferFrame frame = createFrame();

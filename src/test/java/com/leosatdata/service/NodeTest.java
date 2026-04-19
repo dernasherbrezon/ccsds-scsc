@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -41,8 +42,8 @@ import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
-import com.leosatdata.model.Vr;
 import com.leosatdata.util.BitOutputStream;
+import com.leosatdata.util.CommSettings;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.TestUtil;
@@ -279,15 +280,44 @@ public class NodeTest {
 
 	@Test
 	public void testStartSendStop() throws Exception {
-		establishSession();
+		List<CommSettings> settings = new ArrayList<>();
+		// different combinations of transfer frames, spdu directives and seq numbers
+//		settings.add(new CommSettings(3, 1, 1));
+		settings.add(new CommSettings(4, 4, 1, 1));
+//		settings.add(new CommSettings(4, 4, 2, 1));
+//		settings.add(new CommSettings(4, 4, 3, 1));
+//		settings.add(new CommSettings(4, 4, 2, 2));
+//		settings.add(new CommSettings(4, 4, 3, 2));
 
-		testComm(ground, groundDataCallback, groundTransceiver, satellite, satelliteDataCallback, satelliteTransceiver);
-		testComm(satellite, satelliteDataCallback, satelliteTransceiver, ground, groundDataCallback, groundTransceiver);
+		for (CommSettings cur : settings) {
+			groundConfig.setProperty("u_frame_version", String.valueOf(cur.getuFrameVersion()));
+			groundConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
+			groundConfig.setProperty("frame_version", String.valueOf(cur.getpFrameVersion()));
+			groundConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
+			
+			satelliteConfig.setProperty("u_frame_version", String.valueOf(cur.getuFrameVersion()));
+			satelliteConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
+			satelliteConfig.setProperty("frame_version", String.valueOf(cur.getpFrameVersion()));
+			satelliteConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
+			
+			ground.stop();
+			ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
+			ground.start();
+			
+			satellite.stop();
+			satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
+			satellite.start();
+			
+			establishSession();
 
-		satellite.stopSession();
+			testComm(ground, groundDataCallback, groundTransceiver, satellite, satelliteDataCallback, satelliteTransceiver);
+			testComm(satellite, satelliteDataCallback, satelliteTransceiver, ground, groundDataCallback, groundTransceiver);
 
-		assertNotNull(groundCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
-		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
+			satellite.stopSession();
+
+			assertNotNull(groundCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
+			assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
+		}
 	}
 
 	private void testComm(Node from, MockUserDataCallback fromCallback, NullTransceiver fromTransceiver, Node to, MockUserDataCallback toCallback, NullTransceiver toTransceiver) throws Exception {

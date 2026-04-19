@@ -1,9 +1,13 @@
 package com.leosatdata.ccsds7321b3.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
@@ -16,6 +20,8 @@ import com.leosatdata.util.Configuration;
 
 public class TransferFrameParser {
 
+	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
+
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
 	private final int maxDataLength;
@@ -26,6 +32,10 @@ public class TransferFrameParser {
 	private final int vcfCountLength;
 
 	private int pseudoPacketId = 0;
+
+	private ConstructionRules previousFlag = ConstructionRules.LAST_SEGMENT;
+	private int currentPseudoPacketId = 0;
+	private final ByteArrayOutputStream currentBuffer = new ByteArrayOutputStream();
 
 	public TransferFrameParser(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
@@ -217,6 +227,7 @@ public class TransferFrameParser {
 		frame.setHeaderTruncated(false);
 		frame.setSequenceControl(QualityOfService.EXPEDITED);
 		frame.setProtocolControl(PduTypeId.SPDU);
+		frame.setConstructionRule(ConstructionRules.NO_SEGMENTATION);
 		frame.setOcf(false);
 		frame.setDataField(payload);
 		frame.setVcfCountLength(vcfCountLength);
@@ -287,8 +298,53 @@ public class TransferFrameParser {
 		return result;
 	}
 
-	public byte[] assemblePacket(Object frame) {
-		// TODO Auto-generated method stub
+	public byte[] assemblePacket(Object obj) {
+		TransferFrame frame = (TransferFrame) obj;
+		if (frame.getConstructionRule().equals(ConstructionRules.NO_SEGMENTATION)) {
+			return frame.getDataField();
+		}
+		boolean transitionState = false;
+		if (frame.getConstructionRule().equals(ConstructionRules.STARTING_SEGMENT)) {
+			currentBuffer.reset();
+			currentPseudoPacketId = frame.getUpid();
+			transitionState = true;
+		}
+		if (frame.getConstructionRule().equals(ConstructionRules.LAST_SEGMENT)) {
+			transitionState = (previousFlag.equals(ConstructionRules.STARTING_SEGMENT) || previousFlag.equals(ConstructionRules.CONTINUING_SEGMENT));
+		}
+		if (frame.getConstructionRule().equals(ConstructionRules.CONTINUING_SEGMENT)) {
+			transitionState = (previousFlag.equals(ConstructionRules.STARTING_SEGMENT) || previousFlag.equals(ConstructionRules.CONTINUING_SEGMENT));
+		}
+
+		if (!transitionState) {
+			currentBuffer.reset();
+			previousFlag = ConstructionRules.LAST_SEGMENT;
+			return null;
+		}
+
+		if (currentPseudoPacketId != frame.getUpid()) {
+			LOG.info("invalid pseudo packet id received: {} expected {}", frame.getUpid(), currentPseudoPacketId);
+			currentBuffer.reset();
+			previousFlag = ConstructionRules.LAST_SEGMENT;
+			return null;
+		}
+
+		previousFlag = frame.getConstructionRule();
+
+		try {
+			currentBuffer.write(frame.getDataField());
+		} catch (IOException e) {
+			LOG.error("can't output to bytes", e);
+			currentBuffer.reset();
+			previousFlag = ConstructionRules.LAST_SEGMENT;
+			return null;
+		}
+
+		if (previousFlag.equals(ConstructionRules.LAST_SEGMENT)) {
+			byte[] result = currentBuffer.toByteArray();
+			currentBuffer.reset();
+			return result;
+		}
 		return null;
 	}
 
