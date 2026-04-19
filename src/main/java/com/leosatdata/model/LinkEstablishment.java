@@ -120,4 +120,10 @@ public class LinkEstablishment {
 		this.symbolRate = symbolRate;
 	}
 
+	@Override
+	public String toString() {
+		return "[direction=" + direction + ", demandQuery=" + demandQuery + ", queryResponse=" + queryResponse + ", rnmd=" + rnmd + ", transmitToken=" + transmitToken + ", duplex=" + duplex + ", freqChannel=" + freqChannel + ", polarization=" + polarization + ", modulationIndex="
+				+ modulationIndex + ", modulation=" + modulation + ", coding=" + coding + ", linkSnr=" + linkSnr + ", symbolRate=" + symbolRate + "]";
+	}
+
 }

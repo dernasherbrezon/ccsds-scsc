@@ -25,28 +25,39 @@ import org.slf4j.LoggerFactory;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.CarrierModulation;
+import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.DataRate;
+import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
+import com.leosatdata.model.LinkDirection;
+import com.leosatdata.model.LinkEstablishment;
+import com.leosatdata.model.LinkModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.Modulation;
+import com.leosatdata.model.ModulationIndex;
+import com.leosatdata.model.NegotiationType;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
+import com.leosatdata.model.Polarization;
+import com.leosatdata.model.QueryResponse;
 import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
+import com.leosatdata.model.Type4Directive;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.CommSettings;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.TestUtil;
+import com.oracle.tools.packager.Platform;
 
 public class NodeTest {
 
@@ -72,7 +83,7 @@ public class NodeTest {
 
 	@Test
 	public void testResync1() throws Exception {
-		establishSession();
+		establishV3Session();
 
 		assertTestSeqPacket(1);
 
@@ -84,7 +95,7 @@ public class NodeTest {
 
 	@Test
 	public void testResync2() throws Exception {
-		establishSession();
+		establishV3Session();
 
 		assertTestSeqPacket(1);
 
@@ -96,7 +107,7 @@ public class NodeTest {
 
 	@Test
 	public void testResync3() throws Exception {
-		establishSession();
+		establishV3Session();
 
 		assertTestSeqPacket(1);
 
@@ -115,7 +126,7 @@ public class NodeTest {
 
 	@Test
 	public void testCommChange() throws Exception {
-		establishSession();
+		establishV3Session();
 
 		// switch to the different tx channel. rx stays the same
 		TxRxParameters tx = new TxRxParameters();
@@ -137,7 +148,7 @@ public class NodeTest {
 	@Test
 	public void testValiteSourceFrame() throws Exception {
 		// remote_spacecraft_id is configured
-		establishSession();
+		establishV3Session();
 
 		ground2.setCommParameters(createType1CommParameters());
 		ground2Transceiver.setTxFrameFilter(null); // ignore rx/tx mismatch
@@ -154,7 +165,7 @@ public class NodeTest {
 		satellite.stop();
 		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
 		satellite.start();
-		establishSession();
+		establishV3Session();
 
 		ground2.setCommParameters(createType1CommParameters());
 		ground2Transceiver.setTxFrameFilter(null); // ignore rx/tx mismatch
@@ -180,7 +191,7 @@ public class NodeTest {
 
 	@Test
 	public void testTemporaryCarrierLoss() throws Exception {
-		establishSession();
+		establishV3Session();
 
 		ground.onCarrierLost();
 		satellite.onCarrierLost();
@@ -195,7 +206,7 @@ public class NodeTest {
 
 	@Test
 	public void testReconnectAfterCarrierLoss() throws Exception {
-		establishSession();
+		establishV3Session();
 
 		ground.onCarrierLost();
 		satellite.onCarrierLost();
@@ -215,7 +226,7 @@ public class NodeTest {
 
 	@Test
 	public void testPrioritization() throws Exception {
-		establishSession();
+		establishV3Session();
 
 		PausingFrameFilter pausingFilter = new PausingFrameFilter();
 		satelliteTransceiver.setTxFrameFilter(pausingFilter);
@@ -258,7 +269,7 @@ public class NodeTest {
 		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
 		satellite.start();
 
-		establishSession(DataRate.R256C);
+		establishV3Session(DataRate.R256C);
 
 		int maxFrameLength = groundConfig.getInteger("maximum_frame_length", 0);
 		// test sequence reset
@@ -283,8 +294,8 @@ public class NodeTest {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
 //		settings.add(new CommSettings(3, 1, 1));
-		settings.add(new CommSettings(4, 4, 1, 1));
-//		settings.add(new CommSettings(4, 4, 2, 1));
+//		settings.add(new CommSettings(4, 4, 1, 1));
+		settings.add(new CommSettings(4, 4, 2, 1));
 //		settings.add(new CommSettings(4, 4, 3, 1));
 //		settings.add(new CommSettings(4, 4, 2, 2));
 //		settings.add(new CommSettings(4, 4, 3, 2));
@@ -294,24 +305,30 @@ public class NodeTest {
 			groundConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
 			groundConfig.setProperty("frame_version", String.valueOf(cur.getpFrameVersion()));
 			groundConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
-			
+
 			satelliteConfig.setProperty("u_frame_version", String.valueOf(cur.getuFrameVersion()));
 			satelliteConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
 			satelliteConfig.setProperty("frame_version", String.valueOf(cur.getpFrameVersion()));
 			satelliteConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
-			
+
 			ground.stop();
 			ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
 			ground.start();
-			
+
 			satellite.stop();
 			satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
 			satellite.start();
-			
-			establishSession();
 
-			testComm(ground, groundDataCallback, groundTransceiver, satellite, satelliteDataCallback, satelliteTransceiver);
-			testComm(satellite, satelliteDataCallback, satelliteTransceiver, ground, groundDataCallback, groundTransceiver);
+			if (cur.getuFrameVersion() == 3) {
+				establishV3Session();
+			} else if (cur.getuFrameVersion() == 4) {
+				establishV4Session();
+			} else {
+				throw new IllegalArgumentException("unsupported: " + cur.getuFrameVersion());
+			}
+
+			testComm(ground, groundTransceiver, satelliteDataCallback);
+			testComm(satellite, satelliteTransceiver, groundDataCallback);
 
 			satellite.stopSession();
 
@@ -320,7 +337,7 @@ public class NodeTest {
 		}
 	}
 
-	private void testComm(Node from, MockUserDataCallback fromCallback, NullTransceiver fromTransceiver, Node to, MockUserDataCallback toCallback, NullTransceiver toTransceiver) throws Exception {
+	private void testComm(Node from, NullTransceiver fromTransceiver, MockUserDataCallback toCallback) throws Exception {
 		int maxFrameLength = groundConfig.getInteger("maximum_frame_length", 0);
 		QualityOfService qos[] = new QualityOfService[] { QualityOfService.EXPEDITED, QualityOfService.SEQUENCE_CONTROLLED };
 		for (QualityOfService curQos : qos) {
@@ -453,11 +470,21 @@ public class NodeTest {
 		}
 	}
 
-	private void establishSession() throws InterruptedException {
-		establishSession(DataRate.R8C);
+	private void establishV4Session() throws InterruptedException {
+		satellite.waitForSession();
+		ground.setCommParameters(createType4CommParameters());
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+
+		waitPersistenceActivityCompletion();
 	}
 
-	private void establishSession(DataRate dataRate) throws InterruptedException {
+	private void establishV3Session() throws InterruptedException {
+		establishV3Session(DataRate.R8C);
+	}
+
+	private void establishV3Session(DataRate dataRate) throws InterruptedException {
 		satellite.waitForSession();
 		ground.setCommParameters(createType1CommParameters(dataRate));
 		ground.startSession();
@@ -497,6 +524,43 @@ public class NodeTest {
 
 	private static Type1Directive createType1CommParameters() {
 		return createType1CommParameters(DataRate.R8C);
+	}
+
+	public static Type4Directive createType4CommParameters() {
+		LinkEstablishment rx = new LinkEstablishment();
+		rx.setCoding(Coding.CONVOLUTIONAL);
+		rx.setDemandQuery(NegotiationType.DEMAND);
+		rx.setDirection(LinkDirection.RETURN);
+		rx.setDuplex(Duplex.FULL_DUPLEX);
+		rx.setFreqChannel(1);
+		rx.setLinkSnr(0);
+		rx.setModulation(LinkModulation.GMSK);
+		rx.setModulationIndex(ModulationIndex.M0_4);
+		rx.setPolarization(Polarization.LHCP);
+		rx.setQueryResponse(QueryResponse.ACK);
+		rx.setRnmd(false);
+		rx.setSymbolRate(9600);
+		rx.setTransmitToken(false);
+
+		LinkEstablishment tx = new LinkEstablishment();
+		tx.setCoding(Coding.CONVOLUTIONAL);
+		tx.setDemandQuery(NegotiationType.DEMAND);
+		tx.setDirection(LinkDirection.FORWARD);
+		tx.setDuplex(Duplex.FULL_DUPLEX);
+		tx.setFreqChannel(1);
+		tx.setLinkSnr(0);
+		tx.setModulation(LinkModulation.GMSK);
+		tx.setModulationIndex(ModulationIndex.M0_4);
+		tx.setPolarization(Polarization.LHCP);
+		tx.setQueryResponse(QueryResponse.ACK);
+		tx.setRnmd(false);
+		tx.setSymbolRate(9600);
+		tx.setTransmitToken(false);
+
+		Type4Directive result = new Type4Directive();
+		result.setRxLink(rx);
+		result.setTxLink(tx);
+		return result;
 	}
 
 	private static Type1Directive createType1CommParameters(DataRate dataRate) {

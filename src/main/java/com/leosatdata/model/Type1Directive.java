@@ -106,31 +106,35 @@ public class Type1Directive implements Spdu {
 	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
-		result.append("type1 [header=").append(header);
+		result.append("type1 [");
+		if (header != null) {
+			result.append(" header=").append(header);
+		}
 		if (txParams != null) {
-			result.append(", tx=").append(txParams);
+			result.append(" tx=").append(txParams);
 		}
 		if (txPlExtensions != null) {
-			result.append(", txExt=").append(txPlExtensions);
+			result.append(" txExt=").append(txPlExtensions);
 		}
 		if (controlParams != null) {
-			result.append(", control=").append(controlParams);
+			result.append(" control=").append(controlParams);
 		}
 		if (rxParams != null) {
-			result.append(", rx=").append(rxParams);
+			result.append(" rx=").append(rxParams);
 		}
 		if (rxPlExtensions != null) {
-			result.append(", rxExt=").append(rxPlExtensions);
+			result.append(" rxExt=").append(rxPlExtensions);
 		}
 		if (vr != null) {
-			result.append(", vr=").append(vr);
+			result.append(" vr=").append(vr);
 		}
 		if (reportReq != null) {
-			result.append(", report=").append(reportReq);
+			result.append(" report=").append(reportReq);
 		}
 		if (sourceSpacecraftId != null) {
-			result.append(", ssid=").append(sourceSpacecraftId);
+			result.append(" ssid=").append(sourceSpacecraftId);
 		}
+		result.append(" ]");
 		return result.toString();
 	}
 
