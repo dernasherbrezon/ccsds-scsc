@@ -136,7 +136,16 @@ public class SpduUtil {
 		}
 		if (obj instanceof Type5Directive) {
 			Type5Directive directive = (Type5Directive) obj;
-			return directive.getRxLink() != null || directive.getTxLink() != null;
+			if (directive.getRxLink() == null && directive.getTxLink() == null) {
+				return false;
+			}
+			if (directive.getRxLink() != null && directive.getRxLink().isRnmd()) {
+				return false;
+			}
+			if (directive.getTxLink() != null && directive.getTxLink().isRnmd()) {
+				return false;
+			}
+			return true;
 		}
 		return false;
 	}
