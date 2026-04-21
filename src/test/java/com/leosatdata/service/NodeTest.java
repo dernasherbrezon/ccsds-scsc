@@ -297,12 +297,12 @@ public class NodeTest {
 	public void testStartSendStop() throws Exception {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
-//		settings.add(new CommSettings(3, 1, 1));
-//		settings.add(new CommSettings(4, 4, 1, 1));
-//		settings.add(new CommSettings(4, 4, 2, 1));
+		settings.add(new CommSettings(3, 3, 1, 1));
+		settings.add(new CommSettings(4, 4, 1, 1));
+		settings.add(new CommSettings(4, 4, 2, 1));
 		settings.add(new CommSettings(4, 4, 3, 1));
-//		settings.add(new CommSettings(4, 4, 2, 2));
-//		settings.add(new CommSettings(4, 4, 3, 2));
+		settings.add(new CommSettings(4, 4, 2, 2));
+		settings.add(new CommSettings(4, 4, 3, 2));
 
 		for (CommSettings cur : settings) {
 			LOG.info("testing: {}", cur);

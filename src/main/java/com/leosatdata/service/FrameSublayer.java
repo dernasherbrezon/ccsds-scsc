@@ -95,6 +95,7 @@ class FrameSublayer {
 			return;
 		}
 		// support transceivers without extra "to be modulated" buffer
+		// so if the state is not modulation, skip sending
 		if (!state.getTxState().equals(TransceiverTxState.MODULATION)) {
 			return;
 		}
@@ -199,10 +200,13 @@ class FrameSublayer {
 
 	public int modCompare(int a, int b) {
 		int modDiff = (a - b) & maxSequenceNumber;
+		if (modDiff == 0) {
+			return 0;
+		}
 		if (1 <= modDiff && modDiff <= 127) {
 			return 1;
 		}
-		if (128 <= modDiff && modDiff <= 255) {
+		if (128 <= modDiff) {
 			return -1;
 		}
 		return 0;
