@@ -54,6 +54,7 @@ class FrameSublayer {
 	private final com.leosatdata.ccsds2110b6.util.TransferFrameParser framev3Parser;
 	private final com.leosatdata.ccsds7321b3.util.TransferFrameParser framev4Parser;
 	private final SpduParser spduParser;
+	private final CsSublayer csSublayer;
 
 	private Timer synchTimer;
 	private TimerTask synchTimerTask;
@@ -73,6 +74,7 @@ class FrameSublayer {
 		this.framev3Parser = new com.leosatdata.ccsds2110b6.util.TransferFrameParser(config);
 		this.framev4Parser = new com.leosatdata.ccsds7321b3.util.TransferFrameParser(config);
 		this.spduParser = new SpduParser(config);
+		this.csSublayer = new CsSublayer(config);
 		this.callback = callback;
 	}
 
@@ -165,7 +167,7 @@ class FrameSublayer {
 
 		state.setTxReady(false);
 
-		transceiver.send(payload);
+		transceiver.send(csSublayer.encode(payload));
 
 	}
 
