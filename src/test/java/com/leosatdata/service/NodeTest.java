@@ -259,9 +259,8 @@ public class NodeTest {
 		assertEquals((byte) QualityOfService.SEQUENCE_CONTROLLED.getCode(), packets.get(2)[0]);
 	}
 
-	// TODO test v4 and 2 byte seq length
 	@Test
-	public void testSequenceOverflow() throws Exception {
+	public void testSequenceOverflow1() throws Exception {
 		// make test a little bit faster
 		groundConfig.setProperty("maximum_frame_length", "255");
 		ground.stop();
@@ -275,6 +274,38 @@ public class NodeTest {
 
 		establishType1Session(DataRate.R256C);
 
+		assertSequenceOverflowPackets();
+	}
+	
+	@Test
+	public void testSequenceOverflow2() throws Exception {
+		// make test a little bit faster
+		groundConfig.setProperty("maximum_frame_length", "255");
+		groundConfig.setProperty("u_frame_version", "4");
+		groundConfig.setProperty("frame_version", "4");
+		groundConfig.setProperty("spdu_version", "2");
+		groundConfig.setProperty("maximum_frame_sequence_length", "2");
+
+		ground.stop();
+		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
+		ground.start();
+
+		satelliteConfig.setProperty("maximum_frame_length", "255");
+		satelliteConfig.setProperty("u_frame_version", "4");
+		satelliteConfig.setProperty("frame_version", "4");
+		satelliteConfig.setProperty("spdu_version", "2");
+		satelliteConfig.setProperty("maximum_frame_sequence_length", "2");
+
+		satellite.stop();
+		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
+		satellite.start();
+
+		establishType4Session();
+
+		assertSequenceOverflowPackets();
+	}
+
+	private void assertSequenceOverflowPackets() {
 		int maxFrameLength = groundConfig.getInteger("maximum_frame_length", 0);
 		// test sequence reset
 		// 2 is important here, it will ensure packet will be partially transffered
