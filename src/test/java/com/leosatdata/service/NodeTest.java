@@ -61,7 +61,6 @@ import com.leosatdata.util.CommSettings;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.TestUtil;
-import com.oracle.tools.packager.Platform;
 
 public class NodeTest {
 

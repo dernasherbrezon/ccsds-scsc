@@ -4,9 +4,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Modulation;
@@ -15,8 +12,6 @@ import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
 
 public class NullTransceiver implements Transceiver {
-
-	private final static Logger LOG = LoggerFactory.getLogger(NullTransceiver.class);
 
 	private final Configuration config;
 	private TxCallback sendCallback;
@@ -52,7 +47,6 @@ public class NullTransceiver implements Transceiver {
 		if (executor == null) {
 			return;
 		}
-		// FIXME gracefull shutdown with timeouts and retry
 		executor.shutdown();
 	}
 
@@ -61,7 +55,7 @@ public class NullTransceiver implements Transceiver {
 		assert (symbolRate != 0);
 		long txMillisToWait = (long) ((data.length * 8 * 1000) / symbolRate);
 		// tx should be called by interrupt, i.e. async
-		executor.schedule(new DelayedTxTask(getTxCallback(), data), txMillisToWait, TimeUnit.MILLISECONDS);
+		executor.schedule(new DelayedTxTask(getTxCallback()), txMillisToWait, TimeUnit.MILLISECONDS);
 		if (txFrameFilter != null && !txFrameFilter.accept(this, otherSide, data)) {
 			return;
 		}
@@ -112,11 +106,9 @@ public class NullTransceiver implements Transceiver {
 	private static class DelayedTxTask implements Runnable {
 
 		private final TxCallback callback;
-		private final byte[] data;
 
-		public DelayedTxTask(TxCallback callback, byte[] data) {
+		public DelayedTxTask(TxCallback callback) {
 			this.callback = callback;
-			this.data = data;
 		}
 
 		@Override
@@ -133,7 +125,7 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setRxDataModulation(DataModulation dataModulation) {
-		// TODO
+		// do nothing
 	}
 
 	@Override
@@ -164,29 +156,27 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setRxDataEncoding(Coding dataEncoding) {
-		// TODO
+		// do nothing
 	}
 
 	@Override
 	public void setRxPolarization(Polarization polarization) {
-		// TODO
+		// do nothing
 	}
 
 	@Override
 	public void setRxModulation(Modulation modulation) {
-		// TODO
+		// do nothing
 	}
 
 	@Override
 	public void setTxSymbolRate(float baud) {
-		// TODO Auto-generated method stub
-
+		// do nothing
 	}
 
 	@Override
 	public void setTxDataModulation(DataModulation modulation) {
-		// TODO Auto-generated method stub
-
+		// do nothing
 	}
 
 	@Override
@@ -218,20 +208,17 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setTxDataEncoding(Coding encoding) {
-		// TODO Auto-generated method stub
-
+		// do nothing
 	}
 
 	@Override
 	public void setTxPolarization(Polarization polarization) {
-		// TODO Auto-generated method stub
-
+		// do nothing
 	}
 
 	@Override
 	public void setTxModulation(Modulation modulation) {
-		// TODO Auto-generated method stub
-
+		// do nothing
 	}
 
 	public void setTxFrameFilter(FrameFilter frameFilter) {

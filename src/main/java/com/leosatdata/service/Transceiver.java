@@ -5,6 +5,7 @@ import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
 
+// i.e PhysicalChannel
 public interface Transceiver {
 
 	void send(byte[] data);
