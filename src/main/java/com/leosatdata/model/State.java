@@ -39,6 +39,7 @@ public class State {
 	// tx is async operation
 	private boolean txReady = true;
 	private TransceiverTxState txState = TransceiverTxState.OFF;
+	private Duplex duplex = Duplex.FULL_DUPLEX; // reasonable default
 
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);
@@ -196,5 +197,13 @@ public class State {
 
 	public TransceiverTxState getTxState() {
 		return txState;
+	}
+
+	public void setDuplex(Duplex duplex) {
+		this.duplex = duplex;
+	}
+
+	public Duplex getDuplex() {
+		return duplex;
 	}
 }

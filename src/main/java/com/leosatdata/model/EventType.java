@@ -38,6 +38,7 @@ public enum EventType {
 	SPDU,
 	STOP,
 	REQUEST_PLCW,
+	DUPLEX,
 
 	// transceiver events
 	TX_COMPLETE,

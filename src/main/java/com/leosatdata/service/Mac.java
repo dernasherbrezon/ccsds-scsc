@@ -1,9 +1,5 @@
 package com.leosatdata.service;
 
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,9 +13,6 @@ import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
 import com.leosatdata.model.TransceiverOperationMode;
-import com.leosatdata.model.Type1Directive;
-import com.leosatdata.model.Type4Directive;
-import com.leosatdata.model.Type5Directive;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransceiverUtil;
@@ -27,8 +20,6 @@ import com.leosatdata.util.TransceiverUtil;
 public class Mac {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);
-	private final static int HAIL_RESPONSE_FRAME = 0;
-	private final static int HAIL_RESPONSE_SYMBOL_IN_LOCK = 1;
 
 	private final State state;
 	private final Configuration config;
@@ -37,33 +28,20 @@ public class Mac {
 	private final NodeCallback callback;
 	private final int spduVersion;
 
-	private Timer waitTimer;
-	private TimerTask waitTimerTask;
-	private TimerTask carrierLossTask;
-	private TimerTask plcwTask;
+	private TimerService timer;
 	private int currentHailAttempt = 0;
 	private int currentCommChangeAttempt = 0;
 	private boolean hailCarrierReceived;
-	private boolean symbolInLock;
 	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
 
-	public Mac(State state, Configuration config, Transceiver transceiver, NodeCallback callback) {
+	public Mac(State state, Configuration config, Transceiver transceiver, NodeCallback callback, TimerService timer) {
 		this.state = state;
 		this.config = config;
 		this.transceiver = transceiver;
 		this.transceiverUtil = new TransceiverUtil(config, transceiver);
 		this.callback = callback;
 		this.spduVersion = config.getInteger("spdu_version", 1);
-	}
-
-	public void start() {
-		waitTimer = new Timer("wt"); // this will start Thread
-	}
-
-	public void stop() {
-		if (waitTimer != null) {
-			waitTimer.cancel();
-		}
+		this.timer = timer;
 	}
 
 	public void handle(Event e) {
@@ -102,13 +80,13 @@ public class Mac {
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			state.setPersistence(true);
 			state.setState(MacState.S31_START_HAIL);
-			scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+			timer.scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
 		case E4_CARRIER_ONLY_TIMEOUT:
 			transceiver.setTxState(TransceiverTxState.MODULATION);
 			state.setTxState(TransceiverTxState.MODULATION);
 			state.setState(MacState.S32_SEND_HAIL_ACQUISITION);
-			scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
+			timer.scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
 			state.getMacQueue().add(state.getCommParameters());
@@ -117,7 +95,7 @@ public class Mac {
 		case TX_COMPLETE:
 			if (state.getState().equals(MacState.S33_SEND_HAIL_DIRECTIVES)) {
 				state.setState(MacState.S34_SEND_HAIL_TAIL);
-				scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+				timer.scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
 				state.setState(MacState.S41_RADIATE_CARRIER);
@@ -125,50 +103,46 @@ public class Mac {
 				// assume
 				transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 				callback.handle(createNotification("hail", true));
-				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
 			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE)) {
 				state.setState(MacState.S48_3_COMM_CHANGE_WAIT);
-				scheduleWait(EventType.E18_COMM_CHANGE_WAIT_TIMEOUT, config.getDuration("comm_change_waiting_period"));
+				timer.scheduleWait(EventType.E18_COMM_CHANGE_WAIT_TIMEOUT, config.getDuration("comm_change_waiting_period"));
 			}
 			if (state.getState().equals(MacState.S48_4_REMOTE_COMM_CHANGE)) {
 				state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
-				scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
+				timer.scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
 			hailCarrierReceived = false;
 			state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
-			scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
+			timer.scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
 		case CARRIER_ACQUIRED:
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE)) {
 				hailCarrierReceived = true;
 			}
-			if (carrierLossTask != null) {
-				LOG.info("carrier recovered");
-				carrierLossTask.cancel();
-				carrierLossTask = null;
-			}
+			timer.cancelCarrierLoss();
 			break;
 		case CARRIER_LOST:
 			// CARRIER_LOSS_TIMER value is ‘0’ and MODE = active;
-			if (carrierLossTask == null && state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
-				scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
+			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+				timer.scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
 			}
 			break;
 		case E80_CARRIER_LOST_TIMEOUT:
 			LOG.info("carrier loss recovery timeout");
-			carrierLossTask = null;
+			timer.cancelCarrierLoss();
 			callback.handle(new ControllerEvent(ControllerEventType.CARRIER_LOSS));
 			// stop sending any data, but keep carrier for remote to detect it
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 			state.setTxState(TransceiverTxState.CARRIER_ONLY);
-			scheduleWait(EventType.E81_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
+			timer.scheduleWait(EventType.E81_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
 			break;
 		case E81_RECONNECT_WAIT_TIMEOUT:
 			LOG.info("carrier didn't come back. start hailing");
-			stopPeriodicPlcw();
+			timer.stopPeriodicPlcw();
 			switch (transceiverMode) {
 			case CALLER:
 				sendEvent(new Event(EventType.E2_CONNECTING_T));
@@ -189,18 +163,12 @@ public class Mac {
 				state.setState(MacState.S48__1_RX_COMM_CHANGE);
 			}
 			break;
-		case SYMBOL_LOCK:
-			symbolInLock = true;
-			if (config.getInteger("hail_response", 0) != HAIL_RESPONSE_SYMBOL_IN_LOCK) {
-				break;
-			}
-			// no break clause here because should proceed as valid frame
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
 			// check several states because responder can send response faster than extra
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
-				waitTimerTask.cancel();
+				timer.cancelWait();
 				callback.handle(createNotification("hail", true));
 				currentHailAttempt = 0;
 				// switch over to the agreed link
@@ -208,7 +176,7 @@ public class Mac {
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 				state.setTxState(TransceiverTxState.CARRIER_ONLY);
-				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("session established");
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
@@ -219,7 +187,7 @@ public class Mac {
 				state.setNeedPlcw(true);
 			}
 			if (state.getState().equals(MacState.S48__1_RX_COMM_CHANGE)) {
-				waitTimerTask.cancel();
+				timer.cancelWait();
 				callback.handle(createNotification("comm_change", true));
 				state.setPersistence(false);
 				transceiverUtil.applyTxParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
@@ -227,7 +195,7 @@ public class Mac {
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 				state.setTxState(TransceiverTxState.CARRIER_ONLY);
 				state.setState(MacState.S41_RADIATE_CARRIER);
-				scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
 			}
 			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
@@ -238,7 +206,7 @@ public class Mac {
 					// no pending frames on transceiver
 					if (state.isTxReady()) {
 						state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
-						scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
+						timer.scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
 					} else {
 						state.setState(MacState.S48_4_REMOTE_COMM_CHANGE);
 					}
@@ -249,12 +217,12 @@ public class Mac {
 			transceiver.setTxState(TransceiverTxState.MODULATION);
 			state.setTxState(TransceiverTxState.MODULATION);
 			state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
-			scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
+			timer.scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			state.setPersistence(false);
 			state.setState(MacState.S40_0_DATA_SERVICES);
-			startPeriodicPlcw();
+			timer.startPeriodicPlcw();
 			LOG.info("data services ready");
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
@@ -301,7 +269,7 @@ public class Mac {
 			state.setState(MacState.S41_RADIATE_CARRIER);
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 			state.setTxState(TransceiverTxState.CARRIER_ONLY);
-			scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+			timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
 			state.setNeedPlcw(true);
 			LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
@@ -358,12 +326,12 @@ public class Mac {
 			}
 			if (state.getState().equals(MacState.S40_2_DATA_SERVICES)) {
 				state.setState(MacState.S40_5_DATA_SERVICES);
-				scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+				timer.scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
 			break;
 		case TX_COMPLETE:
 			if (state.getState().equals(MacState.S40_5_DATA_SERVICES)) {
-				scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+				timer.scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
 			break;
 		}
@@ -379,30 +347,6 @@ public class Mac {
 		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}
 
-	private void scheduleWait(EventType type, long duration) {
-		waitTimerTask = new TimerTask() {
-
-			@Override
-			public void run() {
-				sendEvent(new Event(type));
-			}
-		};
-		LOG.info("waiting: {} for {} ms", type, duration);
-		waitTimer.schedule(waitTimerTask, duration);
-	}
-
-	private void scheduleCarrierLossTimeout(EventType type, long duration) {
-		carrierLossTask = new TimerTask() {
-
-			@Override
-			public void run() {
-				sendEvent(new Event(type));
-			}
-		};
-		LOG.info("carrier loss: {} for {} ms", type, duration);
-		waitTimer.schedule(carrierLossTask, duration);
-	}
-
 	private void sendEvent(Event e) {
 		try {
 			state.getQueue().put(e);
@@ -412,23 +356,4 @@ public class Mac {
 		}
 	}
 
-	private void stopPeriodicPlcw() {
-		if (plcwTask == null) {
-			return;
-		}
-		plcwTask.cancel();
-		plcwTask = null;
-	}
-
-	private void startPeriodicPlcw() {
-		long plcwPeriod = config.getDuration("plcw_repeat_interval");
-		plcwTask = new TimerTask() {
-
-			@Override
-			public void run() {
-				sendEvent(new Event(EventType.REQUEST_PLCW));
-			}
-		};
-		waitTimer.schedule(plcwTask, new Date(System.currentTimeMillis() + plcwPeriod), plcwPeriod);
-	}
 }

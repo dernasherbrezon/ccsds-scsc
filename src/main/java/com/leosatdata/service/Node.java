@@ -10,6 +10,7 @@ import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
+import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.QueueType;
@@ -28,6 +29,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	private final State state;
 	private final Mac mac;
 	private final FrameSublayer frameSublayer;
+	private final TimerService timer;
 
 	private final Thread t;
 	private final int localScid;
@@ -52,13 +54,20 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
 		this.maxSequenceNumber = (config.getInteger("maximum_frame_sequence_length", 0) == 1) ? 0xFF : 0xFFFF;
 		this.state = new State(config);
-		this.mac = new Mac(state, config, transceiver, callback);
+		this.timer = new TimerService(state, config);
+		this.mac = new Mac(state, config, transceiver, callback, timer);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
 		t = new Thread(this, "node-" + localScid);
 		t.setDaemon(true);
 	}
 
+	@SuppressWarnings("incomplete-switch")
 	private void handle(Event e) {
+		switch (e.getType()) {
+		case DUPLEX:
+			state.setDuplex((Duplex) e.getArg());
+			break;
+		}
 		mac.handle(e);
 		frameSublayer.handle(e);
 	}
@@ -102,11 +111,24 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	}
 
 	public void setCommParameters(Object directive) {
+		if (directive == null) {
+			throw new IllegalArgumentException("comm parameters cannot be null");
+		}
 		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
 	}
 
 	public void clearQueue(QueueType type) {
+		if (type == null) {
+			throw new IllegalArgumentException("queue type cannot be null");
+		}
 		sendEvent(new Event(EventType.CLEAR_QUEUE, type));
+	}
+
+	public void setDuplex(Duplex duplex) {
+		if (duplex == null) {
+			throw new IllegalArgumentException("duplex cannot be null");
+		}
+		sendEvent(new Event(EventType.DUPLEX, duplex));
 	}
 
 	// TODO pcid parameter? should it be hardcoded local? or specific remote pcid?
@@ -235,7 +257,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 
 	public void start() {
 		frameSublayer.start();
-		mac.start();
+		timer.start();
 		t.start();
 	}
 
@@ -247,7 +269,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		mac.stop();
+		timer.stop();
 		frameSublayer.stop();
 	}
 
@@ -264,7 +286,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	State getState() {
 		return state;
 	}
-	
+
 	void setVrFromCallback(int vrFromCallback) {
 		this.vrFromCallback = vrFromCallback;
 	}

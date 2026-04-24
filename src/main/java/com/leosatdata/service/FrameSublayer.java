@@ -502,6 +502,10 @@ class FrameSublayer {
 	}
 
 	private Object onRxInternal(byte[] data) {
+		data = csSublayer.decode(data);
+		if (data == null) {
+			return null;
+		}
 		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data)) {
 			if (uFrameVersion != 2) {
 				LOG.info("version mismatch. expected: {} got {}", uFrameVersion, 2);
