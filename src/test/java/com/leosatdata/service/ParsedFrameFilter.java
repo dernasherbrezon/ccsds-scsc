@@ -12,14 +12,16 @@ import com.leosatdata.util.TransferFrameUtil;
 public abstract class ParsedFrameFilter implements FrameFilter {
 
 	private final SpduParser spduParser;
+	private final CsSublayer csSublayer;
 
 	public ParsedFrameFilter(Configuration config) {
 		spduParser = new SpduParser(config);
+		csSublayer = new CsSublayer(config);
 	}
 
 	@Override
 	public boolean accept(NullTransceiver tx, NullTransceiver rx, byte[] data) {
-		Object frame = parseFrame(data);
+		Object frame = parseFrame(csSublayer.decode(data));
 		if (frame != null) {
 			PduTypeId type = TransferFrameUtil.getPduTypeId(frame);
 			if (type.equals(PduTypeId.SPDU)) {

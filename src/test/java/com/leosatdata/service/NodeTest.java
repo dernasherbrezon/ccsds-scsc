@@ -31,7 +31,6 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.DataRate;
-import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
@@ -90,6 +89,7 @@ public class NodeTest {
 
 		assertTestSeqPacket(1);
 
+		// less than expected
 		ground.onRx(createPlcw(false, 0));
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 
@@ -102,6 +102,7 @@ public class NodeTest {
 
 		assertTestSeqPacket(1);
 
+		// more than expected
 		ground.onRx(createPlcw(false, 3));
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 
@@ -695,7 +696,6 @@ public class NodeTest {
 		SpduParser spduParser = new SpduParser(satelliteConfig);
 
 		Plcw plcw = new Plcw();
-		// smaller report value
 		plcw.setReportValue(reportValue);
 		plcw.setRetransmit(retransmit);
 		plcw.setExpeditedFrameCounter(0);
@@ -709,7 +709,8 @@ public class NodeTest {
 		try (BitOutputStream bos = new BitOutputStream(baos)) {
 			com.leosatdata.ccsds2110b6.util.TransferFrameParser.encode(frame, bos);
 		}
-		return baos.toByteArray();
+		CsSublayer csSublayer = new CsSublayer(satelliteConfig);
+		return csSublayer.encode(baos.toByteArray());
 	}
 
 	private static void assertEvent(ControllerEvent hail, boolean expectedStatus) {
