@@ -149,7 +149,7 @@ public class NodeTest {
 	}
 
 	@Test
-	public void testValiteSourceFrame() throws Exception {
+	public void testValidateSourceFrame() throws Exception {
 		// remote_spacecraft_id is configured
 		establishType1Session();
 
@@ -162,7 +162,7 @@ public class NodeTest {
 	}
 
 	@Test
-	public void testValiteSourceFrame2() throws Exception {
+	public void testValidateSourceFrame2() throws Exception {
 		// remote_spacecraft_id will be taken from the first message
 		satelliteConfig.removeProperty("remote_spacecraft_id");
 		satellite.stop();
@@ -275,7 +275,7 @@ public class NodeTest {
 
 		assertSequenceOverflowPackets();
 	}
-	
+
 	@Test
 	public void testSequenceOverflow2() throws Exception {
 		// make test a little bit faster
@@ -580,7 +580,6 @@ public class NodeTest {
 		rx.setCoherency(Modulation.COHERENT_PSK);
 		rx.setDemandQuery(NegotiationType2.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
-		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setFrequency(2_100_000_000f);
 		rx.setLinkSnr(0);
 		rx.setModulation(LinkModulation.GMSK);
@@ -597,7 +596,6 @@ public class NodeTest {
 		tx.setCoherency(Modulation.COHERENT_PSK);
 		tx.setDemandQuery(NegotiationType2.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
-		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setFrequency(2_200_000_000f);
 		tx.setLinkSnr(0);
 		tx.setModulation(LinkModulation.GMSK);
@@ -619,7 +617,6 @@ public class NodeTest {
 		rx.setCoding(Coding.CONVOLUTIONAL);
 		rx.setDemandQuery(NegotiationType.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
-		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setFreqChannel(1);
 		rx.setLinkSnr(0);
 		rx.setModulation(LinkModulation.GMSK);
@@ -634,7 +631,6 @@ public class NodeTest {
 		tx.setCoding(Coding.CONVOLUTIONAL);
 		tx.setDemandQuery(NegotiationType.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
-		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setFreqChannel(1);
 		tx.setLinkSnr(0);
 		tx.setModulation(LinkModulation.GMSK);

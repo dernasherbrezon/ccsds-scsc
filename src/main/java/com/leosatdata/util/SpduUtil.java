@@ -169,9 +169,7 @@ public class SpduUtil {
 
 	public static Spdu mergeCommParameters(Spdu oldParams, Spdu newParams) {
 		if (newParams instanceof Type1Directive) {
-			// FIXME default duplex mode
 			ControlParameters controlParameters = new ControlParameters();
-			controlParameters.setDuplex(Duplex.FULL_DUPLEX);
 			controlParameters.setRnmd(false);
 			controlParameters.setTimeSampleField(0);
 			controlParameters.setTransmitToken(false);
@@ -201,6 +199,69 @@ public class SpduUtil {
 			return oldParams;
 		}
 		LOG.error("unknown spdu for mergeCommParameters: {}", newParams);
+		return null;
+	}
+
+	public static void setDuplex(Spdu params, Duplex duplex) {
+		if (params instanceof Type1Directive) {
+			Type1Directive type1 = (Type1Directive) params;
+			if (type1.getControlParams() != null) {
+				type1.getControlParams().setDuplex(duplex);
+			}
+			return;
+		}
+		if (params instanceof Type4Directive) {
+			Type4Directive type4 = (Type4Directive) params;
+			if (type4.getRxLink() != null) {
+				type4.getRxLink().setDuplex(duplex);
+			}
+			if (type4.getTxLink() != null) {
+				type4.getTxLink().setDuplex(duplex);
+			}
+			return;
+		}
+		if (params instanceof Type5Directive) {
+			Type5Directive type5 = (Type5Directive) params;
+			if (type5.getRxLink() != null) {
+				type5.getRxLink().setDuplex(duplex);
+			}
+			if (type5.getTxLink() != null) {
+				type5.getTxLink().setDuplex(duplex);
+			}
+			return;
+		}
+		LOG.error("unknown spdu for setDuplex: {}", params);
+	}
+
+	public static Duplex getDuplex(Spdu params) {
+		if (params instanceof Type1Directive) {
+			Type1Directive type1 = (Type1Directive) params;
+			if (type1.getControlParams() != null) {
+				return type1.getControlParams().getDuplex();
+			}
+			return null;
+		}
+		if (params instanceof Type4Directive) {
+			Type4Directive type4 = (Type4Directive) params;
+			if (type4.getRxLink() != null) {
+				return type4.getRxLink().getDuplex();
+			}
+			if (type4.getTxLink() != null) {
+				return type4.getTxLink().getDuplex();
+			}
+			return null;
+		}
+		if (params instanceof Type5Directive) {
+			Type5Directive type5 = (Type5Directive) params;
+			if (type5.getRxLink() != null) {
+				return type5.getRxLink().getDuplex();
+			}
+			if (type5.getTxLink() != null) {
+				return type5.getTxLink().getDuplex();
+			}
+			return null;
+		}
+		LOG.error("unknown spdu for getDuplex: {}", params);
 		return null;
 	}
 }

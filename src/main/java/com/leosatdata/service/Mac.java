@@ -56,7 +56,9 @@ public class Mac {
 			LOG.info("waiting for hail");
 			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
 			transceiverMode = TransceiverOperationMode.RESPONDER;
-			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
+			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
+			transceiverUtil.applyParameters(hailCommParameters, transceiverMode.equals(TransceiverOperationMode.CALLER));
 			transceiver.setTxState(TransceiverTxState.MODULATION);
 			state.setTxState(TransceiverTxState.MODULATION);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
@@ -74,7 +76,9 @@ public class Mac {
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
 			transceiverMode = TransceiverOperationMode.CALLER;
-			transceiverUtil.applyParameters(transceiverUtil.createHailTxRx(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+			hailCommParameters = transceiverUtil.createHailTxRx();
+			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
+			transceiverUtil.applyParameters(hailCommParameters, transceiverMode.equals(TransceiverOperationMode.CALLER));
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 			state.setTxState(TransceiverTxState.CARRIER_ONLY);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
@@ -203,6 +207,8 @@ public class Mac {
 					LOG.info("remote comm change parameters requested: {}", spdu);
 					state.setPersistence(true);
 					state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), spdu));
+					// FIXME switch mode if changed
+					state.setDuplex(SpduUtil.getDuplex(state.getCommParameters()));
 					// no pending frames on transceiver
 					if (state.isTxReady()) {
 						state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
@@ -244,6 +250,7 @@ public class Mac {
 				return;
 			}
 			state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg()));
+			SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
 			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
 				sendEvent(new Event(EventType.E14_COMM_CHANGE));
 			}
