@@ -27,7 +27,7 @@ public class FullDuplexMac {
 	private final TransceiverUtil transceiverUtil;
 	private final NodeCallback callback;
 	private final TimerService timer;
-	
+
 	private final int spduVersion;
 	private int currentHailAttempt = 0;
 	private int currentCommChangeAttempt = 0;
@@ -45,6 +45,7 @@ public class FullDuplexMac {
 
 	public void handle(Event e) {
 		handleHail(e);
+		handleCommChange(e);
 		handleTermination(e);
 	}
 
@@ -106,14 +107,6 @@ public class FullDuplexMac {
 				callback.handle(createNotification("hail", true));
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
-			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE)) {
-				state.setState(MacState.S48_3_COMM_CHANGE_WAIT);
-				timer.scheduleWait(EventType.E18_COMM_CHANGE_WAIT_TIMEOUT, config.getDuration("comm_change_waiting_period"));
-			}
-			if (state.getState().equals(MacState.S48_4_REMOTE_COMM_CHANGE)) {
-				state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
-				timer.scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
-			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
 			hailCarrierReceived = false;
@@ -155,14 +148,6 @@ public class FullDuplexMac {
 				break;
 			}
 			break;
-		case SYMBOL_UNLOCK:
-			// comm change routine
-			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE) || state.getState().equals(MacState.S48_3_COMM_CHANGE_WAIT)) {
-				LOG.info("rx comm parameters changed: {}", state.getCommParameters());
-				transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
-				state.setState(MacState.S48__1_RX_COMM_CHANGE);
-			}
-			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
 			// check several states because responder can send response faster than extra
@@ -185,6 +170,96 @@ public class FullDuplexMac {
 				state.setCommParameters(spdu);
 				state.setNeedPlcw(true);
 			}
+			break;
+		case E10_CARRIER_ONLY_TIMEOUT:
+			transceiver.setTxState(TransceiverTxState.MODULATION);
+			state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
+			timer.scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
+			break;
+		case E11_ACQUISITION_IDLE_TIMEOUT:
+			state.setPersistence(false);
+			state.setState(MacState.S40_0_DATA_SERVICES);
+			timer.startPeriodicPlcw();
+			LOG.info("data services ready");
+			break;
+		case E8_HAIL_WAIT_TIMEOUT:
+			if (hailCarrierReceived) {
+				callback.handle(new ControllerEvent(ControllerEventType.CARRIER_ONLY_RECEIVED));
+			}
+			currentHailAttempt++;
+			int maxAttempts = config.getInteger("hail_lifetime", 0);
+			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
+				currentHailAttempt = 0;
+				callback.handle(createNotification("hail", false));
+			} else {
+				sendEvent(new Event(EventType.E2_CONNECTING_T));
+			}
+			break;
+		case REQUEST_PLCW:
+			state.setNeedPlcw(true);
+			break;
+		}
+	}
+
+	@SuppressWarnings("incomplete-switch")
+	private void handleCommChange(Event e) {
+		switch (e.getType()) {
+		case E12_LOCAL_COMM_CHANGE:
+			if (e.getArg() == null) {
+				LOG.error("received comm change without payload");
+				return;
+			}
+			state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg()));
+			SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
+			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+				sendEvent(new Event(EventType.E14_COMM_CHANGE));
+			}
+			break;
+		case E14_COMM_CHANGE:
+			LOG.info("attempting comm_change: {} of {}", (currentCommChangeAttempt + 1), config.getInteger("comm_change_lifetime", 0));
+			state.setPersistence(true);
+			state.getMacQueue().add(state.getCommParameters());
+			state.setState(MacState.S48_2_SEND_COMM_CHANGE);
+			break;
+		case E18_COMM_CHANGE_WAIT_TIMEOUT:
+			currentCommChangeAttempt++;
+			int maxAttempts = config.getInteger("comm_change_lifetime", 0);
+			if (maxAttempts != 0 && currentCommChangeAttempt >= maxAttempts) {
+				currentCommChangeAttempt = 0;
+				callback.handle(createNotification("comm_change", false));
+			} else {
+				sendEvent(new Event(EventType.E14_COMM_CHANGE));
+			}
+			break;
+		case E20_COMM_CHANGE_TAIL_TIMEOUT:
+			state.setPersistence(false);
+			state.setState(MacState.S41_RADIATE_CARRIER);
+			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+			timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+			transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			state.setNeedPlcw(true);
+			LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
+			break;
+		case SYMBOL_UNLOCK:
+			// comm change routine
+			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE) || state.getState().equals(MacState.S48_3_COMM_CHANGE_WAIT)) {
+				LOG.info("rx comm parameters changed: {}", state.getCommParameters());
+				transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				state.setState(MacState.S48__1_RX_COMM_CHANGE);
+			}
+			break;
+		case TX_COMPLETE:
+			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE)) {
+				state.setState(MacState.S48_3_COMM_CHANGE_WAIT);
+				timer.scheduleWait(EventType.E18_COMM_CHANGE_WAIT_TIMEOUT, config.getDuration("comm_change_waiting_period"));
+			}
+			if (state.getState().equals(MacState.S48_4_REMOTE_COMM_CHANGE)) {
+				state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
+				timer.scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
+			}
+			break;
+		case SPDU:
+			Spdu spdu = (Spdu) e.getArg();
 			if (state.getState().equals(MacState.S48__1_RX_COMM_CHANGE)) {
 				timer.cancelWait();
 				callback.handle(createNotification("comm_change", true));
@@ -213,70 +288,8 @@ public class FullDuplexMac {
 				}
 			}
 			break;
-		case E10_CARRIER_ONLY_TIMEOUT:
-			transceiver.setTxState(TransceiverTxState.MODULATION);
-			state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
-			timer.scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
-			break;
-		case E11_ACQUISITION_IDLE_TIMEOUT:
-			state.setPersistence(false);
-			state.setState(MacState.S40_0_DATA_SERVICES);
-			timer.startPeriodicPlcw();
-			LOG.info("data services ready");
-			break;
-		case E8_HAIL_WAIT_TIMEOUT:
-			if (hailCarrierReceived) {
-				callback.handle(new ControllerEvent(ControllerEventType.CARRIER_ONLY_RECEIVED));
-			}
-			currentHailAttempt++;
-			int maxAttempts = config.getInteger("hail_lifetime", 0);
-			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
-				currentHailAttempt = 0;
-				callback.handle(createNotification("hail", false));
-			} else {
-				sendEvent(new Event(EventType.E2_CONNECTING_T));
-			}
-			break;
-		case E12_LOCAL_COMM_CHANGE:
-			if (e.getArg() == null) {
-				LOG.error("received comm change without payload");
-				return;
-			}
-			state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg()));
-			SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
-			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
-				sendEvent(new Event(EventType.E14_COMM_CHANGE));
-			}
-			break;
-		case E14_COMM_CHANGE:
-			LOG.info("attempting comm_change: {} of {}", (currentCommChangeAttempt + 1), config.getInteger("comm_change_lifetime", 0));
-			state.setPersistence(true);
-			state.getMacQueue().add(state.getCommParameters());
-			state.setState(MacState.S48_2_SEND_COMM_CHANGE);
-			break;
-		case E18_COMM_CHANGE_WAIT_TIMEOUT:
-			currentCommChangeAttempt++;
-			maxAttempts = config.getInteger("comm_change_lifetime", 0);
-			if (maxAttempts != 0 && currentCommChangeAttempt >= maxAttempts) {
-				currentCommChangeAttempt = 0;
-				callback.handle(createNotification("comm_change", false));
-			} else {
-				sendEvent(new Event(EventType.E14_COMM_CHANGE));
-			}
-			break;
-		case E20_COMM_CHANGE_TAIL_TIMEOUT:
-			state.setPersistence(false);
-			state.setState(MacState.S41_RADIATE_CARRIER);
-			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-			timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
-			transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
-			state.setNeedPlcw(true);
-			LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
-			break;
-		case REQUEST_PLCW:
-			state.setNeedPlcw(true);
-			break;
 		}
+
 	}
 
 	// when initiated locally (lnmd) send to remote and wait response rnmd, then
