@@ -30,7 +30,7 @@ public class HalfDuplexMac {
 
 	private int currentHailAttempt = 0;
 	private int currentCommChangeAttempt = 0;
-	private boolean carrierAcquired = false;
+	private boolean carrierAcquired;
 
 	public HalfDuplexMac(State state, Configuration config, Transceiver transceiver, NodeCallback callback, TimerService timer) {
 		this.state = state;

@@ -31,7 +31,7 @@ public class FullDuplexMac {
 	private final int spduVersion;
 	private int currentHailAttempt = 0;
 	private int currentCommChangeAttempt = 0;
-	private boolean hailCarrierReceived;
+	private boolean carrierAcquired;
 
 	public FullDuplexMac(State state, Configuration config, Transceiver transceiver, NodeCallback callback, TimerService timer) {
 		this.state = state;
@@ -45,6 +45,7 @@ public class FullDuplexMac {
 
 	public void handle(Event e) {
 		handleHail(e);
+		handleReconnect(e);
 		handleCommChange(e);
 		handleTermination(e);
 	}
@@ -109,44 +110,13 @@ public class FullDuplexMac {
 			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
-			hailCarrierReceived = false;
+			carrierAcquired = false;
 			state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
 			timer.scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
 		case CARRIER_ACQUIRED:
-			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE)) {
-				hailCarrierReceived = true;
-			}
+			carrierAcquired = true;
 			timer.cancelCarrierLoss();
-			break;
-		case CARRIER_LOST:
-			// CARRIER_LOSS_TIMER value is ‘0’ and MODE = active;
-			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
-				timer.scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
-			}
-			break;
-		case E80_CARRIER_LOST_TIMEOUT:
-			LOG.info("carrier loss recovery timeout");
-			timer.cancelCarrierLoss();
-			callback.handle(new ControllerEvent(ControllerEventType.CARRIER_LOSS));
-			// stop sending any data, but keep carrier for remote to detect it
-			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-			timer.scheduleWait(EventType.E81_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
-			break;
-		case E81_RECONNECT_WAIT_TIMEOUT:
-			LOG.info("carrier didn't come back. start hailing");
-			timer.stopPeriodicPlcw();
-			switch (state.getTransceiverMode()) {
-			case CALLER:
-				sendEvent(new Event(EventType.E2_CONNECTING_T));
-				break;
-			case RESPONDER:
-				sendEvent(new Event(EventType.E1_CONNECTING_L));
-				break;
-			default:
-				LOG.error("unsupported transceiver operating mode: {}", state.getTransceiverMode());
-				break;
-			}
 			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
@@ -183,7 +153,7 @@ public class FullDuplexMac {
 			LOG.info("data services ready");
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
-			if (hailCarrierReceived) {
+			if (carrierAcquired) {
 				callback.handle(new ControllerEvent(ControllerEventType.CARRIER_ONLY_RECEIVED));
 			}
 			currentHailAttempt++;
@@ -197,6 +167,42 @@ public class FullDuplexMac {
 			break;
 		case REQUEST_PLCW:
 			state.setNeedPlcw(true);
+			break;
+		}
+	}
+
+	@SuppressWarnings("incomplete-switch")
+	private void handleReconnect(Event e) {
+		switch (e.getType()) {
+		case CARRIER_LOST:
+			carrierAcquired = false;
+			// CARRIER_LOSS_TIMER value is ‘0’ and MODE = active;
+			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+				timer.scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
+			}
+			break;
+		case E80_CARRIER_LOST_TIMEOUT:
+			LOG.info("carrier loss recovery timeout");
+			timer.cancelCarrierLoss();
+			callback.handle(new ControllerEvent(ControllerEventType.CARRIER_LOSS));
+			// stop sending any data, but keep carrier for remote to detect it
+			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+			timer.scheduleWait(EventType.E81_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
+			break;
+		case E81_RECONNECT_WAIT_TIMEOUT:
+			LOG.info("carrier didn't come back. start hailing");
+			timer.stopPeriodicPlcw();
+			switch (state.getTransceiverMode()) {
+			case CALLER:
+				sendEvent(new Event(EventType.E2_CONNECTING_T));
+				break;
+			case RESPONDER:
+				sendEvent(new Event(EventType.E1_CONNECTING_L));
+				break;
+			default:
+				LOG.error("unsupported transceiver operating mode: {}", state.getTransceiverMode());
+				break;
+			}
 			break;
 		}
 	}
