@@ -16,6 +16,7 @@ import com.leosatdata.model.EventType;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.State;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransferFrameUtil;
 
 public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallback, CarrierCallback {
@@ -27,7 +28,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	private final NodeCallback callback;
 	private final UserDataCallback rxCallback;
 	private final State state;
-	private final Mac mac;
+	private final FullDuplexMac fullDuplexMac;
 	private final FrameSublayer frameSublayer;
 	private final TimerService timer;
 
@@ -55,7 +56,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		this.maxSequenceNumber = (config.getInteger("maximum_frame_sequence_length", 0) == 1) ? 0xFF : 0xFFFF;
 		this.state = new State(config);
 		this.timer = new TimerService(state, config);
-		this.mac = new Mac(state, config, transceiver, callback, timer);
+		this.fullDuplexMac = new FullDuplexMac(state, config, transceiver, callback, timer);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
 		t = new Thread(this, "node-" + localScid);
 		t.setDaemon(true);
@@ -66,9 +67,14 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		switch (e.getType()) {
 		case DUPLEX:
 			state.setDuplex((Duplex) e.getArg());
+			if (state.getCommParameters() != null) {
+				SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
+			}
 			break;
 		}
-		mac.handle(e);
+		if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
+			fullDuplexMac.handle(e);
+		}
 		frameSublayer.handle(e);
 	}
 

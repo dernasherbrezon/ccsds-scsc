@@ -3,7 +3,6 @@ package com.leosatdata.model;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import com.leosatdata.service.TransceiverTxState;
 import com.leosatdata.util.Configuration;
 
 public class State {
@@ -38,8 +37,8 @@ public class State {
 	// wait tx complete before sending next frame
 	// tx is async operation
 	private boolean txReady = true;
-	private TransceiverTxState txState = TransceiverTxState.OFF;
 	private Duplex duplex = Duplex.FULL_DUPLEX; // reasonable default
+	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
 
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);
@@ -191,14 +190,6 @@ public class State {
 		return txReady;
 	}
 
-	public void setTxState(TransceiverTxState txState) {
-		this.txState = txState;
-	}
-
-	public TransceiverTxState getTxState() {
-		return txState;
-	}
-
 	public void setDuplex(Duplex duplex) {
 		this.duplex = duplex;
 	}
@@ -206,4 +197,13 @@ public class State {
 	public Duplex getDuplex() {
 		return duplex;
 	}
+
+	public void setTransceiverMode(TransceiverOperationMode transceiverMode) {
+		this.transceiverMode = transceiverMode;
+	}
+
+	public TransceiverOperationMode getTransceiverMode() {
+		return transceiverMode;
+	}
+
 }

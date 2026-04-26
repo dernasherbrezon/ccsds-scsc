@@ -17,24 +17,23 @@ import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransceiverUtil;
 
-public class Mac {
+public class FullDuplexMac {
 
-	private final static Logger LOG = LoggerFactory.getLogger(Mac.class);
+	private final static Logger LOG = LoggerFactory.getLogger(FullDuplexMac.class);
 
 	private final State state;
 	private final Configuration config;
 	private final Transceiver transceiver;
 	private final TransceiverUtil transceiverUtil;
 	private final NodeCallback callback;
+	private final TimerService timer;
+	
 	private final int spduVersion;
-
-	private TimerService timer;
 	private int currentHailAttempt = 0;
 	private int currentCommChangeAttempt = 0;
 	private boolean hailCarrierReceived;
-	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
 
-	public Mac(State state, Configuration config, Transceiver transceiver, NodeCallback callback, TimerService timer) {
+	public FullDuplexMac(State state, Configuration config, Transceiver transceiver, NodeCallback callback, TimerService timer) {
 		this.state = state;
 		this.config = config;
 		this.transceiver = transceiver;
@@ -54,13 +53,13 @@ public class Mac {
 		switch (e.getType()) {
 		case E1_CONNECTING_L:
 			LOG.info("waiting for hail");
+			// FIXME persistence=true?
 			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
-			transceiverMode = TransceiverOperationMode.RESPONDER;
+			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
-			transceiverUtil.applyParameters(hailCommParameters, transceiverMode.equals(TransceiverOperationMode.CALLER));
+			transceiverUtil.applyParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 			transceiver.setTxState(TransceiverTxState.MODULATION);
-			state.setTxState(TransceiverTxState.MODULATION);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			break;
 		case E2_CONNECTING_T:
@@ -75,12 +74,11 @@ public class Mac {
 				return;
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
-			transceiverMode = TransceiverOperationMode.CALLER;
+			state.setTransceiverMode(TransceiverOperationMode.CALLER);
 			hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
-			transceiverUtil.applyParameters(hailCommParameters, transceiverMode.equals(TransceiverOperationMode.CALLER));
+			transceiverUtil.applyParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-			state.setTxState(TransceiverTxState.CARRIER_ONLY);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			state.setPersistence(true);
 			state.setState(MacState.S31_START_HAIL);
@@ -88,7 +86,6 @@ public class Mac {
 			break;
 		case E4_CARRIER_ONLY_TIMEOUT:
 			transceiver.setTxState(TransceiverTxState.MODULATION);
-			state.setTxState(TransceiverTxState.MODULATION);
 			state.setState(MacState.S32_SEND_HAIL_ACQUISITION);
 			timer.scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
@@ -105,7 +102,7 @@ public class Mac {
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				// switch over to the agreed link once plcw sent
 				// assume
-				transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				callback.handle(createNotification("hail", true));
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
@@ -141,13 +138,12 @@ public class Mac {
 			callback.handle(new ControllerEvent(ControllerEventType.CARRIER_LOSS));
 			// stop sending any data, but keep carrier for remote to detect it
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-			state.setTxState(TransceiverTxState.CARRIER_ONLY);
 			timer.scheduleWait(EventType.E81_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
 			break;
 		case E81_RECONNECT_WAIT_TIMEOUT:
 			LOG.info("carrier didn't come back. start hailing");
 			timer.stopPeriodicPlcw();
-			switch (transceiverMode) {
+			switch (state.getTransceiverMode()) {
 			case CALLER:
 				sendEvent(new Event(EventType.E2_CONNECTING_T));
 				break;
@@ -155,7 +151,7 @@ public class Mac {
 				sendEvent(new Event(EventType.E1_CONNECTING_L));
 				break;
 			default:
-				LOG.error("unsupported transceiver operating mode: {}", transceiverMode);
+				LOG.error("unsupported transceiver operating mode: {}", state.getTransceiverMode());
 				break;
 			}
 			break;
@@ -163,7 +159,7 @@ public class Mac {
 			// comm change routine
 			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE) || state.getState().equals(MacState.S48_3_COMM_CHANGE_WAIT)) {
 				LOG.info("rx comm parameters changed: {}", state.getCommParameters());
-				transceiverUtil.applyRxParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+				transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				state.setState(MacState.S48__1_RX_COMM_CHANGE);
 			}
 			break;
@@ -176,10 +172,9 @@ public class Mac {
 				callback.handle(createNotification("hail", true));
 				currentHailAttempt = 0;
 				// switch over to the agreed link
-				transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-				state.setTxState(TransceiverTxState.CARRIER_ONLY);
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("session established");
 			}
@@ -194,10 +189,9 @@ public class Mac {
 				timer.cancelWait();
 				callback.handle(createNotification("comm_change", true));
 				state.setPersistence(false);
-				transceiverUtil.applyTxParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+				transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				currentCommChangeAttempt = 0;
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-				state.setTxState(TransceiverTxState.CARRIER_ONLY);
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
@@ -221,7 +215,6 @@ public class Mac {
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
 			transceiver.setTxState(TransceiverTxState.MODULATION);
-			state.setTxState(TransceiverTxState.MODULATION);
 			state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
 			timer.scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
@@ -275,9 +268,8 @@ public class Mac {
 			state.setPersistence(false);
 			state.setState(MacState.S41_RADIATE_CARRIER);
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-			state.setTxState(TransceiverTxState.CARRIER_ONLY);
 			timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
-			transceiverUtil.applyParameters(state.getCommParameters(), transceiverMode.equals(TransceiverOperationMode.CALLER));
+			transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 			state.setNeedPlcw(true);
 			LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
 			break;

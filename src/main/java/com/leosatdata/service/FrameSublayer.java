@@ -98,7 +98,7 @@ class FrameSublayer {
 		}
 		// support transceivers without extra "to be modulated" buffer
 		// so if the state is not modulation, skip sending
-		if (!state.getTxState().equals(TransceiverTxState.MODULATION)) {
+		if (!transceiver.getTxState().equals(TransceiverTxState.MODULATION)) {
 			return;
 		}
 
