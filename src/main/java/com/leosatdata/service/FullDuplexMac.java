@@ -105,18 +105,21 @@ public class FullDuplexMac {
 				// switch over to the agreed link once plcw sent
 				// assume
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 				callback.handle(createNotification("hail", true));
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
-			carrierAcquired = false;
 			state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
 			timer.scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
 		case CARRIER_ACQUIRED:
 			carrierAcquired = true;
 			timer.cancelCarrierLoss();
+			break;
+		case CARRIER_LOST:
+			carrierAcquired = false;
 			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
@@ -175,7 +178,6 @@ public class FullDuplexMac {
 	private void handleReconnect(Event e) {
 		switch (e.getType()) {
 		case CARRIER_LOST:
-			carrierAcquired = false;
 			// CARRIER_LOSS_TIMER value is ‘0’ and MODE = active;
 			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
 				timer.scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
