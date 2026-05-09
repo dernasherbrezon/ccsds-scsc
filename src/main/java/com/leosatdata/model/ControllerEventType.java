@@ -9,6 +9,7 @@ public enum ControllerEventType {
 	COP_P_LOSS_SYNCHRONIZATION,
 	END_OF_SESSION,
 	CARRIER_LOSS,
+	NO_CARRIER_RECEIVED, // half-duplex
 	INVALID_FRAME_SOURCE
 	// @formatter:on
 	

@@ -264,4 +264,65 @@ public class SpduUtil {
 		LOG.error("unknown spdu for getDuplex: {}", params);
 		return null;
 	}
+
+	public static void setTransmit(Spdu params, boolean token) {
+		if (params instanceof Type1Directive) {
+			Type1Directive type1 = (Type1Directive) params;
+			type1.getControlParams().setTransmitToken(token);
+			return;
+		}
+		if (params instanceof Type4Directive) {
+			Type4Directive type4 = (Type4Directive) params;
+			if (type4.getRxLink() != null) {
+				type4.getRxLink().setTransmitToken(token);
+			}
+			if (type4.getTxLink() != null) {
+				type4.getTxLink().setTransmitToken(token);
+			}
+			return;
+		}
+		if (params instanceof Type5Directive) {
+			Type5Directive type5 = (Type5Directive) params;
+			if (type5.getRxLink() != null) {
+				type5.getRxLink().setTransmitToken(token);
+			}
+			if (type5.getTxLink() != null) {
+				type5.getTxLink().setTransmitToken(token);
+			}
+			return;
+		}
+		LOG.error("unknown spdu for setTransmit: {}", params);
+	}
+
+	public static boolean isTransmit(Spdu params) {
+		if (params instanceof Type1Directive) {
+			Type1Directive type1 = (Type1Directive) params;
+			if (type1.getControlParams() != null) {
+				return type1.getControlParams().isTransmitToken();
+			}
+			return false;
+		}
+		if (params instanceof Type4Directive) {
+			Type4Directive type4 = (Type4Directive) params;
+			if (type4.getRxLink() != null) {
+				return type4.getRxLink().isTransmitToken();
+			}
+			if (type4.getTxLink() != null) {
+				return type4.getTxLink().isTransmitToken();
+			}
+			return false;
+		}
+		if (params instanceof Type5Directive) {
+			Type5Directive type5 = (Type5Directive) params;
+			if (type5.getRxLink() != null) {
+				return type5.getRxLink().isTransmitToken();
+			}
+			if (type5.getTxLink() != null) {
+				return type5.getTxLink().isTransmitToken();
+			}
+			return false;
+		}
+		LOG.error("unknown spdu for isTransmit: {}", params);
+		return false;
+	}
 }

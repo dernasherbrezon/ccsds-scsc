@@ -8,6 +8,7 @@ public class HalfDuplexTransceiver extends NullTransceiver {
 		super(config);
 	}
 
+	// ensure tx and rx properly switched in tests
 	@Override
 	public void setTxState(TransceiverTxState state) {
 		super.setTxState(state);
