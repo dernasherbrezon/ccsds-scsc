@@ -10,6 +10,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -19,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +35,7 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.DataRate;
+import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
@@ -61,6 +66,7 @@ import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.TestUtil;
 
+@RunWith(Parameterized.class)
 public class NodeTest {
 
 	private final static Logger LOG = LoggerFactory.getLogger(NodeTest.class);
@@ -82,6 +88,12 @@ public class NodeTest {
 	private MockNodeCallback satelliteCallback;
 	private MockUserDataCallback satelliteDataCallback;
 	private Node satellite;
+
+	private Duplex duplex;
+
+	public NodeTest(Duplex duplex) {
+		this.duplex = duplex;
+	}
 
 	@Test
 	public void testResync1() throws Exception {
@@ -532,10 +544,20 @@ public class NodeTest {
 		establishType1Session(DataRate.R8C);
 	}
 
+	// @formatter:off
+	@Parameterized.Parameters(name = "{0}")
+	public static Collection<?> parameters() {
+		return Arrays.asList(new Object[][] { 
+//			{ Duplex.HALF_DUPLEX }, 
+			{ Duplex.FULL_DUPLEX } 
+		});
+	}
+	// @formatter:on
+
 	private void establishType1Session(DataRate dataRate) throws InterruptedException {
-//		satellite.setDuplex(Duplex.HALF_DUPLEX);
+		satellite.setDuplex(duplex);
 		satellite.waitForSession();
-//		ground.setDuplex(Duplex.HALF_DUPLEX);
+		ground.setDuplex(duplex);
 		ground.setCommParameters(createType1CommParameters(dataRate));
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
