@@ -26,7 +26,7 @@ public class NullTransceiver implements Transceiver {
 	private TransceiverRxState rxState = TransceiverRxState.OFF;
 	private boolean skipCallbacks = false;
 
-	private float symbolRate;
+	private float rxSymbolRate;
 	private float rxFrequency;
 	private float txFrequency;
 
@@ -52,8 +52,8 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void send(byte[] data) {
-		assert (symbolRate != 0);
-		long txMillisToWait = (long) ((data.length * 8 * 1000) / symbolRate);
+		assert (rxSymbolRate != 0);
+		long txMillisToWait = (long) ((data.length * 8 * 1000) / rxSymbolRate);
 		// tx should be called by interrupt, i.e. async
 		executor.schedule(new DelayedTxTask(getTxCallback()), txMillisToWait, TimeUnit.MILLISECONDS);
 		if (txFrameFilter != null && !txFrameFilter.accept(this, otherSide, data)) {
@@ -82,45 +82,9 @@ public class NullTransceiver implements Transceiver {
 		return receiveCallback;
 	}
 
-	private static class DelayedRxTask implements Runnable {
-
-		private final byte[] data;
-		private final RxCallback callback;
-		private final FrameFilter filter;
-
-		public DelayedRxTask(RxCallback callback, byte[] data, FrameFilter filter) {
-			this.data = data;
-			this.callback = callback;
-			this.filter = filter;
-		}
-
-		@Override
-		public void run() {
-			if (filter == null || filter.accept(null, null, data)) {
-				callback.onRx(data);
-			}
-		}
-
-	}
-
-	private static class DelayedTxTask implements Runnable {
-
-		private final TxCallback callback;
-
-		public DelayedTxTask(TxCallback callback) {
-			this.callback = callback;
-		}
-
-		@Override
-		public void run() {
-			callback.onTx();
-		}
-
-	}
-
 	@Override
 	public void setRxSymbolRate(float baud) {
-		this.symbolRate = baud;
+		this.rxSymbolRate = baud;
 	}
 
 	@Override

@@ -29,6 +29,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	private final UserDataCallback rxCallback;
 	private final State state;
 	private final FullDuplexMac fullDuplexMac;
+	private final HalfDuplexMac halfDuplexMac;
 	private final FrameSublayer frameSublayer;
 	private final TimerService timer;
 
@@ -57,6 +58,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		this.state = new State(config);
 		this.timer = new TimerService(state, config);
 		this.fullDuplexMac = new FullDuplexMac(state, config, transceiver, callback, timer);
+		this.halfDuplexMac = new HalfDuplexMac(state, config, transceiver, callback, timer);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
 		t = new Thread(this, "node-" + localScid);
 		t.setDaemon(true);
@@ -70,10 +72,33 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 			if (state.getCommParameters() != null) {
 				SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
 			}
+			return;
+		case CONNECTING_L:
+			if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
+				e = new Event(EventType.E1_CONNECTING_L);
+			} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
+				e = new Event(EventType.E29_CONNECTING_L);
+			}
+			break;
+		case CONNECTING_T:
+			if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
+				e = new Event(EventType.E2_CONNECTING_T);
+			} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
+				e = new Event(EventType.E31_CONNECTING_T);
+			}
+			break;
+		case LOCAL_COMM_CHANGE:
+			if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
+				e = new Event(EventType.E12_LOCAL_COMM_CHANGE, e.getArg());
+			} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
+				e = new Event(EventType.E62_LOCAL_COMM_CHANGE, e.getArg());
+			}
 			break;
 		}
 		if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
 			fullDuplexMac.handle(e);
+		} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
+			halfDuplexMac.handle(e);
 		}
 		frameSublayer.handle(e);
 	}
@@ -100,11 +125,11 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	}
 
 	public void startSession() {
-		sendEvent(new Event(EventType.E2_CONNECTING_T));
+		sendEvent(new Event(EventType.CONNECTING_T));
 	}
 
 	public void waitForSession() {
-		sendEvent(new Event(EventType.E1_CONNECTING_L));
+		sendEvent(new Event(EventType.CONNECTING_L));
 	}
 
 	public void stopSession() {
@@ -120,7 +145,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		if (directive == null) {
 			throw new IllegalArgumentException("comm parameters cannot be null");
 		}
-		sendEvent(new Event(EventType.E12_LOCAL_COMM_CHANGE, directive));
+		sendEvent(new Event(EventType.LOCAL_COMM_CHANGE, directive));
 	}
 
 	public void clearQueue(QueueType type) {

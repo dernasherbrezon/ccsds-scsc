@@ -44,6 +44,7 @@ public class HalfDuplexMac {
 
 	public void handle(Event e) {
 		handleHail(e);
+		handleCommChange(e);
 		handleTermination(e);
 	}
 
@@ -162,7 +163,7 @@ public class HalfDuplexMac {
 			break;
 		case E41_ACQUISITION_IDLE_TIMEOUT:
 			LOG.info("data services ready");
-			//FIXME send duration
+			// FIXME send duration
 			break;
 		case E44_RECEIVE_TIMEOUT:
 			if (carrierAcquired) {
@@ -183,6 +184,24 @@ public class HalfDuplexMac {
 	private void handleTermination(Event e) {
 		switch (e.getType()) {
 
+		}
+	}
+
+	@SuppressWarnings("incomplete-switch")
+	private void handleCommChange(Event e) {
+		switch (e.getType()) {
+		case E62_LOCAL_COMM_CHANGE:
+			if (e.getArg() == null) {
+				LOG.error("received comm change without payload");
+				return;
+			}
+			state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg()));
+			SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
+			// FIXME
+//			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+//				sendEvent(new Event(EventType.E14_COMM_CHANGE));
+//			}
+			break;
 		}
 	}
 

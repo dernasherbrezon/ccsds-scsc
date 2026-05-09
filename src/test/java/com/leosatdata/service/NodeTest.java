@@ -533,7 +533,9 @@ public class NodeTest {
 	}
 
 	private void establishType1Session(DataRate dataRate) throws InterruptedException {
+//		satellite.setDuplex(Duplex.HALF_DUPLEX);
 		satellite.waitForSession();
+//		ground.setDuplex(Duplex.HALF_DUPLEX);
 		ground.setCommParameters(createType1CommParameters(dataRate));
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);

@@ -3,6 +3,7 @@ package com.leosatdata.model;
 public enum EventType {
 
 	// @formatter:off
+	// full duplex events
 	E1_CONNECTING_L,
 	E2_CONNECTING_T,
 	E3_HAIL_DIRECTIVES_RECEIVED,
@@ -25,6 +26,7 @@ public enum EventType {
 	E26_TAIL_IDLE_TIMEOUT,
 	E28_INACTIVE,
 	
+	// half duplex events
 	E29_CONNECTING_L,
 	E31_CONNECTING_T,
 	E32_CARRIER_ONLY_TIMEOUT,
@@ -34,6 +36,7 @@ public enum EventType {
 	E40_CARRIER_ONLY_TIMEOUT,
 	E41_ACQUISITION_IDLE_TIMEOUT,
 	E44_RECEIVE_TIMEOUT,
+	E62_LOCAL_COMM_CHANGE,
 	
 	RE3_EXPEDITED_FRAME,
 	RE4_SEQUENCE_FRAME,
@@ -43,6 +46,9 @@ public enum EventType {
 	SE4_1_RESYNCH_TIMEOUT,
 	
 	// directive events
+	CONNECTING_L,
+	CONNECTING_T,
+	LOCAL_COMM_CHANGE,
 	CLEAR_QUEUE,
 	UFRAME,
 	SPDU,
