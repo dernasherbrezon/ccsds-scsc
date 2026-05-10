@@ -273,6 +273,9 @@ public class HalfDuplexMac {
 			break;
 		case CARRIER_LOST:
 			carrierAcquired = false;
+			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE)) {
+				timer.scheduleCarrierLossTimeout(EventType.E85_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
+			}
 			break;
 		}
 	}
@@ -288,7 +291,23 @@ public class HalfDuplexMac {
 	private void handleReconnect(Event e) {
 		switch (e.getType()) {
 		case E83_TOKEN_PASS_EXCEEDED:
-			// FIXME handle
+			if (state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND) || state.getState().equals(MacState.S50_DATA_SERVICES_SEND)) {
+				state.setState(MacState.S80_RECONNECT);
+				timer.scheduleWait(EventType.E84_RECONNECT_WAIT_TIMEOUT, config.getDuration("reconnect_wait_duration"));
+				transceiver.setTxState(TransceiverTxState.OFF);
+			}
+			break;
+		case E84_RECONNECT_WAIT_TIMEOUT:
+			if (state.getState().equals(MacState.S80_RECONNECT)) {
+				timer.stopPeriodicPlcw();
+				sendEvent(new Event(EventType.E31_CONNECTING_T));
+			}
+			break;
+		case E85_CARRIER_LOST_TIMEOUT:
+			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE)) {
+				timer.stopPeriodicPlcw();
+				sendEvent(new Event(EventType.E29_CONNECTING_L));
+			}
 			break;
 		}
 	}
