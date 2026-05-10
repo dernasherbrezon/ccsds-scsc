@@ -55,7 +55,6 @@ public class FullDuplexMac {
 		switch (e.getType()) {
 		case E1_CONNECTING_L:
 			LOG.info("waiting for hail");
-			// FIXME persistence=true?
 			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
 			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();

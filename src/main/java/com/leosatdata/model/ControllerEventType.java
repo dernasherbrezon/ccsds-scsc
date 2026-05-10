@@ -10,6 +10,7 @@ public enum ControllerEventType {
 	END_OF_SESSION,
 	CARRIER_LOSS,
 	NO_CARRIER_RECEIVED, // half-duplex
+	NO_DATA_RECEIVED, // half-duplex
 	INVALID_FRAME_SOURCE
 	// @formatter:on
 	

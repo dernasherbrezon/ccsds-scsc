@@ -45,19 +45,67 @@ public class HalfDuplexMac {
 
 	public void handle(Event e) {
 		handleHail(e);
-		handleDataExchange(e);
+		handleTxDataExchange(e);
+		handleRxDataExchange(e);
 		handleCommChange(e);
 		handleTermination(e);
 		handleReconnect(e);
 	}
 
 	@SuppressWarnings("incomplete-switch")
-	private void handleDataExchange(Event e) {
+	private void handleRxDataExchange(Event e) {
 		switch (e.getType()) {
-		case E37_DATA_SERVICES:
-			timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
-			state.setState(MacState.S60_DATA_SERVICES_RECEIVE);
+		case E44_RECEIVE_TIMEOUT:
+			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE)) {
+				if (carrierAcquired) {
+					timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
+					callback.handle(new ControllerEvent(ControllerEventType.SENDER_TX_TIMEOUT));
+				} else {
+					transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+					state.setState(MacState.S51_RADIATE_CARRIER);
+					timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				}
+			}
+			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
+				if (carrierAcquired) {
+					timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
+					callback.handle(new ControllerEvent(ControllerEventType.NO_DATA_RECEIVED));
+				}
+			}
+			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME) || state.getState().equals(MacState.S62_WAIT_FOR_CARRIER)) {
+				if (!carrierAcquired) {
+					callback.handle(new ControllerEvent(ControllerEventType.NO_CARRIER_RECEIVED));
+					transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+					state.setState(MacState.S51_RADIATE_CARRIER);
+					timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				}
+			}
 			break;
+		case CARRIER_ACQUIRED:
+			if (state.getState().equals(MacState.S62_WAIT_FOR_CARRIER)) {
+				state.setState(MacState.S61_AWAITING_FIRST_FRAME);
+			}
+			break;
+		case SPDU:
+			Spdu spdu = (Spdu) e.getArg();
+			// explicit switch to tx by responder
+			if (SpduUtil.isTransmit(spdu) && (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME))) {
+				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+				state.setState(MacState.S51_RADIATE_CARRIER);
+				timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+			}
+			// TODO track every received frame here? s61 only used for granular messages to
+			// vehicle controller
+			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
+				state.setState(MacState.S60_DATA_SERVICES_RECEIVE);
+			}
+			break;
+		}
+	}
+
+	@SuppressWarnings("incomplete-switch")
+	private void handleTxDataExchange(Event e) {
+		switch (e.getType()) {
 		case E40_CARRIER_ONLY_TIMEOUT:
 			transceiver.setTxState(TransceiverTxState.MODULATION);
 			state.setNeedPlcw(true);
@@ -70,29 +118,10 @@ public class HalfDuplexMac {
 				timer.scheduleWait(EventType.E38_SEND_TIMEOUT, config.getDuration("send_duration"));
 			}
 			break;
-		case E44_RECEIVE_TIMEOUT:
-			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE)) {
-				if (carrierAcquired) {
-					timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
-					callback.handle(new ControllerEvent(ControllerEventType.SENDER_TX_TIMEOUT));
-				} else {
-					transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-					state.setState(MacState.S51_RADIATE_CARRIER);
-					timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
-				}
-			}
-			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME) || state.getState().equals(MacState.S62_WAIT_FOR_CARRIER)) {
-				if (!carrierAcquired) {
-					callback.handle(new ControllerEvent(ControllerEventType.NO_CARRIER_RECEIVED));
-					transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-					state.setState(MacState.S51_RADIATE_CARRIER);
-					timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
-				}
-			}
-			break;
 		case E38_SEND_TIMEOUT:
 			if (state.getState().equals(MacState.S50_DATA_SERVICES_SEND)) {
 				if (currentTokenPassAttempt > config.getInteger("maximum_failed_token_passes", 0)) {
+					LOG.info("token pass exceeded, reconnect");
 					sendEvent(new Event(EventType.E83_TOKEN_PASS_EXCEEDED));
 					break;
 				}
@@ -105,6 +134,12 @@ public class HalfDuplexMac {
 				}
 			}
 			break;
+		case E39_SWITCH_TO_TRANSMIT:
+			currentTokenPassAttempt++;
+			SpduUtil.setTransmit(state.getCommParameters(), true);
+			state.setState(MacState.S56_TOKEN_PASS);
+			state.getMacQueue().add(state.getCommParameters());
+			break;
 		case TX_COMPLETE:
 			if (state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND)) {
 				if (!state.isNeedPlcw() && state.getMacQueue().isEmpty()) {
@@ -115,29 +150,6 @@ public class HalfDuplexMac {
 				state.setState(MacState.S58_TAIL_BEFORE_SWITCH);
 				timer.scheduleWait(EventType.E43_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
-			break;
-		case CARRIER_ACQUIRED:
-			if (state.getState().equals(MacState.S62_WAIT_FOR_CARRIER)) {
-				state.setState(MacState.S61_AWAITING_FIRST_FRAME);
-			}
-			break;
-		case SPDU:
-			Spdu spdu = (Spdu) e.getArg();
-			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
-				if (!SpduUtil.isTransmit(spdu)) {
-					break;
-				}
-				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-				state.setState(MacState.S51_RADIATE_CARRIER);
-				timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
-			}
-			break;
-		// FIXME receive first frame? reset currentTokenPassAttempt
-		case E39_SWITCH_TO_TRANSMIT:
-			currentTokenPassAttempt++;
-			SpduUtil.setTransmit(state.getCommParameters(), true);
-			state.setState(MacState.S56_TOKEN_PASS);
-			state.getMacQueue().add(state.getCommParameters());
 			break;
 		case E43_TAIL_IDLE_TIMEOUT:
 			if (state.getState().equals(MacState.S58_TAIL_BEFORE_SWITCH)) {
@@ -155,8 +167,6 @@ public class HalfDuplexMac {
 		switch (e.getType()) {
 		case E29_CONNECTING_L:
 			LOG.info("waiting for hail");
-			// FIXME persistence?
-//			state.setPersistence(true);
 			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
 			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
@@ -238,7 +248,8 @@ public class HalfDuplexMac {
 				timer.cancelWait();
 				LOG.info("session established");
 				LOG.info("data services ready");
-				sendEvent(new Event(EventType.E37_DATA_SERVICES));
+				timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
+				state.setState(MacState.S60_DATA_SERVICES_RECEIVE);
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
 				if (!SpduUtil.isValidDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
@@ -250,7 +261,7 @@ public class HalfDuplexMac {
 
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-				// FIXME ? state.setState(MacState.S51_RADIATE_CARRIER);
+				state.setState(MacState.S51_RADIATE_CARRIER);
 				timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("session established");
 				LOG.info("data services ready");
