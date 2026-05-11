@@ -47,6 +47,7 @@ public class HalfDuplexMac {
 		handleHail(e);
 		handleTxDataExchange(e);
 		handleRxDataExchange(e);
+		// ensure comm change goes after rx/tx as it need to state shift to s50
 		handleCommChange(e);
 		handleTermination(e);
 		handleReconnect(e);
@@ -127,7 +128,7 @@ public class HalfDuplexMac {
 				}
 				state.setPersistence(true);
 				// if already empty
-				if (!state.isNeedPlcw() && state.getMacQueue().isEmpty()) {
+				if (state.isNoMessagesToSend()) {
 					sendEvent(new Event(EventType.E39_SWITCH_TO_TRANSMIT));
 				} else {
 					state.setState(MacState.S50_0_DATA_SERVICES_SEND);
@@ -141,10 +142,8 @@ public class HalfDuplexMac {
 			state.getMacQueue().add(state.getCommParameters());
 			break;
 		case TX_COMPLETE:
-			if (state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND)) {
-				if (!state.isNeedPlcw() && state.getMacQueue().isEmpty()) {
-					sendEvent(new Event(EventType.E39_SWITCH_TO_TRANSMIT));
-				}
+			if (state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND) && state.isNoMessagesToSend()) {
+				sendEvent(new Event(EventType.E39_SWITCH_TO_TRANSMIT));
 			}
 			if (state.getState().equals(MacState.S56_TOKEN_PASS)) {
 				state.setState(MacState.S58_TAIL_BEFORE_SWITCH);
@@ -322,11 +321,69 @@ public class HalfDuplexMac {
 			}
 			state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg()));
 			SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
-			// FIXME
-//			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
-//				sendEvent(new Event(EventType.E14_COMM_CHANGE));
-//			}
+			if (state.getState().equals(MacState.S50_DATA_SERVICES_SEND) || state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND)) {
+				initiateCommChange();
+			} else {
+				state.setCommChangeRequested(true);
+			}
 			break;
+		case E41_ACQUISITION_IDLE_TIMEOUT:
+			if (state.isCommChangeRequested()) {
+				initiateCommChange();
+			}
+			break;
+		case TX_COMPLETE:
+			if (state.getState().equals(MacState.S50_2_DATA_SERVICES_SEND) && state.isNoMessagesToSend()) {
+				state.getMacQueue().add(state.getCommParameters());
+				state.setState(MacState.S56_2_COMM_CHANGE);
+			}
+			// comm change has been sent
+			if (state.getState().equals(MacState.S56_2_COMM_CHANGE)) {
+				state.setState(MacState.S58_2_TAIL_BEFORE_SWITCH);
+				timer.scheduleWait(EventType.E67_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+			}
+			break;
+		case E67_TAIL_IDLE_TIMEOUT:
+			if (state.getState().equals(MacState.S58_2_TAIL_BEFORE_SWITCH)) {
+				state.setState(MacState.S62_3_WAIT_FOR_CARRIER);
+				transceiver.setRxState(TransceiverRxState.RECEIVING);
+				timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
+			}
+			break;
+		case CARRIER_ACQUIRED:
+			if (state.getState().equals(MacState.S62_3_WAIT_FOR_CARRIER)) {
+				state.setState(MacState.S61_3_AWAITING_FIRST_FRAME);
+			}
+			break;
+		case SPDU:
+			Spdu spdu = (Spdu) e.getArg();
+			if (state.getState().equals(MacState.S61_3_AWAITING_FIRST_FRAME) || state.getState().equals(MacState.S62_3_WAIT_FOR_CARRIER)) {
+				state.setState(MacState.S60_DATA_SERVICES_RECEIVE);
+				transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
+				state.setPersistence(false);
+			}
+			if (SpduUtil.isCommChange(spdu) && (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME))) {
+				state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), spdu));
+				// FIXME switch mode if changed
+				state.setDuplex(SpduUtil.getDuplex(state.getCommParameters()));
+				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				state.setNeedPlcw(true);
+			}
+			break;
+		}
+	}
+
+	private void initiateCommChange() {
+		state.setPersistence(true);
+		transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+		LOG.info("rx comm parameters changed: {}", state.getCommParameters());
+		// ready to send
+		if (state.isNoMessagesToSend()) {
+			state.getMacQueue().add(state.getCommParameters());
+			state.setState(MacState.S56_2_COMM_CHANGE);
+		} else {
+			state.setState(MacState.S50_2_DATA_SERVICES_SEND);
 		}
 	}
 

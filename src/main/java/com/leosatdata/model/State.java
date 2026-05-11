@@ -39,6 +39,7 @@ public class State {
 	private boolean txReady = true;
 	private Duplex duplex = Duplex.FULL_DUPLEX; // reasonable default
 	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
+	private boolean commChangeRequested = false;
 
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);
@@ -206,4 +207,15 @@ public class State {
 		return transceiverMode;
 	}
 
+	public void setCommChangeRequested(boolean commChangeRequested) {
+		this.commChangeRequested = commChangeRequested;
+	}
+
+	public boolean isCommChangeRequested() {
+		return commChangeRequested;
+	}
+
+	public boolean isNoMessagesToSend() {
+		return !needPlcw && macQueue.isEmpty() && txReady;
+	}
 }

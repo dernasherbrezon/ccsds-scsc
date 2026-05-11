@@ -285,8 +285,7 @@ public class FullDuplexMac {
 					state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), spdu));
 					// FIXME switch mode if changed
 					state.setDuplex(SpduUtil.getDuplex(state.getCommParameters()));
-					// no pending frames on transceiver
-					if (state.isTxReady()) {
+					if (state.isNoMessagesToSend()) {
 						state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
 						timer.scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
 					} else {
