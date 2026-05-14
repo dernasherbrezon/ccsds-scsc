@@ -548,8 +548,8 @@ public class NodeTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<?> parameters() {
 		return Arrays.asList(new Object[][] { 
-//			{ Duplex.HALF_DUPLEX }, 
-			{ Duplex.FULL_DUPLEX } 
+			{ Duplex.HALF_DUPLEX }, 
+//			{ Duplex.FULL_DUPLEX } 
 		});
 	}
 	// @formatter:on
@@ -586,7 +586,7 @@ public class NodeTest {
 		Thread.sleep(2 * (groundConfig.getDuration("carrier_only_duration") + groundConfig.getDuration("acquisition_idle_duration")));
 	}
 
-	private static Properties load(String file) throws Exception {
+	public static Properties load(String file) throws Exception {
 		Properties result = new Properties();
 		try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
 			result.load(is);
@@ -672,7 +672,7 @@ public class NodeTest {
 		return result;
 	}
 
-	private static Type1Directive createType1CommParameters(DataRate dataRate) {
+	public static Type1Directive createType1CommParameters(DataRate dataRate) {
 		TxRxParameters tx = new TxRxParameters();
 		tx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
 		tx.setDataRate(dataRate);

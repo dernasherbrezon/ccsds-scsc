@@ -41,6 +41,9 @@ public class State {
 	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
 	private boolean commChangeRequested = false;
 
+	// termination step, used in half-duplex
+	private int x;
+
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);
 		this.seqQueue = new ArrayBlockingQueue<>(capacity);
@@ -215,7 +218,20 @@ public class State {
 		return commChangeRequested;
 	}
 
-	public boolean isNoMessagesToSend() {
+	public boolean noSpduPending() {
 		return !needPlcw && macQueue.isEmpty() && txReady;
 	}
+
+	public boolean noFramesPending() {
+		return !needPlcw && macQueue.isEmpty() && seqQueue.isEmpty() && expQueue.isEmpty() && txReady;
+	}
+
+	public void setX(int x) {
+		this.x = x;
+	}
+
+	public int getX() {
+		return x;
+	}
+
 }

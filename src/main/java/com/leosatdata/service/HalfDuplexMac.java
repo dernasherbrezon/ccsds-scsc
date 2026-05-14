@@ -9,6 +9,7 @@ import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacState;
 import com.leosatdata.model.PersistentActivity;
+import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
 import com.leosatdata.model.TransceiverOperationMode;
@@ -128,7 +129,7 @@ public class HalfDuplexMac {
 				}
 				state.setPersistence(true);
 				// if already empty
-				if (state.isNoMessagesToSend()) {
+				if (state.noSpduPending()) {
 					sendEvent(new Event(EventType.E39_SWITCH_TO_TRANSMIT));
 				} else {
 					state.setState(MacState.S50_0_DATA_SERVICES_SEND);
@@ -142,7 +143,7 @@ public class HalfDuplexMac {
 			state.getMacQueue().add(state.getCommParameters());
 			break;
 		case TX_COMPLETE:
-			if (state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND) && state.isNoMessagesToSend()) {
+			if (state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND) && state.noSpduPending()) {
 				sendEvent(new Event(EventType.E39_SWITCH_TO_TRANSMIT));
 			}
 			if (state.getState().equals(MacState.S56_TOKEN_PASS)) {
@@ -282,7 +283,96 @@ public class HalfDuplexMac {
 	@SuppressWarnings("incomplete-switch")
 	private void handleTermination(Event e) {
 		switch (e.getType()) {
+		case E51_LNMD:
+			// initiate lnmd
+			if (state.getX() == 0) {
+				state.setX(1);
+			}
+			// remote already indicated no more data. transition to the local no more data
+			if (state.getX() == 3) {
+				state.setX(4);
+			}
+			break;
+		case E41_ACQUISITION_IDLE_TIMEOUT:
+			// just before switching to s50 check if rnmd was received
+			if (state.getState().equals(MacState.S52_RADIATE_ACQUISITION_IDLE)) {
+				checkIfTerminationNeededAndSend();
+			}
+			break;
+		case E57_TAIL_IDLE_TIMEOUT:
+			putIntoInactive();
+			break;
+		case TX_COMPLETE:
+			if (state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND) || state.getState().equals(MacState.S50_0_DATA_SERVICES_SEND)) {
+				checkIfTerminationNeededAndSend();
+			}
+			if (state.getState().equals(MacState.S54_TERMINATION_FROM_REMOTE) && state.getX() == 5) {
+				timer.scheduleWait(EventType.E57_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+			}
+			break;
+		case SPDU:
+			if (e.getArg() instanceof Plcw) {
+				break;
+			}
+			boolean rnmd = SpduUtil.isRnmd((Spdu) e.getArg());
+			if (!rnmd) {
+				break;
+			}
+			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
+				// this is response from caller initiation
+				if (state.getX() == 2) {
+					putIntoInactive();
+				}
+				// this termination initiated remotely
+				// - during normal receive
+				if (state.getX() == 0) {
+					state.setX(3);
+					transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+					state.setState(MacState.S51_RADIATE_CARRIER);
+					timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				}
+				// - just before entering receive
+				if (state.getX() == 1) {
+					state.setX(4);
+					transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+					state.setState(MacState.S51_RADIATE_CARRIER);
+					timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
+				}
+			}
+			break;
+		}
+	}
 
+	private void putIntoInactive() {
+		state.setX(0);
+		LOG.info("session stopped");
+		// FIXME reset state variables, turn off transceiver
+		state.setState(MacState.S1_INACTIVE);
+		// don't send number of received packets. not clear why and hard to sync rx
+		// thread data
+		callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));
+	}
+
+	private void checkIfTerminationNeededAndSend() {
+		if (!state.noFramesPending()) {
+			return;
+		}
+		Spdu rnmdDirective = SpduUtil.createRnmdDirective(state.getCommParameters(), true);
+		if (rnmdDirective == null) {
+			LOG.error("unable to create rnmd - not enough data in comm parameters");
+			return;
+		}
+		// this termination initiated locally
+		// - send directive to responder
+		if (state.getX() == 1) {
+			state.getMacQueue().add(rnmdDirective);
+			state.setX(2);
+		}
+		// this is reply to the remote termination
+		if (state.getX() == 4) {
+			state.getMacQueue().add(rnmdDirective);
+			state.setState(MacState.S54_TERMINATION_FROM_REMOTE);
+			state.setX(5);
 		}
 	}
 
@@ -333,7 +423,7 @@ public class HalfDuplexMac {
 			}
 			break;
 		case TX_COMPLETE:
-			if (state.getState().equals(MacState.S50_2_DATA_SERVICES_SEND) && state.isNoMessagesToSend()) {
+			if (state.getState().equals(MacState.S50_2_DATA_SERVICES_SEND) && state.noSpduPending()) {
 				state.getMacQueue().add(state.getCommParameters());
 				state.setState(MacState.S56_2_COMM_CHANGE);
 			}
@@ -379,7 +469,7 @@ public class HalfDuplexMac {
 		transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 		LOG.info("rx comm parameters changed: {}", state.getCommParameters());
 		// ready to send
-		if (state.isNoMessagesToSend()) {
+		if (state.noSpduPending()) {
 			state.getMacQueue().add(state.getCommParameters());
 			state.setState(MacState.S56_2_COMM_CHANGE);
 		} else {

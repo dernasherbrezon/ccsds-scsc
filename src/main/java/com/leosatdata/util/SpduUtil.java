@@ -322,7 +322,6 @@ public class SpduUtil {
 			}
 			return false;
 		}
-		LOG.error("unknown spdu for isTransmit: {}", params);
 		return false;
 	}
 }

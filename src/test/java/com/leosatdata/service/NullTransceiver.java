@@ -30,6 +30,8 @@ public class NullTransceiver implements Transceiver {
 	private float rxFrequency;
 	private float txFrequency;
 
+	private Long txDelay;
+
 	public NullTransceiver(Configuration config) {
 		this.config = config;
 		this.txFrameFilter = new DefaultFrameFilter();
@@ -53,7 +55,12 @@ public class NullTransceiver implements Transceiver {
 	@Override
 	public void send(byte[] data) {
 		assert (rxSymbolRate != 0);
-		long txMillisToWait = (long) ((data.length * 8 * 1000) / rxSymbolRate);
+		long txMillisToWait;
+		if (txDelay == null) {
+			txMillisToWait = (long) ((data.length * 8 * 1000) / rxSymbolRate);
+		} else {
+			txMillisToWait = txDelay;
+		}
 		// tx should be called by interrupt, i.e. async
 		executor.schedule(new DelayedTxTask(getTxCallback()), txMillisToWait, TimeUnit.MILLISECONDS);
 		if (txFrameFilter != null && !txFrameFilter.accept(this, otherSide, data)) {
@@ -265,5 +272,9 @@ public class NullTransceiver implements Transceiver {
 
 	public void setRxFrameFilter(FrameFilter rxFrameFilter) {
 		this.rxFrameFilter = rxFrameFilter;
+	}
+	
+	public void setTxDelay(Long txDelay) {
+		this.txDelay = txDelay;
 	}
 }

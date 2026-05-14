@@ -73,6 +73,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 				SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
 			}
 			return;
+// the below TODO can be replaced by hashmap
 		case CONNECTING_L:
 			if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
 				e = new Event(EventType.E1_CONNECTING_L);
@@ -92,6 +93,13 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 				e = new Event(EventType.E12_LOCAL_COMM_CHANGE, e.getArg());
 			} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
 				e = new Event(EventType.E62_LOCAL_COMM_CHANGE, e.getArg());
+			}
+			break;
+		case LNMD:
+			if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
+				e = new Event(EventType.E21_LNMD);
+			} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
+				e = new Event(EventType.E51_LNMD);
 			}
 			break;
 		}
@@ -133,7 +141,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	}
 
 	public void stopSession() {
-		sendEvent(new Event(EventType.E21_LNMD));
+		sendEvent(new Event(EventType.LNMD));
 	}
 
 	// going into inactive straightaway
