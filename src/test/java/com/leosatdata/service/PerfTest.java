@@ -75,6 +75,7 @@ public class PerfTest {
 		ground.setCommParameters(NodeTest.createType1CommParameters(DataRate.R128C));
 		ground.startSession();
 
+		// disable rx/tx logging
 		org.apache.log4j.Logger rx = org.apache.log4j.Logger.getLogger("rx");
 		rx.setLevel(Level.FATAL);
 		org.apache.log4j.Logger tx = org.apache.log4j.Logger.getLogger("tx");
@@ -92,7 +93,7 @@ public class PerfTest {
 			}
 		});
 
-		Future<?> logger = executor.schedule(new Runnable() {
+		Future<?> logger = executor.scheduleAtFixedRate(new Runnable() {
 
 			private long previousTime = 0;
 			private long previousValue = 0;
@@ -107,11 +108,11 @@ public class PerfTest {
 				}
 				long delta = currentValue - previousValue;
 				// TODO not always sec use time diff
-				LOG.info("{} byte/sec", delta);
+				LOG.info("{} byte/s", delta);
 				previousValue = currentValue;
 				previousTime = System.currentTimeMillis();
 			}
-		}, 1000, TimeUnit.MILLISECONDS);
+		}, 1000, 1000, TimeUnit.MILLISECONDS);
 
 		Thread.sleep(10000);
 
@@ -119,6 +120,11 @@ public class PerfTest {
 		logger.cancel(true);
 
 		executor.shutdown();
+
+		satellite.stop();
+		ground.stop();
+		satelliteTransceiver.stop();
+		groundTransceiver.stop();
 	}
 
 }

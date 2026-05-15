@@ -317,7 +317,6 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 			state.getQueue().put(e);
 		} catch (InterruptedException e1) {
 			Thread.currentThread().interrupt();
-			LOG.error("can't send event", e1);
 		}
 	}
 

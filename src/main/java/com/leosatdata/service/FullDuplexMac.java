@@ -60,7 +60,7 @@ public class FullDuplexMac {
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
 			transceiverUtil.applyParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
-			transceiver.setTxState(TransceiverTxState.MODULATION);
+			transceiver.setTxState(TransceiverTxState.OFF);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			break;
 		case E2_CONNECTING_T:
@@ -140,6 +140,7 @@ public class FullDuplexMac {
 					break;
 				}
 				state.setCommParameters(spdu);
+				transceiver.setTxState(TransceiverTxState.MODULATION);
 				state.setNeedPlcw(true);
 			}
 			break;
