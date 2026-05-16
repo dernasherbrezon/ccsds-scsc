@@ -338,16 +338,7 @@ public class NodeTest {
 
 	@Test
 	public void testStartSendStop() throws Exception {
-		List<CommSettings> settings = new ArrayList<>();
-		// different combinations of transfer frames, spdu directives and seq numbers
-		settings.add(new CommSettings(3, 3, 1, 1));
-		settings.add(new CommSettings(4, 4, 1, 1));
-		settings.add(new CommSettings(4, 4, 2, 1));
-		settings.add(new CommSettings(4, 4, 3, 1));
-		settings.add(new CommSettings(4, 4, 2, 2));
-		settings.add(new CommSettings(4, 4, 3, 2));
-
-		for (CommSettings cur : settings) {
+		for (CommSettings cur : getSupportedSettingsCombination()) {
 			LOG.info("testing: {}", cur);
 			groundConfig.setProperty("u_frame_version", String.valueOf(cur.getuFrameVersion()));
 			groundConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
@@ -542,6 +533,18 @@ public class NodeTest {
 
 	private void establishType1Session() throws InterruptedException {
 		establishType1Session(DataRate.R8C);
+	}
+
+	public static List<CommSettings> getSupportedSettingsCombination() {
+		List<CommSettings> settings = new ArrayList<>();
+		// different combinations of transfer frames, spdu directives and seq numbers
+		settings.add(new CommSettings(3, 3, 1, 1));
+		settings.add(new CommSettings(4, 4, 1, 1));
+		settings.add(new CommSettings(4, 4, 2, 1));
+		settings.add(new CommSettings(4, 4, 3, 1));
+		settings.add(new CommSettings(4, 4, 2, 2));
+		settings.add(new CommSettings(4, 4, 3, 2));
+		return settings;
 	}
 
 	// @formatter:off

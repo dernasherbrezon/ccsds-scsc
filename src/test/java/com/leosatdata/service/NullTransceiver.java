@@ -62,7 +62,11 @@ public class NullTransceiver implements Transceiver {
 			txMillisToWait = txDelay;
 		}
 		// tx should be called by interrupt, i.e. async
-		executor.schedule(new DelayedTxTask(getTxCallback()), txMillisToWait, TimeUnit.MILLISECONDS);
+		if (txMillisToWait == 0) {
+			executor.execute(new DelayedTxTask(getTxCallback()));
+		} else {
+			executor.schedule(new DelayedTxTask(getTxCallback()), txMillisToWait, TimeUnit.MILLISECONDS);
+		}
 		if (txFrameFilter != null && !txFrameFilter.accept(this, otherSide, data)) {
 			return;
 		}
@@ -273,7 +277,7 @@ public class NullTransceiver implements Transceiver {
 	public void setRxFrameFilter(FrameFilter rxFrameFilter) {
 		this.rxFrameFilter = rxFrameFilter;
 	}
-	
+
 	public void setTxDelay(Long txDelay) {
 		this.txDelay = txDelay;
 	}
