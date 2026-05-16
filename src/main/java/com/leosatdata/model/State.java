@@ -40,7 +40,8 @@ public class State {
 	private Duplex duplex = Duplex.FULL_DUPLEX; // reasonable default
 	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
 	private boolean commChangeRequested = false;
-
+	private boolean carrierAcquired;
+	
 	// termination step, used in half-duplex
 	private int x;
 
@@ -234,4 +235,11 @@ public class State {
 		return x;
 	}
 
+	public void setCarrierAcquired(boolean carrierAcquired) {
+		this.carrierAcquired = carrierAcquired;
+	}
+	
+	public boolean isCarrierAcquired() {
+		return carrierAcquired;
+	}
 }

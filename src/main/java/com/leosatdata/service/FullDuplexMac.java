@@ -31,7 +31,6 @@ public class FullDuplexMac {
 	private final int spduVersion;
 	private int currentHailAttempt = 0;
 	private int currentCommChangeAttempt = 0;
-	private boolean carrierAcquired;
 
 	public FullDuplexMac(State state, Configuration config, Transceiver transceiver, NodeCallback callback, TimerService timer) {
 		this.state = state;
@@ -112,13 +111,6 @@ public class FullDuplexMac {
 				timer.scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			}
 			break;
-		case CARRIER_ACQUIRED:
-			carrierAcquired = true;
-			timer.cancelCarrierLoss();
-			break;
-		case CARRIER_LOST:
-			carrierAcquired = false;
-			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
 			// check several states because responder can send response faster than extra
@@ -167,7 +159,7 @@ public class FullDuplexMac {
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE)) {
-				if (carrierAcquired) {
+				if (state.isCarrierAcquired()) {
 					callback.handle(new ControllerEvent(ControllerEventType.CARRIER_ONLY_RECEIVED));
 				}
 				currentHailAttempt++;

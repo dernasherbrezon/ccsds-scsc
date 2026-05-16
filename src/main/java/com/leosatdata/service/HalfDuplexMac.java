@@ -31,7 +31,6 @@ public class HalfDuplexMac {
 
 	private int currentHailAttempt = 0;
 	private int currentCommChangeAttempt = 0;
-	private boolean carrierAcquired;
 	private int currentTokenPassAttempt = 0;
 
 	public HalfDuplexMac(State state, Configuration config, Transceiver transceiver, NodeCallback callback, TimerService timer) {
@@ -59,7 +58,7 @@ public class HalfDuplexMac {
 		switch (e.getType()) {
 		case E44_RECEIVE_TIMEOUT:
 			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE)) {
-				if (carrierAcquired) {
+				if (state.isCarrierAcquired()) {
 					timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
 					callback.handle(new ControllerEvent(ControllerEventType.SENDER_TX_TIMEOUT));
 				} else {
@@ -69,13 +68,13 @@ public class HalfDuplexMac {
 				}
 			}
 			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
-				if (carrierAcquired) {
+				if (state.isCarrierAcquired()) {
 					timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
 					callback.handle(new ControllerEvent(ControllerEventType.NO_DATA_RECEIVED));
 				}
 			}
 			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME) || state.getState().equals(MacState.S62_WAIT_FOR_CARRIER)) {
-				if (!carrierAcquired) {
+				if (!state.isCarrierAcquired()) {
 					callback.handle(new ControllerEvent(ControllerEventType.NO_CARRIER_RECEIVED));
 					transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 					state.setState(MacState.S51_RADIATE_CARRIER);
@@ -214,13 +213,12 @@ public class HalfDuplexMac {
 			}
 			break;
 		case E35_TAIL_IDLE_TIMEOUT:
-			carrierAcquired = false;
 			state.setState(MacState.S36_WAITING_FOR_HAIL_RESPONSE);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			timer.scheduleWait(EventType.E36_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
 		case E36_HAIL_WAIT_TIMEOUT:
-			if (carrierAcquired) {
+			if (state.isCarrierAcquired()) {
 				callback.handle(new ControllerEvent(ControllerEventType.CARRIER_ONLY_RECEIVED));
 			}
 			currentHailAttempt++;
@@ -267,12 +265,7 @@ public class HalfDuplexMac {
 				LOG.info("data services ready");
 			}
 			break;
-		case CARRIER_ACQUIRED:
-			carrierAcquired = true;
-			timer.cancelCarrierLoss();
-			break;
 		case CARRIER_LOST:
-			carrierAcquired = false;
 			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE)) {
 				timer.scheduleCarrierLossTimeout(EventType.E85_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
 			}

@@ -73,6 +73,13 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 				SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
 			}
 			return;
+		case CARRIER_ACQUIRED:
+			state.setCarrierAcquired(true);
+			timer.cancelCarrierLoss();
+			break;
+		case CARRIER_LOST:
+			state.setCarrierAcquired(false);
+			break;
 // the below TODO can be replaced by hashmap
 		case CONNECTING_L:
 			if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
