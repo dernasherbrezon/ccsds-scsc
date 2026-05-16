@@ -94,6 +94,33 @@ public class NodeTest {
 	public NodeTest(Duplex duplex) {
 		this.duplex = duplex;
 	}
+	
+	@Test
+	public void testStartStopStartSession() throws Exception {
+		establishType1Session();
+
+		assertTestExpPacket();
+
+		satellite.stopSession();
+
+		assertNotNull(groundCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
+		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
+
+		assertEquals(TransceiverTxState.OFF, groundTransceiver.getTxState());
+		assertEquals(TransceiverTxState.OFF, satelliteTransceiver.getTxState());
+		assertEquals(TransceiverRxState.OFF, groundTransceiver.getRxState());
+		assertEquals(TransceiverRxState.OFF, satelliteTransceiver.getRxState());
+		
+		satellite.waitForSession();
+		ground.startSession();
+
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+
+		waitPersistenceActivityCompletion();
+		
+		assertTestExpPacket();
+	}
 
 	@Test
 	public void testResync1() throws Exception {

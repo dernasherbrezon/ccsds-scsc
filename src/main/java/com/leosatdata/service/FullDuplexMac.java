@@ -324,8 +324,9 @@ public class FullDuplexMac {
 			break;
 		case E26_TAIL_IDLE_TIMEOUT:
 			LOG.info("session stopped");
-			// FIXME reset state variables, turn off transceiver
-			state.setState(MacState.S1_INACTIVE);
+			state.reset();
+			transceiver.setTxState(TransceiverTxState.OFF);
+			transceiver.setRxState(TransceiverRxState.OFF);
 			// don't send number of received packets. not clear why and hard to sync rx
 			// thread data
 			callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));

@@ -337,10 +337,8 @@ public class HalfDuplexMac {
 	}
 
 	private void putIntoInactive() {
-		state.setX(0);
 		LOG.info("session stopped");
-		// FIXME reset state variables, turn off transceiver
-		state.setState(MacState.S1_INACTIVE);
+		state.reset();
 		// don't send number of received packets. not clear why and hard to sync rx
 		// thread data
 		callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));

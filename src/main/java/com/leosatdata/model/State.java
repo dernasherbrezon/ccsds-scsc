@@ -15,33 +15,33 @@ public class State {
 	private final BlockingQueue<Object> sentQueue;
 
 	private Spdu commParameters;
-	private MacState state = MacState.S1_INACTIVE;
-	private int ves = 0; // sequence number of the next Expedited frame to be sent
-	private int vvs = 0; // sequence number to be assigned to the next Sequence Controlled frame to be
-							// sent
-	private int vs = 0; // sequence number of the next new Sequence Controlled frame to be sent
-	private int nnr = 0; // copy of the Report Value from the previous valid PLCW
-	private boolean needPlcw = false;
-	private boolean uFrameLastSent = true;
-	private boolean rrr = false; // copy of the Retransmit Flag from the previous valid PLCW
-	private boolean resync = false;
-	private boolean rs = false; // indicating whether or not Sequence Controlled frames need to be
-								// retransmitted;
+	private MacState state;
+	private int ves; // sequence number of the next Expedited frame to be sent
+	private int vvs; // sequence number to be assigned to the next Sequence Controlled frame to be
+						// sent
+	private int vs; // sequence number of the next new Sequence Controlled frame to be sent
+	private int nnr; // copy of the Report Value from the previous valid PLCW
+	private boolean needPlcw;
+	private boolean uFrameLastSent;
+	private boolean rrr; // copy of the Retransmit Flag from the previous valid PLCW
+	private boolean resync;
+	private boolean rs; // indicating whether or not Sequence Controlled frames need to be
+						// retransmitted;
 
 	private int expeditedFrameCounter; // a modulo-8 counter indicating that Expedited frames have been received.
 	// FIXME Separate Report Values shall be reported for each physical channel
 	// independent of the I/O port.
-	private int vr = 0; // sequence number plus one (modulo 256) of the last Sequence Controlled frame
-						// acknowledged by the receiver
+	private int vr; // sequence number plus one (modulo 256) of the last Sequence Controlled frame
+					// acknowledged by the receiver
 
 	// wait tx complete before sending next frame
 	// tx is async operation
-	private boolean txReady = true;
-	private Duplex duplex = Duplex.FULL_DUPLEX; // reasonable default
-	private TransceiverOperationMode transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
-	private boolean commChangeRequested = false;
+	private boolean txReady;
+	private Duplex duplex;
+	private TransceiverOperationMode transceiverMode;
+	private boolean commChangeRequested;
 	private boolean carrierAcquired;
-	
+
 	// termination step, used in half-duplex
 	private int x;
 
@@ -53,6 +53,28 @@ public class State {
 		this.sentQueue = new ArrayBlockingQueue<>(capacity);
 		// if all message queues filled up, have +2 for event queue to process
 		this.queue = new ArrayBlockingQueue<>(capacity + capacity + capacity + 2);
+		reset();
+	}
+
+	public void reset() {
+		state = MacState.S1_INACTIVE;
+		ves = 0;
+		vvs = 0;
+		vs = 0;
+		nnr = 0;
+		needPlcw = false;
+		uFrameLastSent = true;
+		rrr = false;
+		resync = false;
+		rs = false;
+		expeditedFrameCounter = 0;
+		vr = 0;
+		txReady = true;
+		duplex = Duplex.FULL_DUPLEX; // reasonable default
+		transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
+		commChangeRequested = false;
+		carrierAcquired = false;
+		x = 0;
 	}
 
 	public int getVr() {
@@ -238,7 +260,7 @@ public class State {
 	public void setCarrierAcquired(boolean carrierAcquired) {
 		this.carrierAcquired = carrierAcquired;
 	}
-	
+
 	public boolean isCarrierAcquired() {
 		return carrierAcquired;
 	}
