@@ -167,7 +167,7 @@ public class HalfDuplexMac {
 		switch (e.getType()) {
 		case E29_CONNECTING_L:
 			LOG.info("waiting for hail");
-			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
+			state.setState(MacState.S2_WAITING_FOR_HAIL);
 			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
@@ -251,7 +251,7 @@ public class HalfDuplexMac {
 				timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
 				state.setState(MacState.S60_DATA_SERVICES_RECEIVE);
 			}
-			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
+			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL)) {
 				if (!SpduUtil.isValidDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
 					break;
 				}

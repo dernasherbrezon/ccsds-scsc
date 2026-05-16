@@ -55,7 +55,7 @@ public class FullDuplexMac {
 		switch (e.getType()) {
 		case E1_CONNECTING_L:
 			LOG.info("waiting for hail");
-			state.setState(MacState.S2_WAITING_FOR_HAIL_REQUEST);
+			state.setState(MacState.S2_WAITING_FOR_HAIL);
 			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
@@ -82,24 +82,28 @@ public class FullDuplexMac {
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			state.setPersistence(true);
-			state.setState(MacState.S31_START_HAIL);
+			state.setState(MacState.S31_START_HAIL_ACTION);
 			timer.scheduleWait(EventType.E4_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			break;
 		case E4_CARRIER_ONLY_TIMEOUT:
-			transceiver.setTxState(TransceiverTxState.MODULATION);
-			state.setState(MacState.S32_SEND_HAIL_ACQUISITION);
-			timer.scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
+			if (state.getState().equals(MacState.S31_START_HAIL_ACTION)) {
+				transceiver.setTxState(TransceiverTxState.MODULATION);
+				state.setState(MacState.S32_SEND_HAIL_ACQUISITION);
+				timer.scheduleWait(EventType.E5_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
+			}
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
-			state.getMacQueue().add(state.getCommParameters());
-			state.setState(MacState.S33_SEND_HAIL_DIRECTIVES);
+			if (state.getState().equals(MacState.S32_SEND_HAIL_ACQUISITION)) {
+				state.getMacQueue().add(state.getCommParameters());
+				state.setState(MacState.S33_SEND_HAIL_DIRECTIVES);
+			}
 			break;
 		case TX_COMPLETE:
 			if (state.getState().equals(MacState.S33_SEND_HAIL_DIRECTIVES)) {
 				state.setState(MacState.S34_SEND_HAIL_TAIL);
 				timer.scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
-			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
+			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL)) {
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				// switch over to the agreed link once plcw sent
 				// assume
@@ -110,8 +114,11 @@ public class FullDuplexMac {
 			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
-			state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
-			timer.scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
+			if (state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
+				state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
+				transceiver.setTxState(TransceiverTxState.OFF);
+				timer.scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
+			}
 			break;
 		case CARRIER_ACQUIRED:
 			carrierAcquired = true;
@@ -135,7 +142,7 @@ public class FullDuplexMac {
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("session established");
 			}
-			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL_REQUEST)) {
+			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL)) {
 				if (!SpduUtil.isValidDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
 					break;
 				}
@@ -145,27 +152,33 @@ public class FullDuplexMac {
 			}
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
-			transceiver.setTxState(TransceiverTxState.MODULATION);
-			state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
-			timer.scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
+			if (state.getState().equals(MacState.S41_RADIATE_CARRIER)) {
+				transceiver.setTxState(TransceiverTxState.MODULATION);
+				state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
+				timer.scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
+			}
 			break;
 		case E11_ACQUISITION_IDLE_TIMEOUT:
-			state.setPersistence(false);
-			state.setState(MacState.S40_0_DATA_SERVICES);
-			timer.startPeriodicPlcw();
-			LOG.info("data services ready");
+			if (state.getState().equals(MacState.S42_RADIATE_ACQUISITION_IDLE)) {
+				state.setPersistence(false);
+				state.setState(MacState.S40_0_DATA_SERVICES);
+				timer.startPeriodicPlcw();
+				LOG.info("data services ready");
+			}
 			break;
 		case E8_HAIL_WAIT_TIMEOUT:
-			if (carrierAcquired) {
-				callback.handle(new ControllerEvent(ControllerEventType.CARRIER_ONLY_RECEIVED));
-			}
-			currentHailAttempt++;
-			int maxAttempts = config.getInteger("hail_lifetime", 0);
-			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
-				currentHailAttempt = 0;
-				callback.handle(createNotification("hail", false));
-			} else {
-				sendEvent(new Event(EventType.E2_CONNECTING_T));
+			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE)) {
+				if (carrierAcquired) {
+					callback.handle(new ControllerEvent(ControllerEventType.CARRIER_ONLY_RECEIVED));
+				}
+				currentHailAttempt++;
+				int maxAttempts = config.getInteger("hail_lifetime", 0);
+				if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
+					currentHailAttempt = 0;
+					callback.handle(createNotification("hail", false));
+				} else {
+					sendEvent(new Event(EventType.E2_CONNECTING_T));
+				}
 			}
 			break;
 		case REQUEST_PLCW:

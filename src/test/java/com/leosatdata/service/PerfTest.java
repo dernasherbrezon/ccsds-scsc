@@ -95,22 +95,18 @@ public class PerfTest {
 
 		Future<?> logger = executor.scheduleAtFixedRate(new Runnable() {
 
-			private long previousTime = 0;
 			private long previousValue = 0;
 
 			@Override
 			public void run() {
 				long currentValue = groundDataCallback.getBytesReceived();
-				if (previousTime == 0) {
+				if (previousValue == 0) {
 					previousValue = currentValue;
-					previousTime = System.currentTimeMillis();
 					return;
 				}
 				long delta = currentValue - previousValue;
-				// TODO not always sec use time diff
 				LOG.info("{} byte/s", delta);
 				previousValue = currentValue;
-				previousTime = System.currentTimeMillis();
 			}
 		}, 1000, 1000, TimeUnit.MILLISECONDS);
 
