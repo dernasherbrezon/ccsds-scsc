@@ -77,7 +77,7 @@ public class Configuration {
 		boolean result = true;
 		int transmissionWindow = getInteger("transmission_window", 0);
 		// for 2 byte frame sequence numbers upper limit can be more than 127,
-		// keep this limit anyway 
+		// keep this limit anyway
 		if (transmissionWindow <= 0 || transmissionWindow > 127) {
 			result = false;
 			LOG.error("invalid transmission_window parameter: {}", transmissionWindow);
@@ -103,6 +103,13 @@ public class Configuration {
 		if (spduVersion == Type1Directive.SPDU_VERSION && maximumFrameSequenceLength == 2) {
 			result = false;
 			LOG.error("u_frame_version {} doesn't support maximum_frame_sequence_length {}", uFrameVersion, maximumFrameSequenceLength);
+		}
+		long carrierOnlyDuration = getDuration("carrier_only_duration");
+		long acquisitionIdleDuration = getDuration("acquisition_idle_duration");
+		long hailWaitDuration = getDuration("hail_wait_duration");
+		if (hailWaitDuration < carrierOnlyDuration + acquisitionIdleDuration) {
+			result = false;
+			LOG.error("hail_wait_duration should be more than carrier_only_duration + acquisition_idle_duration");
 		}
 		return result;
 	}

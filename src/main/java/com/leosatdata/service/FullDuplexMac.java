@@ -59,7 +59,7 @@ public class FullDuplexMac {
 			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
-			transceiverUtil.applyParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			transceiverUtil.applyRxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 			transceiver.setTxState(TransceiverTxState.OFF);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			break;
@@ -78,8 +78,9 @@ public class FullDuplexMac {
 			state.setTransceiverMode(TransceiverOperationMode.CALLER);
 			hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
-			transceiverUtil.applyParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			transceiverUtil.applyTxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+			transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			state.setPersistence(true);
 			state.setState(MacState.S31_START_HAIL_ACTION);
@@ -102,15 +103,6 @@ public class FullDuplexMac {
 			if (state.getState().equals(MacState.S33_SEND_HAIL_DIRECTIVES)) {
 				state.setState(MacState.S34_SEND_HAIL_TAIL);
 				timer.scheduleWait(EventType.E7_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
-			}
-			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL)) {
-				state.setState(MacState.S41_RADIATE_CARRIER);
-				// switch over to the agreed link once plcw sent
-				// assume
-				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
-				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-				callback.handle(createNotification("hail", true));
-				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 			}
 			break;
 		case E7_TAIL_IDLE_TIMEOUT:
@@ -147,8 +139,15 @@ public class FullDuplexMac {
 					break;
 				}
 				state.setCommParameters(spdu);
-				transceiver.setTxState(TransceiverTxState.MODULATION);
+				// switch over to the agreed link once plcw sent
+				// assume
+				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				state.setState(MacState.S41_RADIATE_CARRIER);
+				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+				callback.handle(createNotification("hail", true));
+				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				state.setNeedPlcw(true);
+				LOG.info("session established");
 			}
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
