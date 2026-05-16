@@ -13,6 +13,7 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
+import com.leosatdata.model.MacState;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.State;
 import com.leosatdata.util.Configuration;
@@ -22,6 +23,7 @@ import com.leosatdata.util.TransferFrameUtil;
 public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallback, CarrierCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Node.class);
+	private final static Logger STATE_LOG = LoggerFactory.getLogger("state");
 
 	private final Configuration config;
 	private final Transceiver transceiver;
@@ -129,7 +131,12 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 				if (event.getType().equals(EventType.STOP)) {
 					break;
 				}
+				MacState before = state.getState();
 				handle(event);
+				MacState after = state.getState();
+				if (!before.equals(after)) {
+					STATE_LOG.info(String.format("%20s: %-20s -> %-20s", event.getType(), before, state.getState()));
+				}
 			} catch (InterruptedException e) {
 				break;
 			} catch (Exception e) {
