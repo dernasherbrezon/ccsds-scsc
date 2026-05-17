@@ -102,6 +102,7 @@ public class NodeTest {
 		assertTestExpPacket();
 
 		satellite.stopSession();
+		ground.stopSession();
 
 		assertNotNull(groundCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
 		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
@@ -399,6 +400,7 @@ public class NodeTest {
 			testComm(satellite, satelliteTransceiver, groundDataCallback);
 
 			satellite.stopSession();
+			ground.stopSession();
 
 			assertNotNull(groundCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
 			assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
@@ -578,8 +580,8 @@ public class NodeTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<?> parameters() {
 		return Arrays.asList(new Object[][] { 
-//			{ Duplex.HALF_DUPLEX }, 
-			{ Duplex.FULL_DUPLEX } 
+			{ Duplex.HALF_DUPLEX }, 
+//			{ Duplex.FULL_DUPLEX } 
 		});
 	}
 	// @formatter:on

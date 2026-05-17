@@ -280,6 +280,7 @@ public class HalfDuplexMac {
 		case E51_LNMD:
 			// initiate lnmd
 			if (state.getX() == 0) {
+				LOG.info("session is stopping");
 				state.setX(1);
 			}
 			// remote already indicated no more data. transition to the local no more data
@@ -320,6 +321,7 @@ public class HalfDuplexMac {
 				// this termination initiated remotely
 				// - during normal receive
 				if (state.getX() == 0) {
+					LOG.info("session is stopping");
 					state.setX(3);
 					transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 					state.setState(MacState.S51_RADIATE_CARRIER);

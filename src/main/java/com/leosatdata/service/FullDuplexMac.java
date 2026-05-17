@@ -154,7 +154,7 @@ public class FullDuplexMac {
 				// not according to spec. as soon modulation is set it will output pending
 				// frames
 				transceiver.setTxState(TransceiverTxState.MODULATION);
-				state.setState(MacState.S40_0_DATA_SERVICES);
+				state.setState(MacState.S40_DATA_SERVICES);
 				timer.startPeriodicPlcw();
 				LOG.info("data services ready");
 			}
@@ -185,7 +185,7 @@ public class FullDuplexMac {
 		switch (e.getType()) {
 		case CARRIER_LOST:
 			// CARRIER_LOSS_TIMER value is ‘0’ and MODE = active;
-			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+			if (state.getState().equals(MacState.S40_DATA_SERVICES)) {
 				timer.scheduleCarrierLossTimeout(EventType.E80_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
 			}
 			break;
@@ -225,7 +225,7 @@ public class FullDuplexMac {
 			}
 			state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), (Spdu) e.getArg()));
 			SpduUtil.setDuplex(state.getCommParameters(), state.getDuplex());
-			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+			if (state.getState().equals(MacState.S40_DATA_SERVICES)) {
 				sendEvent(new Event(EventType.E14_COMM_CHANGE));
 			}
 			break;
@@ -285,7 +285,7 @@ public class FullDuplexMac {
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
 			}
-			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+			if (state.getState().equals(MacState.S40_DATA_SERVICES)) {
 				if (SpduUtil.isCommChange(spdu)) {
 					LOG.info("remote comm change parameters requested: {}", spdu);
 					state.setPersistence(true);
@@ -305,17 +305,23 @@ public class FullDuplexMac {
 
 	}
 
-	// when initiated locally (lnmd) send to remote and wait response rnmd, then
-	// terminate
-	// when initiated remotely (rnmd) send response, wait until it was fully sent,
-	// then terminate
 	@SuppressWarnings("incomplete-switch")
 	private void handleTermination(Event e) {
 		switch (e.getType()) {
 		case E21_LNMD:
-			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+			// initiated locally
+			if (state.getState().equals(MacState.S40_DATA_SERVICES) && state.getX() == 0) {
 				LOG.info("session is stopping");
-				state.setState(MacState.S40_2_DATA_SERVICES);
+				state.setX(2);
+				Spdu rnmdDirective = SpduUtil.createRnmdDirective(state.getCommParameters(), true);
+				if (rnmdDirective == null) {
+					LOG.error("unable to create rnmd - not enough data in comm parameters");
+					return;
+				}
+				state.getMacQueue().add(rnmdDirective);
+			}
+			if (state.getState().equals(MacState.S40_DATA_SERVICES) && state.getX() == 4) {
+				state.setX(5);
 				Spdu rnmdDirective = SpduUtil.createRnmdDirective(state.getCommParameters(), true);
 				if (rnmdDirective == null) {
 					LOG.error("unable to create rnmd - not enough data in comm parameters");
@@ -343,23 +349,22 @@ public class FullDuplexMac {
 			if (!rnmd) {
 				break;
 			}
-			if (state.getState().equals(MacState.S40_0_DATA_SERVICES)) {
+			// initiated remotely
+			if (state.getState().equals(MacState.S40_DATA_SERVICES) && state.getX() == 0) {
 				LOG.info("session is stopping");
-				state.setState(MacState.S40_5_DATA_SERVICES);
-				Spdu rnmdDirective = SpduUtil.createRnmdDirective(state.getCommParameters(), true);
-				if (rnmdDirective == null) {
-					LOG.error("unable to create rnmd - not enough data in comm parameters");
-					return;
-				}
-				state.getMacQueue().add(rnmdDirective);
+				state.setX(4);
 			}
-			if (state.getState().equals(MacState.S40_2_DATA_SERVICES)) {
-				state.setState(MacState.S40_5_DATA_SERVICES);
-				timer.scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+			if (state.getState().equals(MacState.S40_DATA_SERVICES) && state.getX() == 2) {
+				state.setX(5);
+				// no more frames, transition to the terminating
+				if (state.noFramesPending()) {
+					state.setState(MacState.S45_TERMINATING_TAIL);
+					timer.scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
+				}
 			}
 			break;
 		case TX_COMPLETE:
-			if (state.getState().equals(MacState.S40_5_DATA_SERVICES)) {
+			if (state.getState().equals(MacState.S40_DATA_SERVICES) && state.getX() == 5 && state.noFramesPending()) {
 				state.setState(MacState.S45_TERMINATING_TAIL);
 				timer.scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
