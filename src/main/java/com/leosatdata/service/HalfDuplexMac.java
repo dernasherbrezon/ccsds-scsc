@@ -108,13 +108,14 @@ public class HalfDuplexMac {
 	private void handleTxDataExchange(Event e) {
 		switch (e.getType()) {
 		case E40_CARRIER_ONLY_TIMEOUT:
-			transceiver.setTxState(TransceiverTxState.MODULATION);
 			state.setNeedPlcw(true);
 			state.setState(MacState.S52_RADIATE_ACQUISITION_IDLE);
 			timer.scheduleWait(EventType.E41_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E41_ACQUISITION_IDLE_TIMEOUT:
 			if (state.getState().equals(MacState.S52_RADIATE_ACQUISITION_IDLE)) {
+				// not according to spec. as soon modulation is set it will output pending frames
+				transceiver.setTxState(TransceiverTxState.MODULATION);
 				state.setState(MacState.S50_DATA_SERVICES_SEND);
 				timer.scheduleWait(EventType.E38_SEND_TIMEOUT, config.getDuration("send_duration"));
 			}

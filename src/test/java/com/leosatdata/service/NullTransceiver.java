@@ -105,8 +105,10 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setRxFrequency(float frequency) {
+		// assume change frequency when symbol lock/unlock is required
 		boolean notifyChange = this.rxFrequency != frequency;
-		if (notifyChange && !skipCallbacks) {
+		boolean mismatchFrequencies = otherSide.txFrequency != frequency;
+		if (notifyChange && mismatchFrequencies && !skipCallbacks) {
 			if (symbolLockCallback != null) {
 				symbolLockCallback.onSymbolUnlock();
 			}
@@ -115,7 +117,7 @@ public class NullTransceiver implements Transceiver {
 			}
 		}
 		this.rxFrequency = frequency;
-		if (notifyChange && !skipCallbacks) {
+		if (notifyChange && !mismatchFrequencies && !skipCallbacks) {
 			if (carrierCallback != null) {
 				carrierCallback.onCarrierAcquired();
 			}
@@ -157,8 +159,9 @@ public class NullTransceiver implements Transceiver {
 	@Override
 	public void setTxFrequency(float frequency) {
 		// assume change frequency when symbol lock/unlock is required
-		boolean notifyChange = this.rxFrequency != frequency;
-		if (notifyChange && !skipCallbacks) {
+		boolean notifyChange = this.txFrequency != frequency;
+		boolean mismatchFrequencies = otherSide.rxFrequency != frequency;
+		if (notifyChange && mismatchFrequencies && !skipCallbacks) {
 			if (otherSide.symbolLockCallback != null) {
 				otherSide.symbolLockCallback.onSymbolUnlock();
 			}
@@ -167,7 +170,7 @@ public class NullTransceiver implements Transceiver {
 			}
 		}
 		this.txFrequency = frequency;
-		if (notifyChange && !skipCallbacks) {
+		if (notifyChange && !mismatchFrequencies && !skipCallbacks) {
 			if (otherSide.carrierCallback != null) {
 				otherSide.carrierCallback.onCarrierAcquired();
 			}

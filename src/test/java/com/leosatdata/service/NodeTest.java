@@ -578,8 +578,8 @@ public class NodeTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<?> parameters() {
 		return Arrays.asList(new Object[][] { 
-			{ Duplex.HALF_DUPLEX }, 
-//			{ Duplex.FULL_DUPLEX } 
+//			{ Duplex.HALF_DUPLEX }, 
+			{ Duplex.FULL_DUPLEX } 
 		});
 	}
 	// @formatter:on

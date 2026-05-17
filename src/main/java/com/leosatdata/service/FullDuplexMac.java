@@ -144,7 +144,6 @@ public class FullDuplexMac {
 			break;
 		case E10_CARRIER_ONLY_TIMEOUT:
 			if (state.getState().equals(MacState.S41_RADIATE_CARRIER)) {
-				transceiver.setTxState(TransceiverTxState.MODULATION);
 				state.setState(MacState.S42_RADIATE_ACQUISITION_IDLE);
 				timer.scheduleWait(EventType.E11_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			}
@@ -152,6 +151,9 @@ public class FullDuplexMac {
 		case E11_ACQUISITION_IDLE_TIMEOUT:
 			if (state.getState().equals(MacState.S42_RADIATE_ACQUISITION_IDLE)) {
 				state.setPersistence(false);
+				// not according to spec. as soon modulation is set it will output pending
+				// frames
+				transceiver.setTxState(TransceiverTxState.MODULATION);
 				state.setState(MacState.S40_0_DATA_SERVICES);
 				timer.startPeriodicPlcw();
 				LOG.info("data services ready");
@@ -323,13 +325,15 @@ public class FullDuplexMac {
 			}
 			break;
 		case E26_TAIL_IDLE_TIMEOUT:
-			LOG.info("session stopped");
-			state.reset();
-			transceiver.setTxState(TransceiverTxState.OFF);
-			transceiver.setRxState(TransceiverRxState.OFF);
-			// don't send number of received packets. not clear why and hard to sync rx
-			// thread data
-			callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));
+			if (state.getState().equals(MacState.S45_TERMINATING_TAIL)) {
+				LOG.info("session stopped");
+				state.reset();
+				transceiver.setTxState(TransceiverTxState.OFF);
+				transceiver.setRxState(TransceiverRxState.OFF);
+				// don't send number of received packets. not clear why and hard to sync rx
+				// thread data
+				callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));
+			}
 			break;
 		case SPDU:
 			if (e.getArg() instanceof Plcw) {
@@ -356,6 +360,7 @@ public class FullDuplexMac {
 			break;
 		case TX_COMPLETE:
 			if (state.getState().equals(MacState.S40_5_DATA_SERVICES)) {
+				state.setState(MacState.S45_TERMINATING_TAIL);
 				timer.scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 			}
 			break;
