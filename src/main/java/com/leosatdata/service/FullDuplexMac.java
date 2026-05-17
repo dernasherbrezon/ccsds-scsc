@@ -8,7 +8,6 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacState;
-import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
@@ -65,12 +64,12 @@ public class FullDuplexMac {
 		case E2_CONNECTING_T:
 			if (state.getCommParameters() == null) {
 				LOG.error("comm parameters not configured");
-				callback.handle(createNotification("hail", false));
+				callback.handle(config.createNotification("hail", false));
 				return;
 			}
 			if (!SpduUtil.isValidDirective(spduVersion, state.getCommParameters())) {
 				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
-				callback.handle(createNotification("hail", false));
+				callback.handle(config.createNotification("hail", false));
 				return;
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
@@ -117,7 +116,7 @@ public class FullDuplexMac {
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
 				timer.cancelWait();
-				callback.handle(createNotification("hail", true));
+				callback.handle(config.createNotification("hail", true));
 				currentHailAttempt = 0;
 				// switch over to the agreed link
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
@@ -136,7 +135,7 @@ public class FullDuplexMac {
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-				callback.handle(createNotification("hail", true));
+				callback.handle(config.createNotification("hail", true));
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				state.setNeedPlcw(true);
 				LOG.info("session established");
@@ -168,7 +167,7 @@ public class FullDuplexMac {
 				int maxAttempts = config.getInteger("hail_lifetime", 0);
 				if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
 					currentHailAttempt = 0;
-					callback.handle(createNotification("hail", false));
+					callback.handle(config.createNotification("hail", false));
 				} else {
 					sendEvent(new Event(EventType.E2_CONNECTING_T));
 				}
@@ -240,7 +239,7 @@ public class FullDuplexMac {
 			int maxAttempts = config.getInteger("comm_change_lifetime", 0);
 			if (maxAttempts != 0 && currentCommChangeAttempt >= maxAttempts) {
 				currentCommChangeAttempt = 0;
-				callback.handle(createNotification("comm_change", false));
+				callback.handle(config.createNotification("comm_change", false));
 			} else {
 				sendEvent(new Event(EventType.E14_COMM_CHANGE));
 			}
@@ -276,7 +275,7 @@ public class FullDuplexMac {
 			Spdu spdu = (Spdu) e.getArg();
 			if (state.getState().equals(MacState.S48__1_RX_COMM_CHANGE)) {
 				timer.cancelWait();
-				callback.handle(createNotification("comm_change", true));
+				callback.handle(config.createNotification("comm_change", true));
 				state.setPersistence(false);
 				transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				currentCommChangeAttempt = 0;
@@ -370,16 +369,6 @@ public class FullDuplexMac {
 			}
 			break;
 		}
-	}
-
-	private ControllerEvent createNotification(String prefix, boolean success) {
-		PersistentActivity activity = new PersistentActivity();
-		activity.setSuccess(success);
-		activity.setLifetime(config.getInteger(prefix + "_lifetime", 0));
-		activity.setWaitingPeriod(config.getInteger(prefix + "_wait_duration", 0));
-		activity.setNotification(config.getInteger(prefix + "_notification", 0));
-		activity.setResponse(config.getInteger(prefix + "_response", 0));
-		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}
 
 	private void sendEvent(Event e) {

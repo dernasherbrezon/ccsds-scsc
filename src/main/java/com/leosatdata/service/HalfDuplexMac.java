@@ -114,7 +114,8 @@ public class HalfDuplexMac {
 			break;
 		case E41_ACQUISITION_IDLE_TIMEOUT:
 			if (state.getState().equals(MacState.S52_RADIATE_ACQUISITION_IDLE)) {
-				// not according to spec. as soon modulation is set it will output pending frames
+				// not according to spec. as soon modulation is set it will output pending
+				// frames
 				transceiver.setTxState(TransceiverTxState.MODULATION);
 				state.setState(MacState.S50_DATA_SERVICES_SEND);
 				timer.scheduleWait(EventType.E38_SEND_TIMEOUT, config.getDuration("send_duration"));
@@ -177,12 +178,12 @@ public class HalfDuplexMac {
 		case E31_CONNECTING_T:
 			if (state.getCommParameters() == null) {
 				LOG.error("comm parameters not configured");
-				callback.handle(createNotification("hail", false));
+				callback.handle(config.createNotification("hail", false));
 				return;
 			}
 			if (!SpduUtil.isValidDirective(spduVersion, state.getCommParameters())) {
 				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
-				callback.handle(createNotification("hail", false));
+				callback.handle(config.createNotification("hail", false));
 				return;
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
@@ -226,7 +227,7 @@ public class HalfDuplexMac {
 			int maxAttempts = config.getInteger("hail_lifetime", 0);
 			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
 				currentHailAttempt = 0;
-				callback.handle(createNotification("hail", false));
+				callback.handle(config.createNotification("hail", false));
 			} else {
 				sendEvent(new Event(EventType.E31_CONNECTING_T));
 			}
@@ -236,7 +237,7 @@ public class HalfDuplexMac {
 			// check several states because responder can send response faster than extra
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S36_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S14_SEND_HAIL_TAIL)) {
-				callback.handle(createNotification("hail", true));
+				callback.handle(config.createNotification("hail", true));
 				currentHailAttempt = 0;
 
 				// switch over to the agreed link
@@ -254,7 +255,7 @@ public class HalfDuplexMac {
 				if (!SpduUtil.isValidDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
 					break;
 				}
-				callback.handle(createNotification("hail", true));
+				callback.handle(config.createNotification("hail", true));
 
 				state.setCommParameters(spdu);
 
@@ -471,16 +472,6 @@ public class HalfDuplexMac {
 		} else {
 			state.setState(MacState.S50_2_DATA_SERVICES_SEND);
 		}
-	}
-
-	private ControllerEvent createNotification(String prefix, boolean success) {
-		PersistentActivity activity = new PersistentActivity();
-		activity.setSuccess(success);
-		activity.setLifetime(config.getInteger(prefix + "_lifetime", 0));
-		activity.setWaitingPeriod(config.getInteger(prefix + "_wait_duration", 0));
-		activity.setNotification(config.getInteger(prefix + "_notification", 0));
-		activity.setResponse(config.getInteger(prefix + "_response", 0));
-		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}
 
 	private void sendEvent(Event e) {

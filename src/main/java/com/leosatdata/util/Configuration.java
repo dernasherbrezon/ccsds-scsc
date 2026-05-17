@@ -6,6 +6,9 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.leosatdata.model.ControllerEvent;
+import com.leosatdata.model.ControllerEventType;
+import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
@@ -112,5 +115,15 @@ public class Configuration {
 			LOG.error("hail_wait_duration should be more than carrier_only_duration + acquisition_idle_duration");
 		}
 		return result;
+	}
+	
+	public ControllerEvent createNotification(String prefix, boolean success) {
+		PersistentActivity activity = new PersistentActivity();
+		activity.setSuccess(success);
+		activity.setLifetime(getInteger(prefix + "_lifetime", 0));
+		activity.setWaitingPeriod(getInteger(prefix + "_wait_duration", 0));
+		activity.setNotification(getInteger(prefix + "_notification", 0));
+		activity.setResponse(getInteger(prefix + "_response", 0));
+		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}
 }
