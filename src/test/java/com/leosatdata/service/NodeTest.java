@@ -94,7 +94,7 @@ public class NodeTest {
 	public NodeTest(Duplex duplex) {
 		this.duplex = duplex;
 	}
-	
+
 	@Test
 	public void testStartStopStartSession() throws Exception {
 		establishType1Session();
@@ -111,7 +111,7 @@ public class NodeTest {
 		assertEquals(TransceiverTxState.OFF, satelliteTransceiver.getTxState());
 		assertEquals(TransceiverRxState.OFF, groundTransceiver.getRxState());
 		assertEquals(TransceiverRxState.OFF, satelliteTransceiver.getRxState());
-		
+
 		satellite.waitForSession();
 		ground.startSession();
 
@@ -119,7 +119,7 @@ public class NodeTest {
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 
 		waitPersistenceActivityCompletion();
-		
+
 		assertTestExpPacket();
 	}
 
@@ -410,6 +410,8 @@ public class NodeTest {
 	private void testComm(Node from, NullTransceiver fromTransceiver, MockUserDataCallback toCallback) throws Exception {
 		int maxFrameLength = groundConfig.getInteger("maximum_frame_length", 0);
 		QualityOfService qos[] = new QualityOfService[] { QualityOfService.EXPEDITED, QualityOfService.SEQUENCE_CONTROLLED };
+		// extra timeout for half-duplex
+		long timeout = duplex.equals(Duplex.FULL_DUPLEX) ? 10000 : 20000;
 		for (QualityOfService curQos : qos) {
 			// test small packet
 			byte[] packet = TestUtil.createTestData(20);
@@ -421,7 +423,7 @@ public class NodeTest {
 			// test packet span over several frames
 			packet = TestUtil.createTestData(2 * maxFrameLength);
 			from.send(packet, curQos, 0);
-			actual = toCallback.waitForData();
+			actual = toCallback.waitForData(timeout);
 			assertNotNull(actual);
 			assertArrayEquals(packet, actual);
 		}
@@ -434,7 +436,8 @@ public class NodeTest {
 		System.arraycopy(payloadBytes, 0, packet, maxFrameLength, payloadBytes.length);
 		from.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
 
-		byte[] actual = toCallback.waitForData(15000);
+		timeout = duplex.equals(Duplex.FULL_DUPLEX) ? 15000 : 30000;
+		byte[] actual = toCallback.waitForData(timeout);
 		assertNotNull(actual);
 		assertArrayEquals(packet, actual);
 	}
@@ -448,7 +451,11 @@ public class NodeTest {
 		props.putAll(load("src/test/resources/ground.properties"));
 		props.putAll(load("src/test/resources/channel.properties"));
 		groundConfig = new Configuration(props);
-		groundTransceiver = new NullTransceiver(groundConfig);
+		if (duplex.equals(Duplex.HALF_DUPLEX)) {
+			groundTransceiver = new HalfDuplexTransceiver(groundConfig);
+		} else {
+			groundTransceiver = new NullTransceiver(groundConfig);
+		}
 		groundTransceiver.start();
 		groundCallback = new MockNodeCallback();
 		groundDataCallback = new MockUserDataCallback();
@@ -461,7 +468,11 @@ public class NodeTest {
 		props.putAll(load("src/test/resources/ground2.properties"));
 		props.putAll(load("src/test/resources/channel.properties"));
 		ground2Config = new Configuration(props);
-		ground2Transceiver = new NullTransceiver(ground2Config);
+		if (duplex.equals(Duplex.HALF_DUPLEX)) {
+			ground2Transceiver = new HalfDuplexTransceiver(ground2Config);
+		} else {
+			ground2Transceiver = new NullTransceiver(ground2Config);
+		}
 		ground2Transceiver.start();
 		ground2Callback = new MockNodeCallback();
 		ground2DataCallback = new MockUserDataCallback();
@@ -474,7 +485,11 @@ public class NodeTest {
 		props.putAll(load("src/test/resources/satellite.properties"));
 		props.putAll(load("src/test/resources/channel.properties"));
 		satelliteConfig = new Configuration(props);
-		satelliteTransceiver = new NullTransceiver(satelliteConfig);
+		if (duplex.equals(Duplex.HALF_DUPLEX)) {
+			satelliteTransceiver = new HalfDuplexTransceiver(satelliteConfig);
+		} else {
+			satelliteTransceiver = new NullTransceiver(satelliteConfig);
+		}
 		satelliteTransceiver.start();
 		satelliteCallback = new MockNodeCallback();
 		satelliteDataCallback = new MockUserDataCallback();

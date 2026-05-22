@@ -24,7 +24,13 @@ public class ControllerEvent {
 
 	@Override
 	public String toString() {
-		return "ControllerEvent [type=" + type + ", obj=" + obj + "]";
+		StringBuilder result = new StringBuilder();
+		result.append("ControllerEvent [type=" + type);
+		if (obj != null) {
+			result.append(", obj=" + obj);
+		}
+		result.append("]");
+		return result.toString();
 	}
 
 }

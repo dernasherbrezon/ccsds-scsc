@@ -68,6 +68,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 
 	@SuppressWarnings("incomplete-switch")
 	private void handle(Event e) {
+//		LOG.info("========= " + state.getExpQueue().size() + " " + state.getSeqQueue().size());
 		switch (e.getType()) {
 		case DUPLEX:
 			state.setDuplex((Duplex) e.getArg());
@@ -76,10 +77,12 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 			}
 			return;
 		case CARRIER_ACQUIRED:
+			LOG.debug("carrier acquired");
 			state.setCarrierAcquired(true);
 			timer.cancelCarrierLoss();
 			break;
 		case CARRIER_LOST:
+			LOG.debug("carrier lost");
 			state.setCarrierAcquired(false);
 			break;
 // the below TODO can be replaced by hashmap
@@ -136,6 +139,8 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 				MacState after = state.getState();
 				if (!before.equals(after)) {
 					STATE_LOG.info(String.format("%20s: %-20s -> %-20s", event.getType(), before, state.getState()));
+				} else {
+					STATE_LOG.debug(String.format("%20s: %-20s -> %-20s", event.getType(), before, state.getState()));
 				}
 			} catch (InterruptedException e) {
 				break;

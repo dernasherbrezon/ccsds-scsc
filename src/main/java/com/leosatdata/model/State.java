@@ -39,11 +39,12 @@ public class State {
 	private boolean txReady;
 	private Duplex duplex;
 	private TransceiverOperationMode transceiverMode;
-	private boolean commChangeRequested;
 	private boolean carrierAcquired;
 
 	// termination step, used in half-duplex
 	private int x;
+	// comm change step, used in half-duplex
+	private int y;
 
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);
@@ -72,8 +73,8 @@ public class State {
 		txReady = true;
 		duplex = Duplex.FULL_DUPLEX; // reasonable default
 		transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
-		commChangeRequested = false;
 		carrierAcquired = false;
+		y = 0;
 		x = 0;
 	}
 
@@ -233,20 +234,20 @@ public class State {
 		return transceiverMode;
 	}
 
-	public void setCommChangeRequested(boolean commChangeRequested) {
-		this.commChangeRequested = commChangeRequested;
-	}
-
-	public boolean isCommChangeRequested() {
-		return commChangeRequested;
-	}
-
 	public boolean noSpduPending() {
-		return !needPlcw && macQueue.isEmpty() && txReady;
+		return !needPlcw && macQueue.isEmpty();
 	}
 
 	public boolean noFramesPending() {
-		return !needPlcw && macQueue.isEmpty() && seqQueue.isEmpty() && expQueue.isEmpty() && txReady;
+		return !needPlcw && macQueue.isEmpty() && seqQueue.isEmpty() && expQueue.isEmpty();
+	}
+	
+	public void setY(int y) {
+		this.y = y;
+	}
+	
+	public int getY() {
+		return y;
 	}
 
 	public void setX(int x) {

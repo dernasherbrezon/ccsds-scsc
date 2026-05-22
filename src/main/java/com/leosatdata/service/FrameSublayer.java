@@ -92,7 +92,7 @@ class FrameSublayer {
 		handleFarmp(e);
 		// always attempt to send frame after handling event
 		handleFopp(e);
-
+		
 		if (!state.isTxReady()) {
 			return;
 		}

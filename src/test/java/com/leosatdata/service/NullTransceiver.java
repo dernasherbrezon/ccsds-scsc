@@ -108,7 +108,8 @@ public class NullTransceiver implements Transceiver {
 		// assume change frequency when symbol lock/unlock is required
 		boolean notifyChange = this.rxFrequency != frequency;
 		boolean mismatchFrequencies = otherSide.txFrequency != frequency;
-		if (notifyChange && mismatchFrequencies && !skipCallbacks) {
+		boolean rxEnabled = rxState.equals(TransceiverRxState.RECEIVING);
+		if (notifyChange && mismatchFrequencies && !skipCallbacks && rxEnabled) {
 			if (symbolLockCallback != null) {
 				symbolLockCallback.onSymbolUnlock();
 			}
@@ -117,7 +118,7 @@ public class NullTransceiver implements Transceiver {
 			}
 		}
 		this.rxFrequency = frequency;
-		if (notifyChange && !mismatchFrequencies && !skipCallbacks) {
+		if (notifyChange && !mismatchFrequencies && !skipCallbacks && rxEnabled) {
 			if (carrierCallback != null) {
 				carrierCallback.onCarrierAcquired();
 			}
@@ -161,20 +162,23 @@ public class NullTransceiver implements Transceiver {
 		// assume change frequency when symbol lock/unlock is required
 		boolean notifyChange = this.txFrequency != frequency;
 		boolean mismatchFrequencies = otherSide.rxFrequency != frequency;
-		if (notifyChange && mismatchFrequencies && !skipCallbacks) {
-			if (otherSide.symbolLockCallback != null) {
+		boolean rxOtherSideEnabled = otherSide.rxState.equals(TransceiverRxState.RECEIVING);
+		boolean txCarrierEnabled = txState.equals(TransceiverTxState.CARRIER_ONLY) || txState.equals(TransceiverTxState.MODULATION);
+		boolean txSymbolEnabled = txState.equals(TransceiverTxState.MODULATION);
+		if (notifyChange && mismatchFrequencies && !skipCallbacks && rxOtherSideEnabled) {
+			if (otherSide.symbolLockCallback != null && txSymbolEnabled) {
 				otherSide.symbolLockCallback.onSymbolUnlock();
 			}
-			if (otherSide.carrierCallback != null) {
+			if (otherSide.carrierCallback != null && txCarrierEnabled) {
 				otherSide.carrierCallback.onCarrierLost();
 			}
 		}
 		this.txFrequency = frequency;
-		if (notifyChange && !mismatchFrequencies && !skipCallbacks) {
-			if (otherSide.carrierCallback != null) {
+		if (notifyChange && !mismatchFrequencies && !skipCallbacks && rxOtherSideEnabled) {
+			if (otherSide.carrierCallback != null && txCarrierEnabled) {
 				otherSide.carrierCallback.onCarrierAcquired();
 			}
-			if (otherSide.symbolLockCallback != null) {
+			if (otherSide.symbolLockCallback != null && txSymbolEnabled) {
 				otherSide.symbolLockCallback.onSymbolLock();
 			}
 		}
@@ -261,6 +265,24 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setRxState(TransceiverRxState state) {
+		if (this.rxState != null && !skipCallbacks && rxFrequency == otherSide.txFrequency) {
+			if (this.rxState.equals(TransceiverRxState.RECEIVING)) {
+				if (state.equals(TransceiverRxState.OFF)) {
+					symbolLockCallback.onSymbolUnlock();
+					carrierCallback.onCarrierLost();
+				}
+			}
+			if (this.rxState.equals(TransceiverRxState.OFF)) {
+				if (state.equals(TransceiverRxState.RECEIVING)) {
+					if (otherSide.txState.equals(TransceiverTxState.CARRIER_ONLY) || otherSide.txState.equals(TransceiverTxState.MODULATION)) {
+						carrierCallback.onCarrierAcquired();
+					}
+					if (otherSide.txState.equals(TransceiverTxState.MODULATION)) {
+						symbolLockCallback.onSymbolLock();
+					}
+				}
+			}
+		}
 		this.rxState = state;
 	}
 

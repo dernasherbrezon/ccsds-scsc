@@ -291,7 +291,7 @@ public class FullDuplexMac {
 					state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), spdu));
 					// FIXME switch mode if changed
 					state.setDuplex(SpduUtil.getDuplex(state.getCommParameters()));
-					if (state.noSpduPending()) {
+					if (state.noSpduPending() && state.isTxReady()) {
 						state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
 						timer.scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
 					} else {
@@ -356,7 +356,7 @@ public class FullDuplexMac {
 			if (state.getState().equals(MacState.S40_DATA_SERVICES) && state.getX() == 2) {
 				state.setX(5);
 				// no more frames, transition to the terminating
-				if (state.noFramesPending()) {
+				if (state.noFramesPending() && state.isTxReady()) {
 					state.setState(MacState.S45_TERMINATING_TAIL);
 					timer.scheduleWait(EventType.E26_TAIL_IDLE_TIMEOUT, config.getDuration("tail_idle_duration"));
 				}

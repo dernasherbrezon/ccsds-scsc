@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
+import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataModulation;
 import com.leosatdata.model.DataRate;
@@ -68,6 +69,11 @@ public class TransceiverUtil {
 		result.setTxPlExtensions(createType1PlExtensions(Direction.TRANSMITTER));
 		result.setRxParams(createType1TxRx());
 		result.setRxPlExtensions(createType1PlExtensions(Direction.RECEIVER));
+		ControlParameters controlParameters = new ControlParameters();
+		controlParameters.setRnmd(false);
+		controlParameters.setTimeSampleField(0);
+		controlParameters.setTransmitToken(false);
+		result.setControlParams(controlParameters);
 		return result;
 	}
 
