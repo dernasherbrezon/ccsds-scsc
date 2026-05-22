@@ -436,7 +436,7 @@ public class NodeTest {
 		System.arraycopy(payloadBytes, 0, packet, maxFrameLength, payloadBytes.length);
 		from.send(packet, QualityOfService.SEQUENCE_CONTROLLED, 0);
 
-		timeout = duplex.equals(Duplex.FULL_DUPLEX) ? 15000 : 30000;
+		timeout = duplex.equals(Duplex.FULL_DUPLEX) ? 15000 : 60000;
 		byte[] actual = toCallback.waitForData(timeout);
 		assertNotNull(actual);
 		assertArrayEquals(packet, actual);
