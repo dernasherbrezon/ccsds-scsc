@@ -71,7 +71,6 @@ public class State {
 		expeditedFrameCounter = 0;
 		vr = 0;
 		txReady = true;
-		duplex = Duplex.FULL_DUPLEX; // reasonable default
 		transceiverMode = TransceiverOperationMode.RESPONDER; // by default passive
 		carrierAcquired = false;
 		y = 0;
@@ -241,11 +240,11 @@ public class State {
 	public boolean noFramesPending() {
 		return !needPlcw && macQueue.isEmpty() && seqQueue.isEmpty() && expQueue.isEmpty();
 	}
-	
+
 	public void setY(int y) {
 		this.y = y;
 	}
-	
+
 	public int getY() {
 		return y;
 	}

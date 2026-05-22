@@ -58,6 +58,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
 		this.maxSequenceNumber = (config.getInteger("maximum_frame_sequence_length", 0) == 1) ? 0xFF : 0xFFFF;
 		this.state = new State(config);
+		this.state.setDuplex(Duplex.FULL_DUPLEX); // reasonable default
 		this.timer = new TimerService(state, config);
 		this.fullDuplexMac = new FullDuplexMac(state, config, transceiver, callback, timer);
 		this.halfDuplexMac = new HalfDuplexMac(state, config, transceiver, callback, timer);
@@ -68,7 +69,6 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 
 	@SuppressWarnings("incomplete-switch")
 	private void handle(Event e) {
-//		LOG.info("========= " + state.getExpQueue().size() + " " + state.getSeqQueue().size());
 		switch (e.getType()) {
 		case DUPLEX:
 			state.setDuplex((Duplex) e.getArg());

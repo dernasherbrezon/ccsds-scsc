@@ -326,21 +326,19 @@ public class HalfDuplexMac {
 				break;
 			}
 			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
-				// this is response from caller initiation
-				if (state.getX() == 2) {
-					putIntoInactive();
-				}
 				// this termination initiated remotely
 				// - during normal receive
 				if (state.getX() == 0) {
 					LOG.info("session is stopping");
 					state.setX(3);
 					switchToTx();
-				}
-				// - just before entering receive
-				if (state.getX() == 1) {
+				} else if (state.getX() == 1) {
+					// - just before entering receive
 					state.setX(4);
 					switchToTx();
+				} else if (state.getX() == 2) {
+					// this is response from caller initiation
+					putIntoInactive();
 				}
 			}
 			break;

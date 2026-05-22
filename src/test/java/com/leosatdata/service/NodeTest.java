@@ -163,6 +163,7 @@ public class NodeTest {
 
 	@Test
 	public void testNoConnection() throws Exception {
+		ground.setDuplex(duplex);
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
