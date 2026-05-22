@@ -556,7 +556,9 @@ public class NodeTest {
 	}
 
 	private void establishType5Session() throws InterruptedException {
+		satellite.setDuplex(duplex);
 		satellite.waitForSession();
+		ground.setDuplex(duplex);
 		ground.setCommParameters(createType5CommParameters());
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
@@ -566,7 +568,9 @@ public class NodeTest {
 	}
 
 	private void establishType4Session() throws InterruptedException {
+		satellite.setDuplex(duplex);
 		satellite.waitForSession();
+		ground.setDuplex(duplex);
 		ground.setCommParameters(createType4CommParameters());
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
@@ -579,6 +583,18 @@ public class NodeTest {
 		establishType1Session(DataRate.R8C);
 	}
 
+	private void establishType1Session(DataRate dataRate) throws InterruptedException {
+		satellite.setDuplex(duplex);
+		satellite.waitForSession();
+		ground.setDuplex(duplex);
+		ground.setCommParameters(createType1CommParameters(dataRate));
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+
+		waitPersistenceActivityCompletion();
+	}
+	
 	public static List<CommSettings> getSupportedSettingsCombination() {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
@@ -600,18 +616,6 @@ public class NodeTest {
 		});
 	}
 	// @formatter:on
-
-	private void establishType1Session(DataRate dataRate) throws InterruptedException {
-		satellite.setDuplex(duplex);
-		satellite.waitForSession();
-		ground.setDuplex(duplex);
-		ground.setCommParameters(createType1CommParameters(dataRate));
-		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-
-		waitPersistenceActivityCompletion();
-	}
 
 	private void resetSequences(int seq) {
 		ground.getState().setVs(seq);
