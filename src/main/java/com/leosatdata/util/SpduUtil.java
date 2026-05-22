@@ -126,10 +126,10 @@ public class SpduUtil {
 			if (directive.getRxLink() == null && directive.getTxLink() == null) {
 				return false;
 			}
-			if (directive.getRxLink() != null && directive.getRxLink().isRnmd()) {
+			if (directive.getRxLink() != null && (directive.getRxLink().isRnmd() || directive.getRxLink().isTransmitToken())) {
 				return false;
 			}
-			if (directive.getTxLink() != null && directive.getTxLink().isRnmd()) {
+			if (directive.getTxLink() != null && (directive.getTxLink().isRnmd() || directive.getTxLink().isTransmitToken())) {
 				return false;
 			}
 			return true;
@@ -139,10 +139,10 @@ public class SpduUtil {
 			if (directive.getRxLink() == null && directive.getTxLink() == null) {
 				return false;
 			}
-			if (directive.getRxLink() != null && directive.getRxLink().isRnmd()) {
+			if (directive.getRxLink() != null && (directive.getRxLink().isRnmd() || directive.getRxLink().isTransmitToken())) {
 				return false;
 			}
-			if (directive.getTxLink() != null && directive.getTxLink().isRnmd()) {
+			if (directive.getTxLink() != null && (directive.getTxLink().isRnmd() || directive.getTxLink().isTransmitToken())) {
 				return false;
 			}
 			return true;
@@ -262,6 +262,49 @@ public class SpduUtil {
 			return null;
 		}
 		LOG.error("unknown spdu for getDuplex: {}", params);
+		return null;
+	}
+
+	public static Spdu createTransmit(Spdu params, boolean transmitToken) {
+		if (params instanceof Type1Directive) {
+			Type1Directive type1 = (Type1Directive) params;
+			Type1Directive result = new Type1Directive();
+			ControlParameters control = new ControlParameters(type1.getControlParams());
+			control.setTransmitToken(transmitToken);
+			result.setControlParams(control);
+			return result;
+		}
+		if (params instanceof Type4Directive) {
+			Type4Directive type4 = (Type4Directive) params;
+			Type4Directive result = new Type4Directive();
+			if (type4.getRxLink() != null) {
+				LinkEstablishment link = new LinkEstablishment(type4.getRxLink());
+				link.setTransmitToken(transmitToken);
+				result.setRxLink(link);
+			}
+			if (type4.getTxLink() != null) {
+				LinkEstablishment link = new LinkEstablishment(type4.getTxLink());
+				link.setTransmitToken(transmitToken);
+				result.setTxLink(link);
+			}
+			return result;
+		}
+		if (params instanceof Type5Directive) {
+			Type5Directive type5 = (Type5Directive) params;
+			Type5Directive result = new Type5Directive();
+			if (type5.getRxLink() != null) {
+				Link2Establishment link = new Link2Establishment(type5.getRxLink());
+				link.setTransmitToken(transmitToken);
+				result.setRxLink(link);
+			}
+			if (type5.getTxLink() != null) {
+				Link2Establishment link = new Link2Establishment(type5.getTxLink());
+				link.setTransmitToken(transmitToken);
+				result.setTxLink(link);
+			}
+			return result;
+		}
+		LOG.error("unknown spdu for createTransmit: {}", params);
 		return null;
 	}
 

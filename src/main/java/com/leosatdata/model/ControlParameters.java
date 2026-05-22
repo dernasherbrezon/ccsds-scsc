@@ -7,6 +7,20 @@ public class ControlParameters {
 	private Duplex duplex;
 	private int timeSampleField; // TODO Parse according to reference 6 section 5
 
+	public ControlParameters() {
+		// do nothing
+	}
+
+	public ControlParameters(ControlParameters other) {
+		if (other == null) {
+			return;
+		}
+		this.transmitToken = other.transmitToken;
+		this.rnmd = other.rnmd;
+		this.duplex = other.duplex;
+		this.timeSampleField = other.timeSampleField;
+	}
+
 	public boolean isTransmitToken() {
 		return transmitToken;
 	}

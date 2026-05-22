@@ -275,7 +275,6 @@ public class FullDuplexMac {
 			Spdu spdu = (Spdu) e.getArg();
 			if (state.getState().equals(MacState.S48__1_RX_COMM_CHANGE)) {
 				timer.cancelWait();
-				callback.handle(config.createNotification("comm_change", true));
 				state.setPersistence(false);
 				transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				currentCommChangeAttempt = 0;
@@ -283,6 +282,7 @@ public class FullDuplexMac {
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
+				callback.handle(config.createNotification("comm_change", true));
 			}
 			if (state.getState().equals(MacState.S40_DATA_SERVICES)) {
 				if (SpduUtil.isCommChange(spdu)) {

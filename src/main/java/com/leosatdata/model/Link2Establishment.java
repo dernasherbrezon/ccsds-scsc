@@ -18,6 +18,31 @@ public class Link2Establishment {
 	private float symbolRate; // IEEE 754 standard for half-precision floating point numbers
 	private float frequency;
 
+	public Link2Establishment() {
+		// do nothing
+	}
+
+	public Link2Establishment(Link2Establishment other) {
+		if (other == null) {
+			return;
+		}
+		this.direction = other.direction;
+		this.demandQuery = other.demandQuery;
+		this.rnmd = other.rnmd;
+		this.transmitToken = other.transmitToken;
+		this.duplex = other.duplex;
+		this.polarization = other.polarization;
+		this.coherency = other.coherency;
+		this.modulation = other.modulation;
+		this.modulationIndex = other.modulationIndex;
+		this.coding = other.coding;
+		this.linkSnr = other.linkSnr;
+		this.transceiverMode = other.transceiverMode;
+		this.aosFrameLength = other.aosFrameLength;
+		this.symbolRate = other.symbolRate;
+		this.frequency = other.frequency;
+	}
+
 	public LinkDirection getDirection() {
 		return direction;
 	}

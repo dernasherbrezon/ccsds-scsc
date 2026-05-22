@@ -418,11 +418,12 @@ public class HalfDuplexMac {
 			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
-			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME) && state.getY() == 3) {
+			if ((state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) && state.getY() == 3) {
 				state.setState(MacState.S60_DATA_SERVICES_RECEIVE);
 				state.setY(0);
 				transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
+				callback.handle(config.createNotification("comm_change", true));
 				state.setPersistence(false);
 			}
 			if (SpduUtil.isCommChange(spdu) && (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME))) {
@@ -430,6 +431,8 @@ public class HalfDuplexMac {
 				// FIXME switch mode if changed
 				state.setDuplex(SpduUtil.getDuplex(state.getCommParameters()));
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
+				callback.handle(config.createNotification("comm_change", true));
 				state.setNeedPlcw(true);
 				switchToTx();
 			}
@@ -477,9 +480,8 @@ public class HalfDuplexMac {
 
 	private void sendTransmitToken() {
 		currentTokenPassAttempt++;
-		SpduUtil.setTransmit(state.getCommParameters(), true);
 		state.setState(MacState.S56_TOKEN_PASS);
-		state.getMacQueue().add(state.getCommParameters());
+		state.getMacQueue().add(SpduUtil.createTransmit(state.getCommParameters(), true));
 	}
 
 	private void switchToRx() {
@@ -499,7 +501,8 @@ public class HalfDuplexMac {
 		state.setY(2);
 		transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 		LOG.info("rx comm parameters changed: {}", state.getCommParameters());
-		if (state.noSpduPending() && state.isTxReady()) {
+		// don't check need_plcw because persistence will never trigger plcw
+		if (state.getMacQueue().isEmpty() && state.isTxReady()) {
 			state.getMacQueue().add(state.getCommParameters());
 			state.setState(MacState.S56_COMM_CHANGE);
 		}

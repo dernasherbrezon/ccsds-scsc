@@ -16,6 +16,29 @@ public class LinkEstablishment {
 	private int linkSnr;
 	private float symbolRate; // IEEE 754 standard for half-precision floating point numbers
 
+	public LinkEstablishment() {
+		// do nothing
+	}
+
+	public LinkEstablishment(LinkEstablishment other) {
+		if (other == null) {
+			return;
+		}
+		this.direction = other.direction;
+		this.demandQuery = other.demandQuery;
+		this.queryResponse = other.queryResponse;
+		this.rnmd = other.rnmd;
+		this.transmitToken = other.transmitToken;
+		this.duplex = other.duplex;
+		this.freqChannel = other.freqChannel;
+		this.polarization = other.polarization;
+		this.modulationIndex = other.modulationIndex;
+		this.modulation = other.modulation;
+		this.coding = other.coding;
+		this.linkSnr = other.linkSnr;
+		this.symbolRate = other.symbolRate;
+	}
+
 	public LinkDirection getDirection() {
 		return direction;
 	}
@@ -122,8 +145,8 @@ public class LinkEstablishment {
 
 	@Override
 	public String toString() {
-		return "[direction=" + direction + ", demandQuery=" + demandQuery + ", queryResponse=" + queryResponse + ", rnmd=" + rnmd + ", transmitToken=" + transmitToken + ", duplex=" + duplex + ", freqChannel=" + freqChannel + ", polarization=" + polarization + ", modulationIndex="
-				+ modulationIndex + ", modulation=" + modulation + ", coding=" + coding + ", linkSnr=" + linkSnr + ", symbolRate=" + symbolRate + "]";
+		return "[direction=" + direction + ", demandQuery=" + demandQuery + ", queryResponse=" + queryResponse + ", rnmd=" + rnmd + ", transmitToken=" + transmitToken + ", duplex=" + duplex + ", freqChannel=" + freqChannel + ", polarization=" + polarization + ", modulationIndex=" + modulationIndex
+				+ ", modulation=" + modulation + ", coding=" + coding + ", linkSnr=" + linkSnr + ", symbolRate=" + symbolRate + "]";
 	}
 
 }
