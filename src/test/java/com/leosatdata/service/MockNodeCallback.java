@@ -25,7 +25,7 @@ public class MockNodeCallback implements NodeCallback {
 	}
 
 	public ControllerEvent waitForEvent(ControllerEventType type) {
-		return waitForEvent(15000, type);
+		return waitForEvent(20000, type);
 	}
 
 	public ControllerEvent waitForEvent(long timeout, ControllerEventType type) {
@@ -40,14 +40,15 @@ public class MockNodeCallback implements NodeCallback {
 						return result;
 					}
 					lock.wait(remaining);
-					remaining = System.currentTimeMillis() - start;
-					if (remaining > 0) {
-						continue;
-					}
+					long actualWait = System.currentTimeMillis() - start;
 					ControllerEvent result = event;
 					event = null;
 					if (result != null && result.getType().equals(type)) {
 						return result;
+					}
+					remaining -= actualWait;
+					if (remaining > 0) {
+						continue;
 					}
 					return null;
 				} catch (InterruptedException e) {

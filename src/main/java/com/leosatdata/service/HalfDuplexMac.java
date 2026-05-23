@@ -358,13 +358,22 @@ public class HalfDuplexMac {
 		case E84_RECONNECT_WAIT_TIMEOUT:
 			if (state.getState().equals(MacState.S80_RECONNECT)) {
 				timer.stopPeriodicPlcw();
-				sendEvent(new Event(EventType.E31_CONNECTING_T));
+				startHail();
+			}
+			break;
+		case CARRIER_LOST:
+			// CARRIER_LOSS_TIMER value is ‘0’ and MODE = active;
+			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
+				timer.scheduleCarrierLossTimeout(EventType.E85_CARRIER_LOST_TIMEOUT, config.getDuration("carrier_loss_timer_duration"));
 			}
 			break;
 		case E85_CARRIER_LOST_TIMEOUT:
-			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE)) {
+			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
+				LOG.info("carrier loss recovery timeout");
+				timer.cancelCarrierLoss();
+				callback.handle(new ControllerEvent(ControllerEventType.CARRIER_LOSS));
 				timer.stopPeriodicPlcw();
-				sendEvent(new Event(EventType.E29_CONNECTING_L));
+				startHail();
 			}
 			break;
 		}
@@ -423,6 +432,7 @@ public class HalfDuplexMac {
 				state.setY(0);
 				transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
+				currentCommChangeAttempt = 0;
 				callback.handle(config.createNotification("comm_change", true));
 				state.setPersistence(false);
 			}
@@ -432,6 +442,7 @@ public class HalfDuplexMac {
 				state.setDuplex(SpduUtil.getDuplex(state.getCommParameters()));
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
+				currentCommChangeAttempt = 0;
 				callback.handle(config.createNotification("comm_change", true));
 				state.setNeedPlcw(true);
 				switchToTx();
@@ -478,6 +489,20 @@ public class HalfDuplexMac {
 		}
 	}
 
+	private void startHail() {
+		switch (state.getTransceiverMode()) {
+		case CALLER:
+			sendEvent(new Event(EventType.E31_CONNECTING_T));
+			break;
+		case RESPONDER:
+			sendEvent(new Event(EventType.E29_CONNECTING_L));
+			break;
+		default:
+			LOG.error("unsupported transceiver operating mode: {}", state.getTransceiverMode());
+			break;
+		}
+	}
+
 	private void sendTransmitToken() {
 		currentTokenPassAttempt++;
 		state.setState(MacState.S56_TOKEN_PASS);
@@ -497,6 +522,15 @@ public class HalfDuplexMac {
 	}
 
 	private void initiateCommChange() {
+		currentCommChangeAttempt++;
+		int maxAttempts = config.getInteger("comm_change_lifetime", 0);
+		if (maxAttempts != 0 && currentCommChangeAttempt >= maxAttempts) {
+			currentCommChangeAttempt = 0;
+			callback.handle(config.createNotification("comm_change", false));
+			// ignore further comm change attempts
+			state.setY(0);
+			return;
+		}
 		state.setPersistence(true);
 		state.setY(2);
 		transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));

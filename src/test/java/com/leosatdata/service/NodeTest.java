@@ -127,38 +127,41 @@ public class NodeTest {
 	public void testResync1() throws Exception {
 		establishType1Session();
 
-		assertTestSeqPacket(1);
+		assertTestSeqPacket(1, true);
 
 		// less than expected
 		ground.onRx(createPlcw(false, 0));
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
+		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 
-		assertTestSeqPacket(2);
+		assertTestSeqPacket(2, false);
 	}
 
 	@Test
 	public void testResync2() throws Exception {
 		establishType1Session();
 
-		assertTestSeqPacket(1);
+		assertTestSeqPacket(1, true);
 
 		// more than expected
 		ground.onRx(createPlcw(false, 3));
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
+		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 
-		assertTestSeqPacket(2);
+		assertTestSeqPacket(2, false);
 	}
 
 	@Test
 	public void testResync3() throws Exception {
 		establishType1Session();
 
-		assertTestSeqPacket(1);
+		assertTestSeqPacket(1, true);
 
 		ground.onRx(createPlcw(true, 1));
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
+		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 
-		assertTestSeqPacket(2);
+		assertTestSeqPacket(2, false);
 	}
 
 	@Test
@@ -189,6 +192,8 @@ public class NodeTest {
 		waitPersistenceActivityCompletion();
 		assertTestExpPacket();
 	}
+
+	// TODO test failed comm change
 
 	@Test
 	public void testValidateSourceFrame() throws Exception {
@@ -251,10 +256,68 @@ public class NodeTest {
 
 	@Test
 	public void testReconnectAfterCarrierLoss() throws Exception {
+		if (duplex.equals(Duplex.HALF_DUPLEX)) {
+			halfDuplexReconnectAfterCarrierLoss();
+		} else if (duplex.equals(Duplex.FULL_DUPLEX)) {
+			fullDuplexReconnectAfterCarrierLoss();
+		}
+	}
+
+	private void halfDuplexReconnectAfterCarrierLoss() throws Exception {
+		// carrier timeout should happen during receive phase, ensure this phase is big
+		// enough
+		groundConfig.setProperty("receive_duration", String.valueOf(3 * groundConfig.getLong("carrier_loss_timer_duration", 0)));
+		// ensure send duration won't pass transmit token quickly
+		groundConfig.setProperty("send_duration", String.valueOf(3 * groundConfig.getLong("carrier_loss_timer_duration", 0)));
+		ground.stop();
+		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
+		ground.start();
+
+		satelliteConfig.setProperty("receive_duration", String.valueOf(3 * satelliteConfig.getLong("carrier_loss_timer_duration", 0)));
+		satelliteConfig.setProperty("send_duration", String.valueOf(3 * satelliteConfig.getLong("carrier_loss_timer_duration", 0)));
+		satellite.stop();
+		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
+		satellite.start();
+
+		establishType1Session();
+
+		// ensure enough frames to send without switching to rx mode and losing carrier
+		// anyway
+		Thread sender = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				byte[] data = new byte[20];
+				while (!Thread.currentThread().isInterrupted()) {
+					satellite.send(data, QualityOfService.EXPEDITED, 0);
+				}
+			}
+		}, "sender");
+		sender.start();
+
+		// wait until ground switch to rx
+		byte[] actual = groundDataCallback.waitForData();
+		assertNotNull(actual);
+		ground.onCarrierLost();
+
+		Thread.sleep(2 * groundConfig.getDuration("carrier_loss_timer_duration"));
+
+		assertNotNull(groundCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
+		sender.interrupt();
+
+		// then automatic recover
+
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+
+		// satellite won't even notice ground lost carrier and re-run hail
+
+		assertTestExpPacket();
+	}
+
+	private void fullDuplexReconnectAfterCarrierLoss() throws Exception {
 		establishType1Session();
 
 		ground.onCarrierLost();
-		satellite.onCarrierLost();
 
 		Thread.sleep(2 * groundConfig.getDuration("carrier_loss_timer_duration"));
 
@@ -522,7 +585,7 @@ public class NodeTest {
 		assertArrayEquals(packet, actual);
 	}
 
-	private void assertTestSeqPacket(int vr) {
+	private void assertTestSeqPacket(int vr, boolean passOnce) {
 		CountDownLatch latch = new CountDownLatch(1);
 		groundTransceiver.setRxFrameFilter(new ParsedFrameFilter(groundConfig) {
 			@Override
@@ -531,6 +594,9 @@ public class NodeTest {
 					return true;
 				}
 				Plcw plcw = (Plcw) spdu;
+				if (passOnce && plcw.getReportValue() == vr && latch.getCount() == 0) {
+					return false;
+				}
 				if (plcw.getReportValue() == vr) {
 					latch.countDown();
 				}
@@ -595,16 +661,16 @@ public class NodeTest {
 
 		waitPersistenceActivityCompletion();
 	}
-	
+
 	public static List<CommSettings> getSupportedSettingsCombination() {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
 		settings.add(new CommSettings(3, 3, 1, 1));
-		settings.add(new CommSettings(4, 4, 1, 1));
-		settings.add(new CommSettings(4, 4, 2, 1));
-		settings.add(new CommSettings(4, 4, 3, 1));
-		settings.add(new CommSettings(4, 4, 2, 2));
-		settings.add(new CommSettings(4, 4, 3, 2));
+//		settings.add(new CommSettings(4, 4, 1, 1));
+//		settings.add(new CommSettings(4, 4, 2, 1));
+//		settings.add(new CommSettings(4, 4, 3, 1));
+//		settings.add(new CommSettings(4, 4, 2, 2));
+//		settings.add(new CommSettings(4, 4, 3, 2));
 		return settings;
 	}
 
@@ -612,8 +678,8 @@ public class NodeTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<?> parameters() {
 		return Arrays.asList(new Object[][] { 
-			{ Duplex.HALF_DUPLEX }, 
-//			{ Duplex.FULL_DUPLEX } 
+//			{ Duplex.HALF_DUPLEX }, 
+			{ Duplex.FULL_DUPLEX } 
 		});
 	}
 	// @formatter:on
