@@ -21,6 +21,10 @@ public class DefaultFrameFilter implements FrameFilter {
 			LOG.error("tx frequency {} doesn't match rx {}", tx.getTxFrequency(), rx.getRxFrequency());
 			return false;
 		}
+		if (tx.getTxSymbolRate() != rx.getRxSymbolRate()) {
+			LOG.error("tx symbold rate {} doesn't match rx symbol rate {}", tx.getTxSymbolRate(), rx.getRxSymbolRate());
+			return false;
+		}
 		return true;
 	}
 }

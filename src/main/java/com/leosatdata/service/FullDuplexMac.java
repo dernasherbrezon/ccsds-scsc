@@ -173,9 +173,6 @@ public class FullDuplexMac {
 				}
 			}
 			break;
-		case REQUEST_PLCW:
-			state.setNeedPlcw(true);
-			break;
 		}
 	}
 

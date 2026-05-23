@@ -32,6 +32,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	private final State state;
 	private final FullDuplexMac fullDuplexMac;
 	private final HalfDuplexMac halfDuplexMac;
+	private final SimplexMac simplexMac;
 	private final FrameSublayer frameSublayer;
 	private final TimerService timer;
 
@@ -62,6 +63,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		this.timer = new TimerService(state, config);
 		this.fullDuplexMac = new FullDuplexMac(state, config, transceiver, callback, timer);
 		this.halfDuplexMac = new HalfDuplexMac(state, config, transceiver, callback, timer);
+		this.simplexMac = new SimplexMac(state, config, transceiver, timer);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
 		t = new Thread(this, "node-" + localScid);
 		t.setDaemon(true);
@@ -85,12 +87,17 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 			LOG.debug("carrier lost");
 			state.setCarrierAcquired(false);
 			break;
+		case REQUEST_PLCW:
+			state.setNeedPlcw(true);
+			break;
 // the below TODO can be replaced by hashmap
 		case CONNECTING_L:
 			if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
 				e = new Event(EventType.E1_CONNECTING_L);
 			} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
 				e = new Event(EventType.E29_CONNECTING_L);
+			} else if (state.getDuplex().equals(Duplex.SIMPLEX_RECEIVE)) {
+				e = new Event(EventType.E72_RECEIVE_SIMPLEX);
 			}
 			break;
 		case CONNECTING_T:
@@ -98,6 +105,8 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 				e = new Event(EventType.E2_CONNECTING_T);
 			} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
 				e = new Event(EventType.E31_CONNECTING_T);
+			} else if (state.getDuplex().equals(Duplex.SIMPLEX_TRANSMIT)) {
+				e = new Event(EventType.E71_TRANSMIT_SIMPLEX);
 			}
 			break;
 		case LOCAL_COMM_CHANGE:
@@ -119,6 +128,8 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 			fullDuplexMac.handle(e);
 		} else if (state.getDuplex().equals(Duplex.HALF_DUPLEX)) {
 			halfDuplexMac.handle(e);
+		} else if (state.getDuplex().equals(Duplex.SIMPLEX_RECEIVE) || state.getDuplex().equals(Duplex.SIMPLEX_TRANSMIT)) {
+			simplexMac.handle(e);
 		}
 		frameSublayer.handle(e);
 	}

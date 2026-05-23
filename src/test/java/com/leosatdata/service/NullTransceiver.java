@@ -27,6 +27,7 @@ public class NullTransceiver implements Transceiver {
 	private boolean skipCallbacks = false;
 
 	private float rxSymbolRate;
+	private float txSymbolRate;
 	private float rxFrequency;
 	private float txFrequency;
 
@@ -54,10 +55,10 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void send(byte[] data) {
-		assert (rxSymbolRate != 0);
+		assert (txSymbolRate != 0);
 		long txMillisToWait;
 		if (txDelay == null) {
-			txMillisToWait = (long) ((data.length * 8 * 1000) / rxSymbolRate);
+			txMillisToWait = (long) ((data.length * 8 * 1000) / txSymbolRate);
 		} else {
 			txMillisToWait = txDelay;
 		}
@@ -149,7 +150,7 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public void setTxSymbolRate(float baud) {
-		// do nothing
+		this.txSymbolRate = baud;
 	}
 
 	@Override
@@ -186,6 +187,14 @@ public class NullTransceiver implements Transceiver {
 
 	public float getTxFrequency() {
 		return txFrequency;
+	}
+	
+	public float getRxSymbolRate() {
+		return rxSymbolRate;
+	}
+	
+	public float getTxSymbolRate() {
+		return txSymbolRate;
 	}
 
 	@Override
