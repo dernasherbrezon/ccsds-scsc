@@ -678,12 +678,12 @@ public class NodeTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<?> parameters() {
 		return Arrays.asList(new Object[][] { 
-//			{ Duplex.HALF_DUPLEX }, 
+			{ Duplex.HALF_DUPLEX }, 
 			{ Duplex.FULL_DUPLEX } 
 		});
 	}
 	// @formatter:on
-
+ 
 	private void resetSequences(int seq) {
 		ground.getState().setVs(seq);
 		ground.getState().setVvs(seq);
