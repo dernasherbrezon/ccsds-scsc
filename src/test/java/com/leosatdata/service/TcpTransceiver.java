@@ -27,7 +27,7 @@ public class TcpTransceiver implements Transceiver {
 	private final Configuration config;
 	private final byte[] buffer;
 
-	private TransceiverTxState txState;
+	private TransceiverTxState txState = TransceiverTxState.OFF;
 	private ServerSocket server;
 	private Socket clientSocket;
 	private ScheduledExecutorService executor;
@@ -208,8 +208,13 @@ public class TcpTransceiver implements Transceiver {
 		if (state.equals(TransceiverRxState.RECEIVING) && server == null) {
 			int port = config.getInteger("tcp.transceiver.port", 8081);
 			try {
-				InetAddress address = InetAddress.getByName(config.getProperty("tcp.transceiver.host"));
+				String hostname = config.getProperty("tcp.transceiver.host");
+				if (hostname == null) {
+					hostname = "localhost";
+				}
+				InetAddress address = InetAddress.getByName(hostname);
 				server = new ServerSocket(port, 50, address);
+				LOG.info("listening on {}:{}", hostname, port);
 				rxFuture = executor.submit(new Runnable() {
 
 					@SuppressWarnings("resource")
