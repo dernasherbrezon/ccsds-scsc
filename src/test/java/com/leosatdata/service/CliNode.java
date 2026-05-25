@@ -33,15 +33,18 @@ public class CliNode {
 	private Node ground;
 
 	public static void main(String[] args) throws Exception {
-		new CliNode().run();
+		new CliNode().run(args);
 	}
 
-	public void run() throws Exception {
+	public void run(String[] args) throws Exception {
 		Properties props = new Properties();
 		props.putAll(NodeTest.load("src/main/resources/mib.properties"));
 		props.putAll(NodeTest.load("src/main/resources/transceiver.properties"));
 		props.putAll(NodeTest.load("src/main/resources/custom.properties"));
 		props.putAll(NodeTest.load("src/test/resources/ground.properties"));
+		for (String cur : args) {
+			props.putAll(NodeTest.load(cur));
+		}
 		groundConfig = new Configuration(props);
 		groundTransceiver = new TcpTransceiver(groundConfig);
 		groundTransceiver.start();

@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Executors;
@@ -185,8 +186,9 @@ public class TcpTransceiver implements Transceiver {
 		} else if (!state.equals(TransceiverTxState.OFF) && clientSocket == null) {
 			try {
 				int port = config.getInteger("tcp.transceiver.remote.port", 8081);
-				InetAddress address = InetAddress.getByName(config.getProperty("tcp.transceiver.remote.host"));
-				clientSocket = new Socket(address, port);
+				clientSocket = new Socket();
+				clientSocket.connect(new InetSocketAddress(config.getProperty("tcp.transceiver.remote.host"), port));
+				LOG.info("tx connected to: {}", clientSocket.getInetAddress());
 			} catch (IOException e) {
 				LOG.error("unable to setup tx connectin", e);
 			}
@@ -222,8 +224,10 @@ public class TcpTransceiver implements Transceiver {
 					public void run() {
 						while (!Thread.currentThread().isInterrupted()) {
 							try (Socket client = server.accept()) {
+								LOG.info("rx client connected: {}:{}", client.getInetAddress(), client.getPort());
 								handleConnect();
 								read(client.getInputStream());
+								LOG.info("rx client disconnected: {}:{}", client.getInetAddress(), client.getPort());
 							} catch (Exception e) {
 								LOG.error("unable to handle", e);
 							}
