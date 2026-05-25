@@ -130,7 +130,8 @@ public class NodeTest {
 		assertTestSeqPacket(1, true);
 
 		// less than expected
-		ground.onRx(createPlcw(false, 0));
+		byte[] plcw = createPlcw(false, 0);
+		ground.onRx(plcw, 0, plcw.length);
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 
@@ -144,7 +145,8 @@ public class NodeTest {
 		assertTestSeqPacket(1, true);
 
 		// more than expected
-		ground.onRx(createPlcw(false, 3));
+		byte[] plcw = createPlcw(false, 3);
+		ground.onRx(plcw, 0, plcw.length);
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 
@@ -157,7 +159,8 @@ public class NodeTest {
 
 		assertTestSeqPacket(1, true);
 
-		ground.onRx(createPlcw(true, 1));
+		byte[] plcw = createPlcw(true, 1);
+		ground.onRx(plcw, 0, plcw.length);
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 
@@ -683,7 +686,7 @@ public class NodeTest {
 		});
 	}
 	// @formatter:on
- 
+
 	private void resetSequences(int seq) {
 		ground.getState().setVs(seq);
 		ground.getState().setVvs(seq);
