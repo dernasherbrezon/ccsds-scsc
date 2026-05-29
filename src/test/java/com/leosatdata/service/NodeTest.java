@@ -131,7 +131,7 @@ public class NodeTest {
 
 		// less than expected
 		byte[] plcw = createPlcw(false, 0);
-		ground.onRx(plcw, 0, plcw.length);
+		ground.onRx(plcw);
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 
@@ -146,7 +146,7 @@ public class NodeTest {
 
 		// more than expected
 		byte[] plcw = createPlcw(false, 3);
-		ground.onRx(plcw, 0, plcw.length);
+		ground.onRx(plcw);
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 
@@ -160,7 +160,7 @@ public class NodeTest {
 		assertTestSeqPacket(1, true);
 
 		byte[] plcw = createPlcw(true, 1);
-		ground.onRx(plcw, 0, plcw.length);
+		ground.onRx(plcw);
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.COP_P_LOSS_SYNCHRONIZATION), true);
 		groundTransceiver.setRxFrameFilter(new DefaultFrameFilter());
 

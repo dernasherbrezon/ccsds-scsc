@@ -15,7 +15,7 @@ class DelayedRxTask implements Runnable {
 	@Override
 	public void run() {
 		if (filter == null || filter.accept(null, null, data)) {
-			callback.onRx(data, 0, data.length);
+			callback.onRx(data);
 		}
 	}
 

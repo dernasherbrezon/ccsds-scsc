@@ -235,8 +235,8 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	}
 
 	@Override
-	public void onRx(byte[] data, int offset, int length) {
-		Object frame = frameSublayer.onRx(data, offset, length);
+	public void onRx(byte[] data) {
+		Object frame = frameSublayer.onRx(data);
 		if (frame == null) {
 			return;
 		}

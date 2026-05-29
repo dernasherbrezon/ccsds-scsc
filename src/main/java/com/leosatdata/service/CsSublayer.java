@@ -18,7 +18,7 @@ public class CsSublayer {
 	private final boolean appendCrc;
 
 	public CsSublayer(Configuration config) {
-		this.asm = Util.hexStringToByteArray(config.getProperty("cs.sublayer.asm"));
+		this.asm = Util.hexToBytes(config.getProperty("cs.sublayer.asm"));
 		this.prependAsm = config.getBoolean("cs.sublayer.asm.prepend");
 		this.appendCrc = config.getBoolean("cs.sublayer.crc.append");
 	}

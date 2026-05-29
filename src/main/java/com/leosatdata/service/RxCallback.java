@@ -2,6 +2,6 @@ package com.leosatdata.service;
 
 public interface RxCallback {
 
-	void onRx(byte[] data, int offset, int length);
+	void onRx(byte[] data);
 
 }

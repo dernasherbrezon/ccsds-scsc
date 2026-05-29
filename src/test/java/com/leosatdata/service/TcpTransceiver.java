@@ -243,6 +243,7 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	private void read(InputStream is) {
+		TcpCsSublayer csSublayer = new TcpCsSublayer(config, rxCallback);
 		while (!Thread.currentThread().isInterrupted()) {
 			int actuallyRead;
 			try {
@@ -256,7 +257,7 @@ public class TcpTransceiver implements Transceiver {
 				handleDisconnect();
 				return;
 			}
-			rxCallback.onRx(buffer, 0, actuallyRead);
+			csSublayer.handle(buffer, 0, actuallyRead);
 		}
 	}
 

@@ -495,13 +495,13 @@ class FrameSublayer {
 	}
 
 	// can be called on a separate thread, shouldn't share any state with encode
-	public Object onRx(byte[] data, int offset, int length) {
-		Object result = onRxInternal(data, offset, length);
+	public Object onRx(byte[] data) {
+		Object result = onRxInternal(data);
 		debug(true, result);
 		return result;
 	}
 
-	private Object onRxInternal(byte[] data, int offset, int length) {
+	private Object onRxInternal(byte[] data) {
 		data = csSublayer.decode(data);
 		if (data == null) {
 			return null;
