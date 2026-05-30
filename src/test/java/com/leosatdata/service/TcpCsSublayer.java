@@ -28,10 +28,30 @@ public class TcpCsSublayer {
 	// nothing to send
 	// thus buffer here do a bit of C&S layer
 	public void handle(byte[] data, int offset, int length) {
-		// FIXME check if length is beying internal buffer
-		System.arraycopy(data, offset, buffer, currentOffset, length);
-		currentOffset += length;
+		int toHandle = length;
+		int inputOffset = offset;
+		while (toHandle > 0) {
+			int toCopy;
+			if (currentOffset + toHandle > buffer.length) {
+				toCopy = buffer.length - currentOffset;
+			} else {
+				toCopy = toHandle;
+			}
+			System.arraycopy(data, inputOffset, buffer, currentOffset, toCopy);
+			currentOffset += toCopy;
 
+			checkForPdu();
+
+			// nothing found and buffer is full. reset it
+			if (currentOffset == buffer.length) {
+				currentOffset = 0;
+			}
+			toHandle -= toCopy;
+			inputOffset += toCopy;
+		}
+	}
+
+	private void checkForPdu() {
 		List<Integer> asmIndexes = new ArrayList<>();
 		for (int i = 0; i < currentOffset - asm.length; i++) {
 			if (checkAsm(buffer, i)) {
@@ -72,10 +92,13 @@ public class TcpCsSublayer {
 			}
 
 			// handle tail
-			if (crcMatch(asmIndexes.get(asmIndexes.size() - 1), currentOffset)) {
-				handle(asmIndexes.get(asmIndexes.size() - 1), currentOffset);
-				currentOffset = 0;
-				newHead = -1;
+			for (int start = 0; start < asmIndexes.size(); start++) {
+				if (crcMatch(asmIndexes.get(start), currentOffset)) {
+					handle(asmIndexes.get(start), currentOffset);
+					currentOffset = 0;
+					newHead = -1;
+					break;
+				}
 			}
 
 			// shift non-processed to the beginning of the buffer
@@ -85,7 +108,6 @@ public class TcpCsSublayer {
 				currentOffset = newLength;
 			}
 		}
-
 	}
 
 	private void handle(int startIndex, int endIndex) {
@@ -98,6 +120,10 @@ public class TcpCsSublayer {
 	private boolean crcMatch(int startIndex, int endIndex) {
 		int pduLength = endIndex - startIndex;
 		if (pduLength <= 0) {
+			return false;
+		}
+		int payloadLength = pduLength - asm.length - 4;
+		if (payloadLength <= 0) {
 			return false;
 		}
 		long actualCrc = ((buffer[endIndex - 4] & 0xFFL) << 24) | ((buffer[endIndex - 3] & 0xFFL) << 16) | ((buffer[endIndex - 2] & 0xFFL) << 8) | (buffer[endIndex - 1] & 0xFFL);

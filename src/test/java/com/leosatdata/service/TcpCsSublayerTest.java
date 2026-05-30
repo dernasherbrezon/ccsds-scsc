@@ -1,6 +1,7 @@
 package com.leosatdata.service;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Properties;
 
@@ -20,15 +21,67 @@ public class TcpCsSublayerTest {
 
 	@Test
 	public void testSuccess() throws Exception {
+		// small payload
 		handle("01");
 		assertArrayEquals(Util.hexToBytes("FAF32001A016D052"), rx.getFrames().get(0));
+
+		// bigger payload
+		rx.getFrames().clear();
+		handle("01020304");
+		assertArrayEquals(Util.hexToBytes("FAF3200102030429308CF4"), rx.getFrames().get(0));
+
+		// payload with just asm in it
+		rx.getFrames().clear();
+		handle("FAF320");
+		assertArrayEquals(Util.hexToBytes("FAF320FAF3209A3EB68F"), rx.getFrames().get(0));
+
+		// payload with asm and some extra data
+		rx.getFrames().clear();
+		handle("01FAF320");
+		assertArrayEquals(Util.hexToBytes("FAF32001FAF3206F78F48A"), rx.getFrames().get(0));
+
+		// 2 frames in the same update
+		rx.getFrames().clear();
+		handle(concat(createPdu("0102"), createPdu("0909")));
+		assertArrayEquals(Util.hexToBytes("FAF320010203F89F52"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF32009090765F7D1"), rx.getFrames().get(1));
+
+		// partial frame
+		rx.getFrames().clear();
+		byte[] frame = createPdu("0102");
+		handle(cut(frame, 0, 4));
+		assertTrue(rx.getFrames().isEmpty());
+		handle(cut(frame, 4, frame.length));
+		assertArrayEquals(Util.hexToBytes("FAF320010203F89F52"), rx.getFrames().get(0));
+
+		// partial frame with enough data for crc check
+		rx.getFrames().clear();
+		frame = createPdu("0102");
+		int length = 3 + 4 + 1;
+		handle(cut(frame, 0, length));
+		assertTrue(rx.getFrames().isEmpty());
+		handle(cut(frame, length, frame.length));
+		assertArrayEquals(Util.hexToBytes("FAF320010203F89F52"), rx.getFrames().get(0));
+
+		// idle data is not supported
+		rx.getFrames().clear();
+		handle(concat(concat(createPdu("0102"), new byte[] { 01, 02 }), createPdu("0909")));
+		assertArrayEquals(Util.hexToBytes("FAF32009090765F7D1"), rx.getFrames().get(0));
+
+		// write beyound max frame length
+		rx.getFrames().clear();
+		handle(concat(concat(createPdu("0102"), createPdu("0909")), createPdu("AAAA")));
+		assertArrayEquals(Util.hexToBytes("FAF320010203F89F52"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF32009090765F7D1"), rx.getFrames().get(1));
+		assertArrayEquals(Util.hexToBytes("FAF320AAAA06D100E1"), rx.getFrames().get(2));
+
 	}
 
 	@Before
 	public void start() {
 		Properties props = new Properties();
 		props.put("cs.sublayer.asm", "FAF320");
-		props.put("maximum_frame_length", "100");
+		props.put("maximum_frame_length", "20");
 		props.put("cs.sublayer.asm.prepend", "true");
 		props.put("cs.sublayer.crc.append", "true");
 		Configuration config = new Configuration(props);
@@ -36,14 +89,17 @@ public class TcpCsSublayerTest {
 		cs = new TcpCsSublayer(config, rx);
 	}
 
-	private void handle(String array) {
-		byte[] bytes = createFrame(array);
-		cs.handle(bytes, 0, bytes.length);
+	private void handle(String frame) {
+		handle(createPdu(frame));
 	}
 
-	private static byte[] createFrame(String array) {
+	private void handle(byte[] pdu) {
+		cs.handle(pdu, 0, pdu.length);
+	}
+
+	private static byte[] createPdu(String frame) {
 		byte[] asm = Util.hexToBytes(ASM);
-		byte[] bytes = Util.hexToBytes(array);
+		byte[] bytes = Util.hexToBytes(frame);
 		long crc = Crc32c.calculate(bytes);
 		byte[] result = new byte[asm.length + bytes.length + 4];
 		System.arraycopy(asm, 0, result, 0, asm.length);
@@ -55,4 +111,16 @@ public class TcpCsSublayerTest {
 		return result;
 	}
 
+	private static byte[] concat(byte[] a1, byte[] a2) {
+		byte[] result = new byte[a1.length + a2.length];
+		System.arraycopy(a1, 0, result, 0, a1.length);
+		System.arraycopy(a2, 0, result, a1.length, a2.length);
+		return result;
+	}
+
+	private static byte[] cut(byte[] array, int from, int to) {
+		byte[] result = new byte[to - from];
+		System.arraycopy(array, from, result, 0, result.length);
+		return result;
+	}
 }
