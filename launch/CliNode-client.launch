@@ -13,7 +13,7 @@
     <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
     <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.leosatdata.service.CliNode"/>
     <stringAttribute key="org.eclipse.jdt.launching.MODULE_NAME" value="ccsds235.1"/>
-    <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="src/test/resources/cli-client.properties"/>
+    <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="src/test/resources/ground.properties src/test/resources/cli-client.properties"/>
     <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="ccsds235.1"/>
     <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>
 </launchConfiguration>

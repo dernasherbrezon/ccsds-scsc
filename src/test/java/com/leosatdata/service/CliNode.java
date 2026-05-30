@@ -21,6 +21,7 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.Util;
 
 public class CliNode {
 
@@ -29,7 +30,7 @@ public class CliNode {
 	private Configuration groundConfig;
 	private TcpTransceiver groundTransceiver;
 	private NodeCallback groundCallback;
-	private MockUserDataCallback groundDataCallback;
+	private UserDataCallback groundDataCallback;
 	private Node ground;
 
 	public static void main(String[] args) throws Exception {
@@ -41,7 +42,6 @@ public class CliNode {
 		props.putAll(NodeTest.load("src/main/resources/mib.properties"));
 		props.putAll(NodeTest.load("src/main/resources/transceiver.properties"));
 		props.putAll(NodeTest.load("src/main/resources/custom.properties"));
-		props.putAll(NodeTest.load("src/test/resources/ground.properties"));
 		for (String cur : args) {
 			props.putAll(NodeTest.load(cur));
 		}
@@ -55,7 +55,13 @@ public class CliNode {
 				LOG.info("received event: {}", event);
 			}
 		};
-		groundDataCallback = new MockUserDataCallback();
+		groundDataCallback = new UserDataCallback() {
+
+			@Override
+			public void onUserData(byte[] payload, int portId) {
+				System.out.println("Received: \"" + new String(payload) + "\" (" + Util.bytesToHex(payload) + ")");
+			}
+		};
 		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
 		ground.start();
 
