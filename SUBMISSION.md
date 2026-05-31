@@ -47,7 +47,24 @@ mvn test
 
 #### Run Examples
 
-TBD
+Run server
+
+```
+mvn exec:java@server
+```
+
+Then run ```listen``` command. This will put node into CONNECTING_L state.
+
+Run client
+
+```
+mvn exec:java@client
+```
+
+Then run ```connect``` command. This will put node into CONNECTING_T state.
+
+After session established, it is possible to type in the console to send message to the other node.
+
 
 ### Gateway Status
 
@@ -119,7 +136,7 @@ TBD
 | ----- | ------- | ----- |
 | PhysicalChannel interface defined | | Transceiver |
 | Mock channel works for unit testing | | NullTransceiver |
-| TCP channel enables ground testing | | |
+| TCP channel enables ground testing | | TcpTransceiver |
 | UDP channel enables loss testing | | |
 | PCID support works (channels 0 and 1) | | |
 | Channel status reporting works | | |
@@ -131,20 +148,20 @@ TBD
 | All states implemented (Init, Hailing, Data, Reconnecting, Termination) | | FullDuplexMac/HalfDuplexMac |
 | Full Duplex state tables (Tables 5-1, 5-2) | | FullDuplexMac |
 | Half Duplex state tables (Tables 5-1, 5-3) | | HalfDuplexMac |
-| Simplex state tables (Tables 5-1, 5-4) | | |
+| Simplex state tables (Tables 5-1, 5-4) | | SimplexMac |
 | State transitions match CCSDS 235.1 tables exactly | | |
 | Invalid transitions rejected | | |
-| State history logging implemented | | |
+| State history logging implemented | | log4j.logger.state |
 
 ### Gateway 6: Hailing & Session Control
 
 | Check | Pass/Fail | Evidence |
 | ----- | ------- | ----- |
-| Hailing works (caller and responder) | | |
-| Caller controller implemented | | |
-| Responder controller implemented | | |
-| Session lifecycle completes | | |
-| Reconnect (rehailing) works | | |
+| Hailing works (caller and responder) | | NodeTest.testStartSendStop |
+| Caller controller implemented | | NodeTest.testStartSendStop |
+| Responder controller implemented | | NodeTest.testStartSendStop |
+| Session lifecycle completes | | NodeTest.testStartSendStop |
+| Reconnect (rehailing) works | | NodeTest.testReconnectAfterCarrierLoss |
 | COMM_CHANGE support works | | NodeTest.testCommChange |
 | Session callbacks implemented | | NodeTest.testStartSendStop |
 | Thread safety verified | | |

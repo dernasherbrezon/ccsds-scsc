@@ -1,5 +1,7 @@
 package com.leosatdata.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -28,14 +30,20 @@ public class PerfTest {
 		org.apache.log4j.Logger tx = org.apache.log4j.Logger.getLogger("tx");
 		tx.setLevel(Level.FATAL);
 
-		for (CommSettings cur : NodeTest.getSupportedSettingsCombination()) {
-			LOG.info("comm settings: {}", cur);
-			stress(cur);
-			LOG.info("=================");
+		List<Duplex> duplexModes = new ArrayList<>();
+		duplexModes.add(Duplex.FULL_DUPLEX);
+		duplexModes.add(Duplex.HALF_DUPLEX);
+
+		for (Duplex duplex : duplexModes) {
+			for (CommSettings cur : NodeTest.getSupportedSettingsCombination()) {
+				LOG.info("comm settings: {}", cur);
+				stress(duplex, cur);
+				LOG.info("=================");
+			}
 		}
 	}
 
-	private static void stress(CommSettings commSettings) throws Exception, InterruptedException {
+	private static void stress(Duplex duplex, CommSettings commSettings) throws Exception, InterruptedException {
 		Configuration groundConfig;
 		NullTransceiver groundTransceiver;
 		MockNodeCallback groundCallback;
@@ -94,9 +102,9 @@ public class PerfTest {
 		ground.start();
 		satellite.start();
 
-		satellite.setDuplex(Duplex.FULL_DUPLEX);
+		satellite.setDuplex(duplex);
 		satellite.waitForSession();
-		ground.setDuplex(Duplex.FULL_DUPLEX);
+		ground.setDuplex(duplex);
 		if (commSettings.getSpduVersion() == 1) {
 			ground.setCommParameters(NodeTest.createType1CommParameters(DataRate.R128C));
 		} else if (commSettings.getSpduVersion() == 2) {

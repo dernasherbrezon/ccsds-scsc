@@ -72,6 +72,41 @@
 				<artifactId>maven-resources-plugin</artifactId>
 				<version>3.3.1</version>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.6.3</version>
+				<executions>
+					<execution>
+						<id>client</id>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<classpathScope>test</classpathScope>
+							<mainClass>com.leosatdata.service.CliNode</mainClass>
+							<arguments>
+								<argument>${project.basedir}/src/test/resources/ground.properties</argument>
+								<argument>${project.basedir}/src/test/resources/cli-client.properties</argument>
+							</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>server</id>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<classpathScope>test</classpathScope>
+							<mainClass>com.leosatdata.service.CliNode</mainClass>
+							<arguments>
+								<argument>${project.basedir}/src/test/resources/satellite.properties</argument>
+								<argument>${project.basedir}/src/test/resources/cli-server.properties</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
