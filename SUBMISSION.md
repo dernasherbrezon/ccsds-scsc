@@ -70,11 +70,11 @@ After session established, it is possible to type in the console to send message
 
 | Gateway | Status | Notes |
 | ----- | ------- | ----- |
-| 0 — Design & Architecture | [ ] Complete / [x] Partial / [ ] Not Attempted | |
+| 0 — Design & Architecture | [x] Complete / [ ] Partial / [ ] Not Attempted | |
 | 1 — SPDU Layer  | [x] Complete / [ ] Partial / [ ] Not Attempted | |
 | 2 — COP-P Layer (FOP-P, FARM-P) | [x] Complete / [ ] Partial / [ ] Not Attempted | |
 | 3 — Frame Layer  | [x] Complete / [ ] Partial / [ ] Not Attempted | |
-| 4 — Physical Layer Abstraction  | [ ] Complete / [x] Partial / [ ] Not Attempted | |
+| 4 — Physical Layer Abstraction  | [x] Complete / [ ] Partial / [ ] Not Attempted | |
 | 5 — State Machine  | [x] Complete / [ ] Partial / [ ] Not Attempted | |
 | 6 — Hailing & Session Control  | [x] Complete / [ ] Partial / [ ] Not Attempted | |
 | 7 — Integration Testing | [ ] Complete / [x] Partial / [ ] Not Attempted | |
