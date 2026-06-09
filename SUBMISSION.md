@@ -23,6 +23,8 @@
 
 ### Architecture Summary
 
+![diagram](https://github.com/dernasherbrezon/ccsds235.1/blob/master/docs/diagram.svg)
+
 ### Build & Run Instructions
 
 #### Prerequisites
