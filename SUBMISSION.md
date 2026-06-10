@@ -25,6 +25,25 @@
 
 ![diagram](https://github.com/dernasherbrezon/ccsds235.1/blob/main/docs/diagram.svg)
 
+Key features:
+
+ * Different queues used for passing data between different threads
+ * Duplex state machine selected by SET_DUPLEX directive
+ * All state machines process every event from the event queue
+ * Frame sublayer is used as IO sublayer (not shown on the diagram) for simplicity of implementation
+ * Transceiver implementation might implement physical interrupt signals for different events. These events passed to the event queue for processing
+
+#### Threading model
+
+![threads](https://github.com/dernasherbrezon/ccsds235.1/blob/main/docs/threads.svg)
+
+Key features:
+
+ * Single TX thread to execute all state machines, frame selection and tx
+ * Transceiver can generate interrupts for different physical signals, they are handled on RX thread
+ * Sending data is asynchronous operation: transceiver will generate TX_COMPLETE event when data physically fully modulated and sent over radio
+ * All notifications to the vehicle controller executed on the TX thread. 
+
 ### Build & Run Instructions
 
 #### Prerequisites
