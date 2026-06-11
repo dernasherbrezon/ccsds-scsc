@@ -1,7 +1,7 @@
 package com.leosatdata.service;
 
 import com.leosatdata.model.Coding;
-import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
 
@@ -14,7 +14,7 @@ public interface Transceiver {
 
 	// RX parameters
 	void setRxSymbolRate(float baud);
-	void setRxDataModulation(DataModulation modulation);
+	void setRxLineCoding(LineCoding modulation);
 	void setRxFrequency(float frequency);
 	void setRxDataEncoding(Coding encoding);
 	void setRxPolarization(Polarization polarization);
@@ -25,7 +25,7 @@ public interface Transceiver {
 
 	// TX parameters
 	void setTxSymbolRate(float baud);
-	void setTxDataModulation(DataModulation modulation);
+	void setTxLineCoding(LineCoding modulation);
 	void setTxFrequency(float frequency);
 	void setTxDataEncoding(Coding encoding);
 	void setTxPolarization(Polarization polarization);

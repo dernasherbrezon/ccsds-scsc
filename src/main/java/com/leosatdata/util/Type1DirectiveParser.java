@@ -5,7 +5,7 @@ import java.io.IOException;
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
-import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Direction;
 import com.leosatdata.model.Duplex;
@@ -79,7 +79,7 @@ public class Type1DirectiveParser {
 				plExtensions.setUseExtendedFreqSet(dirStream.readBoolean());
 				plExtensions.setUseExtendedDataRate(dirStream.readBoolean());
 				plExtensions.setCarrierModulation(CarrierModulation.valueOfCode(dirStream.readUnsignedInt(2)));
-				plExtensions.setDataModulation(DataModulation.valueOfCode(dirStream.readUnsignedInt(2)));
+				plExtensions.setLineCoding(LineCoding.valueOfCode(dirStream.readUnsignedInt(2)));
 				plExtensions.setModeSelect(ModeSelect.valueOfCode(dirStream.readUnsignedInt(2)));
 				plExtensions.setScrambler(ScramblerType.valueOfCode(dirStream.readUnsignedInt(2)));
 				plExtensions.setDifferentialEncoding(dirStream.readBoolean());
@@ -169,7 +169,7 @@ public class Type1DirectiveParser {
 		bos.writeBoolean(params.isUseExtendedFreqSet());
 		bos.writeBoolean(params.isUseExtendedDataRate());
 		bos.writeUnsignedInt(2, params.getCarrierModulation().getCode());
-		bos.writeUnsignedInt(2, params.getDataModulation().getCode());
+		bos.writeUnsignedInt(2, params.getLineCoding().getCode());
 		bos.writeUnsignedInt(2, params.getModeSelect().getCode());
 		bos.writeUnsignedInt(2, params.getScrambler().getCode());
 		bos.writeBoolean(params.isDifferentialEncoding());

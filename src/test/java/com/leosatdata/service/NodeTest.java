@@ -33,7 +33,7 @@ import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.DataEncoding;
-import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
@@ -803,7 +803,7 @@ public class NodeTest {
 
 		PlExtensions txExt = new PlExtensions();
 		txExt.setCarrierModulation(CarrierModulation.PSK);
-		txExt.setDataModulation(DataModulation.NRZ_L);
+		txExt.setLineCoding(LineCoding.MANCHESTER);
 		txExt.setDifferentialEncoding(false);
 		txExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
 		txExt.setRsCode(RsCodeType.RS255_239);
@@ -820,7 +820,7 @@ public class NodeTest {
 
 		PlExtensions rxExt = new PlExtensions();
 		rxExt.setCarrierModulation(CarrierModulation.PSK);
-		rxExt.setDataModulation(DataModulation.NRZ_L);
+		rxExt.setLineCoding(LineCoding.MANCHESTER);
 		rxExt.setDifferentialEncoding(false);
 		rxExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
 		rxExt.setRsCode(RsCodeType.RS255_239);

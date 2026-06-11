@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.Coding;
-import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
@@ -84,7 +84,7 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxDataModulation(DataModulation modulation) {
+	public void setRxLineCoding(LineCoding modulation) {
 		// do nothing
 	}
 
@@ -124,7 +124,7 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxDataModulation(DataModulation modulation) {
+	public void setTxLineCoding(LineCoding modulation) {
 		// do nothing
 	}
 

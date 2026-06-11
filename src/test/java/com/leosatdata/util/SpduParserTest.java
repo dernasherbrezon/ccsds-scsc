@@ -13,7 +13,7 @@ import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
-import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Direction;
@@ -286,7 +286,7 @@ public class SpduParserTest {
 
 		PlExtensions rxPlExt = new PlExtensions();
 		rxPlExt.setCarrierModulation(CarrierModulation.PSK);
-		rxPlExt.setDataModulation(DataModulation.NRZ_L);
+		rxPlExt.setLineCoding(LineCoding.MANCHESTER);
 		rxPlExt.setDifferentialEncoding(true);
 		rxPlExt.setDirection(Direction.RECEIVER);
 		rxPlExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
@@ -304,7 +304,7 @@ public class SpduParserTest {
 
 		PlExtensions txPlExt = new PlExtensions();
 		txPlExt.setCarrierModulation(CarrierModulation.PSK);
-		txPlExt.setDataModulation(DataModulation.NRZ_L);
+		txPlExt.setLineCoding(LineCoding.NRZ_L);
 		txPlExt.setDifferentialEncoding(true);
 		txPlExt.setDirection(Direction.RECEIVER);
 		txPlExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);

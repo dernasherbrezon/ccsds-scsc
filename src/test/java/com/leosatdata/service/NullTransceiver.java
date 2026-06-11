@@ -5,7 +5,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.leosatdata.model.Coding;
-import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
@@ -100,7 +100,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxDataModulation(DataModulation dataModulation) {
+	public void setRxLineCoding(LineCoding dataModulation) {
 		// do nothing
 	}
 
@@ -154,7 +154,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxDataModulation(DataModulation modulation) {
+	public void setTxLineCoding(LineCoding modulation) {
 		// do nothing
 	}
 

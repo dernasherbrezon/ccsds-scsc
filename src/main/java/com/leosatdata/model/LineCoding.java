@@ -1,10 +1,10 @@
 package com.leosatdata.model;
 
-public enum DataModulation {
+public enum LineCoding {
 
 	NRZ_L, MANCHESTER, RESERVED, UNKNOWN;
 
-	public static DataModulation valueOfCode(int code) {
+	public static LineCoding valueOfCode(int code) {
 		switch (code) {
 		case 0b00:
 			return NRZ_L;

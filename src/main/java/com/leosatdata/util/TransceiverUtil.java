@@ -7,7 +7,7 @@ import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
-import com.leosatdata.model.DataModulation;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Direction;
 import com.leosatdata.model.Frequency;
@@ -99,7 +99,7 @@ public class TransceiverUtil {
 	private static PlExtensions createType1PlExtensions(Direction direction) {
 		PlExtensions result = new PlExtensions();
 		result.setCarrierModulation(CarrierModulation.PSK);
-		result.setDataModulation(DataModulation.MANCHESTER);
+		result.setLineCoding(LineCoding.MANCHESTER);
 		result.setDifferentialEncoding(false);
 		result.setDirection(direction);
 		result.setModeSelect(ModeSelect.RESIDUAL_CARRIER); // default is unclear from the spec
@@ -143,7 +143,7 @@ public class TransceiverUtil {
 			symbolRate = commParams.getDataRate().getExtendedRate();
 		}
 		transceiver.setRxSymbolRate(symbolRate);
-		transceiver.setRxDataModulation(plParams.getDataModulation());
+		transceiver.setRxLineCoding(plParams.getLineCoding());
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -152,6 +152,7 @@ public class TransceiverUtil {
 		transceiver.setRxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
 		transceiver.setRxDataEncoding(convertDataEncoding(commParams.getDataEncoding()));
 		transceiver.setRxModulation(commParams.getModulation());
+		transceiver.setRxPolarization(Polarization.RHCP); // defined in 211.1
 	}
 
 	private void applyType1TxParameters(Type1Directive params, boolean invert) {
@@ -162,7 +163,7 @@ public class TransceiverUtil {
 			symbolRate = commParams.getDataRate().getExtendedRate();
 		}
 		transceiver.setTxSymbolRate(symbolRate);
-		transceiver.setTxDataModulation(plParams.getDataModulation());
+		transceiver.setTxLineCoding(plParams.getLineCoding());
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -171,6 +172,7 @@ public class TransceiverUtil {
 		transceiver.setTxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
 		transceiver.setTxDataEncoding(convertDataEncoding(commParams.getDataEncoding()));
 		transceiver.setTxModulation(commParams.getModulation());
+		transceiver.setTxPolarization(Polarization.RHCP); // defined in 211.1
 	}
 
 	private Type5Directive createHailType5() {
@@ -244,7 +246,7 @@ public class TransceiverUtil {
 		LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
-			transceiver.setRxDataModulation(DataModulation.MANCHESTER);
+			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
 		} // FIXME other options
 		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setRxDataEncoding(params.getCoding());
@@ -255,7 +257,7 @@ public class TransceiverUtil {
 		LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
-			transceiver.setTxDataModulation(DataModulation.MANCHESTER);
+			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
 		} // FIXME other options
 		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setTxDataEncoding(params.getCoding());
@@ -266,7 +268,7 @@ public class TransceiverUtil {
 		Link2Establishment params = invert ? directive.getTxLink() : directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
-			transceiver.setRxDataModulation(DataModulation.MANCHESTER);
+			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
 		} // FIXME other options
 		transceiver.setRxFrequency(params.getFrequency());
 		transceiver.setRxDataEncoding(params.getCoding());
@@ -278,7 +280,7 @@ public class TransceiverUtil {
 		Link2Establishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
-			transceiver.setTxDataModulation(DataModulation.MANCHESTER);
+			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
 		} // FIXME other options
 		transceiver.setTxFrequency(params.getFrequency());
 		transceiver.setTxDataEncoding(params.getCoding());
