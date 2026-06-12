@@ -146,6 +146,7 @@ public class TransceiverUtil {
 		transceiver.setRxSymbolRate(symbolRate);
 		transceiver.setRxLineCoding(plParams.getLineCoding());
 		transceiver.setRxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
+		transceiver.setRxModulationIndex(ModulationIndex.MPI_3); // 60deg according to CCSDS 211.1
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -167,6 +168,7 @@ public class TransceiverUtil {
 		transceiver.setTxSymbolRate(symbolRate);
 		transceiver.setTxLineCoding(plParams.getLineCoding());
 		transceiver.setTxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
+		transceiver.setTxModulationIndex(ModulationIndex.MPI_3); // 60deg according to CCSDS 211.1
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -256,6 +258,7 @@ public class TransceiverUtil {
 			transceiver.setRxLineCoding(LineCoding.NONE);
 		}
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
+		transceiver.setRxModulationIndex(params.getModulationIndex());
 		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setRxCoding(params.getCoding());
 		transceiver.setRxCoherency(Coherency.UNKNOWN); // not clear from the spec
@@ -273,6 +276,7 @@ public class TransceiverUtil {
 			transceiver.setTxLineCoding(LineCoding.NONE);
 		}
 		transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
+		transceiver.setTxModulationIndex(params.getModulationIndex());
 		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setTxCoding(params.getCoding());
 		transceiver.setTxCoherency(Coherency.UNKNOWN); // not clear from the spec
@@ -290,6 +294,7 @@ public class TransceiverUtil {
 			transceiver.setRxLineCoding(LineCoding.NONE);
 		}
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
+		transceiver.setRxModulationIndex(params.getModulationIndex());
 		transceiver.setRxFrequency(params.getFrequency());
 		transceiver.setRxCoding(params.getCoding());
 		transceiver.setRxCoherency(params.getCoherency());
@@ -306,7 +311,8 @@ public class TransceiverUtil {
 		} else {
 			transceiver.setTxLineCoding(LineCoding.NONE);
 		}
-		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
+		transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
+		transceiver.setTxModulationIndex(params.getModulationIndex());
 		transceiver.setTxFrequency(params.getFrequency());
 		transceiver.setTxCoding(params.getCoding());
 		transceiver.setTxCoherency(params.getCoherency());
