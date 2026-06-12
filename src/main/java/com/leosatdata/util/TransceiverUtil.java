@@ -104,7 +104,7 @@ public class TransceiverUtil {
 		result.setDirection(direction);
 		result.setModeSelect(ModeSelect.RESIDUAL_CARRIER); // default is unclear from the spec
 		result.setRsCode(RsCodeType.UNKNOWN);
-		result.setScrambler(ScramblerType.BYPASS);
+		result.setScrambler(ScramblerType.NONE);
 		result.setUseExtendedDataRate(false);
 		result.setUseExtendedFreqSet(false);
 		return result;
@@ -144,6 +144,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setRxSymbolRate(symbolRate);
 		transceiver.setRxLineCoding(plParams.getLineCoding());
+		transceiver.setRxCarrierModulation(plParams.getCarrierModulation());
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -164,6 +165,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setTxSymbolRate(symbolRate);
 		transceiver.setTxLineCoding(plParams.getLineCoding());
+		transceiver.setTxCarrierModulation(plParams.getCarrierModulation());
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -247,7 +249,11 @@ public class TransceiverUtil {
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
-		} // FIXME other options
+		} else if (params.getModulation().equals(LinkModulation.PCM_PM_NRZL)) {
+			transceiver.setRxLineCoding(LineCoding.NRZ_L);
+		} else {
+			transceiver.setRxLineCoding(LineCoding.NONE);
+		}
 		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setRxDataEncoding(params.getCoding());
 		transceiver.setRxPolarization(params.getPolarization());
@@ -258,7 +264,11 @@ public class TransceiverUtil {
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
-		} // FIXME other options
+		} else if (params.getModulation().equals(LinkModulation.PCM_PM_NRZL)) {
+			transceiver.setTxLineCoding(LineCoding.NRZ_L);
+		} else {
+			transceiver.setTxLineCoding(LineCoding.NONE);
+		}
 		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setTxDataEncoding(params.getCoding());
 		transceiver.setTxPolarization(params.getPolarization());
@@ -269,7 +279,11 @@ public class TransceiverUtil {
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
-		} // FIXME other options
+		} else if (params.getModulation().equals(LinkModulation.PCM_PM_NRZL)) {
+			transceiver.setRxLineCoding(LineCoding.NRZ_L);
+		} else {
+			transceiver.setRxLineCoding(LineCoding.NONE);
+		}
 		transceiver.setRxFrequency(params.getFrequency());
 		transceiver.setRxDataEncoding(params.getCoding());
 		transceiver.setRxPolarization(params.getPolarization());
@@ -281,7 +295,11 @@ public class TransceiverUtil {
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
-		} // FIXME other options
+		} else if (params.getModulation().equals(LinkModulation.PCM_PM_NRZL)) {
+			transceiver.setTxLineCoding(LineCoding.NRZ_L);
+		} else {
+			transceiver.setTxLineCoding(LineCoding.NONE);
+		}
 		transceiver.setTxFrequency(params.getFrequency());
 		transceiver.setTxDataEncoding(params.getCoding());
 		transceiver.setTxPolarization(params.getPolarization());

@@ -2,13 +2,13 @@ package com.leosatdata.model;
 
 public enum ScramblerType {
 
-	BYPASS, CCITT, IESS, UNKNOWN;
+	NONE, CCITT, IESS, UNKNOWN;
 
 	public static ScramblerType valueOfCode(int code) {
 		switch (code) {
 		case 0b00:
 		case 0b10:
-			return BYPASS;
+			return NONE;
 		case 0b01:
 			return CCITT;
 		case 0b11:
@@ -20,7 +20,7 @@ public enum ScramblerType {
 
 	public int getCode() {
 		switch (this) {
-		case BYPASS:
+		case NONE:
 			return 0b00;
 		case CCITT:
 			return 0b01;

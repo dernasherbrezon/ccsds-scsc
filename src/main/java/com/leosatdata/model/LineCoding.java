@@ -2,7 +2,7 @@ package com.leosatdata.model;
 
 public enum LineCoding {
 
-	NRZ_L, MANCHESTER, RESERVED, UNKNOWN;
+	NRZ_L, MANCHESTER, RESERVED, NONE;
 
 	public static LineCoding valueOfCode(int code) {
 		switch (code) {
@@ -14,7 +14,7 @@ public enum LineCoding {
 		case 0b11:
 			return RESERVED;
 		default:
-			return UNKNOWN;
+			return NONE;
 		}
 	}
 

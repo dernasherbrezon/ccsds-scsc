@@ -197,7 +197,13 @@ public class NodeTest {
 	}
 
 	// TODO test failed comm change
-
+	// TODO type 1 without plextensions
+	// default pl extension:
+	// result.setCarrierModulation(CarrierModulation.PSK);
+	// result.setLineCoding(LineCoding.MANCHESTER);
+	// RESIDUAL_CARRIER - i guess derived from PM modulation
+	// modulation index of 60° ± 5%.
+	
 	@Test
 	public void testValidateSourceFrame() throws Exception {
 		// remote_spacecraft_id is configured
