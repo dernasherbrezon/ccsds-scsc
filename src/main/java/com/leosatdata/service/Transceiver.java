@@ -6,6 +6,7 @@ import com.leosatdata.model.Coherency;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.Polarization;
+import com.leosatdata.model.ScramblerType;
 
 // i.e PhysicalChannel
 public interface Transceiver {
@@ -23,9 +24,7 @@ public interface Transceiver {
 	void setRxCoherency(Coherency modulation);
 	void setRxCarrierModulation(CarrierModulation carrierModulation);
 	void setRxModulationIndex(ModulationIndex modulationIndex);
-
-	void setRxCallback(RxCallback callback);
-	RxCallback getRxCallback();
+	void setRxScrambler(ScramblerType scrambler);
 
 	// TX parameters
 	void setTxSymbolRate(float baud);
@@ -36,7 +35,11 @@ public interface Transceiver {
 	void setTxCoherency(Coherency modulation);	
 	void setTxCarrierModulation(CarrierModulation carrierModulation);
 	void setTxModulationIndex(ModulationIndex modulationIndex);
+	void setTxScrambler(ScramblerType scrambler);
 
+	// callbacks
+	void setRxCallback(RxCallback callback);
+	RxCallback getRxCallback();
 	void setTxCallback(TxCallback callback);
 	TxCallback getTxCallback();
 	void setCarrierCallback(CarrierCallback callback);
@@ -44,6 +47,7 @@ public interface Transceiver {
 	void setSymbolLockCallback(SymbolLockCallback callback);
 	SymbolLockCallback getSymbolLockCallback();
 
+	// change tx/rx state
 	void setTxState(TransceiverTxState state);
 	TransceiverTxState getTxState();
 	void setRxState(TransceiverRxState state);

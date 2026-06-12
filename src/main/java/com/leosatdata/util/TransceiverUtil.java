@@ -157,6 +157,7 @@ public class TransceiverUtil {
 		transceiver.setRxCoding(convertType1Coding(commParams.getCoding(), plParams));
 		transceiver.setRxCoherency(commParams.getCoherency());
 		transceiver.setRxPolarization(Polarization.RHCP); // defined in 211.1
+		transceiver.setRxScrambler(plParams.getScrambler());
 	}
 
 	private void applyType1TxParameters(Type1Directive params, boolean invert) {
@@ -179,6 +180,7 @@ public class TransceiverUtil {
 		transceiver.setTxCoding(convertType1Coding(commParams.getCoding(), plParams));
 		transceiver.setTxCoherency(commParams.getCoherency());
 		transceiver.setTxPolarization(Polarization.RHCP); // defined in 211.1
+		transceiver.setTxScrambler(plParams.getScrambler());
 	}
 
 	private Type5Directive createHailType5() {
@@ -264,6 +266,7 @@ public class TransceiverUtil {
 		transceiver.setRxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setRxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setRxPolarization(params.getPolarization());
+		transceiver.setRxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
 	}
 
 	private void applyType4TxParameters(Type4Directive directive, boolean invert) {
@@ -282,6 +285,7 @@ public class TransceiverUtil {
 		transceiver.setTxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setTxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setTxPolarization(params.getPolarization());
+		transceiver.setTxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
 	}
 
 	private void applyType5RxParameters(Type5Directive directive, boolean invert) {
@@ -300,6 +304,7 @@ public class TransceiverUtil {
 		transceiver.setRxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setRxCoherency(params.getCoherency());
 		transceiver.setRxPolarization(params.getPolarization());
+		transceiver.setRxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
 	}
 
 	private void applyType5TxParameters(Type5Directive directive, boolean invert) {
@@ -318,6 +323,7 @@ public class TransceiverUtil {
 		transceiver.setTxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setTxCoherency(params.getCoherency());
 		transceiver.setTxPolarization(params.getPolarization());
+		transceiver.setTxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
 	}
 
 	private static Coding convertType1Coding(Type1Coding encoding, PlExtensions params) {
