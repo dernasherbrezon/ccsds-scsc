@@ -3,18 +3,17 @@ package com.leosatdata.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.leosatdata.model.Type1CarrierModulation;
+import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
-import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Direction;
 import com.leosatdata.model.Frequency;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
-import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.Modulation;
@@ -28,7 +27,9 @@ import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.TxRxParameters;
+import com.leosatdata.model.Type1CarrierModulation;
 import com.leosatdata.model.Type1Directive;
+import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
 import com.leosatdata.service.Transceiver;
@@ -144,7 +145,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setRxSymbolRate(symbolRate);
 		transceiver.setRxLineCoding(plParams.getLineCoding());
-		transceiver.setRxCarrierModulation(plParams.getCarrierModulation());
+		transceiver.setRxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -165,7 +166,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setTxSymbolRate(symbolRate);
 		transceiver.setTxLineCoding(plParams.getLineCoding());
-		transceiver.setTxCarrierModulation(plParams.getCarrierModulation());
+		transceiver.setTxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -254,6 +255,7 @@ public class TransceiverUtil {
 		} else {
 			transceiver.setRxLineCoding(LineCoding.NONE);
 		}
+		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setRxDataEncoding(params.getCoding());
 		transceiver.setRxPolarization(params.getPolarization());
@@ -269,6 +271,7 @@ public class TransceiverUtil {
 		} else {
 			transceiver.setTxLineCoding(LineCoding.NONE);
 		}
+		transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setTxDataEncoding(params.getCoding());
 		transceiver.setTxPolarization(params.getPolarization());
@@ -284,6 +287,7 @@ public class TransceiverUtil {
 		} else {
 			transceiver.setRxLineCoding(LineCoding.NONE);
 		}
+		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxFrequency(params.getFrequency());
 		transceiver.setRxDataEncoding(params.getCoding());
 		transceiver.setRxPolarization(params.getPolarization());
@@ -300,6 +304,7 @@ public class TransceiverUtil {
 		} else {
 			transceiver.setTxLineCoding(LineCoding.NONE);
 		}
+		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxFrequency(params.getFrequency());
 		transceiver.setTxDataEncoding(params.getCoding());
 		transceiver.setTxPolarization(params.getPolarization());
@@ -316,6 +321,39 @@ public class TransceiverUtil {
 			return Coding.UNCODED;
 		default:
 			return Coding.UNKNOWN;
+		}
+	}
+
+	private static CarrierModulation convertType1CarrierModulation(Type1CarrierModulation mod) {
+		switch (mod) {
+		case FSK:
+			return CarrierModulation.FSK;
+		case NO_MODULATION:
+			return CarrierModulation.NO_MODULATION;
+		case PCM_PSK_PM:
+			return CarrierModulation.PCM_PSK_PM;
+		case QPSK:
+			return CarrierModulation.QPSK;
+		default:
+			return CarrierModulation.UNKNOWN;
+		}
+	}
+
+	private static CarrierModulation convertType4CarrierModulation(Type4CarrierModulation mod) {
+		switch (mod) {
+		case BPSK:
+			return CarrierModulation.BPSK;
+		case GMSK:
+			return CarrierModulation.GMSK;
+		case OQPSK:
+			return CarrierModulation.OQPSK;
+		case PCM_PM_BI_PHASE:
+		case PCM_PM_NRZL:
+			return CarrierModulation.PCM_PM;
+		case PCM_PSK_PM:
+			return CarrierModulation.PCM_PSK_PM;
+		default:
+			return CarrierModulation.UNKNOWN;
 		}
 	}
 
