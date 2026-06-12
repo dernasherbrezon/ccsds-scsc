@@ -158,6 +158,7 @@ public class TransceiverUtil {
 		transceiver.setRxCoherency(commParams.getCoherency());
 		transceiver.setRxPolarization(Polarization.RHCP); // defined in 211.1
 		transceiver.setRxScrambler(plParams.getScrambler());
+		transceiver.setRxDifferentialEncoding(plParams.isDifferentialEncoding());
 	}
 
 	private void applyType1TxParameters(Type1Directive params, boolean invert) {
@@ -181,6 +182,7 @@ public class TransceiverUtil {
 		transceiver.setTxCoherency(commParams.getCoherency());
 		transceiver.setTxPolarization(Polarization.RHCP); // defined in 211.1
 		transceiver.setTxScrambler(plParams.getScrambler());
+		transceiver.setTxDifferentialEncoding(plParams.isDifferentialEncoding());
 	}
 
 	private Type5Directive createHailType5() {
@@ -267,6 +269,7 @@ public class TransceiverUtil {
 		transceiver.setRxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setRxPolarization(params.getPolarization());
 		transceiver.setRxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
+		transceiver.setRxDifferentialEncoding(false); // not defined in the spec. assume false
 	}
 
 	private void applyType4TxParameters(Type4Directive directive, boolean invert) {
@@ -286,6 +289,7 @@ public class TransceiverUtil {
 		transceiver.setTxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setTxPolarization(params.getPolarization());
 		transceiver.setTxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
+		transceiver.setTxDifferentialEncoding(false); // not defined in the spec. assume false
 	}
 
 	private void applyType5RxParameters(Type5Directive directive, boolean invert) {
@@ -305,6 +309,7 @@ public class TransceiverUtil {
 		transceiver.setRxCoherency(params.getCoherency());
 		transceiver.setRxPolarization(params.getPolarization());
 		transceiver.setRxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
+		transceiver.setRxDifferentialEncoding(false); // not defined in the spec. assume false
 	}
 
 	private void applyType5TxParameters(Type5Directive directive, boolean invert) {
@@ -324,6 +329,7 @@ public class TransceiverUtil {
 		transceiver.setTxCoherency(params.getCoherency());
 		transceiver.setTxPolarization(params.getPolarization());
 		transceiver.setTxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
+		transceiver.setTxDifferentialEncoding(false); // not defined in the spec. assume false
 	}
 
 	private static ModulationIndex convertType1ModulationIndex(PlExtensions params) {

@@ -328,4 +328,14 @@ public class TcpTransceiver implements Transceiver {
 	public void setTxScrambler(ScramblerType scrambler) {
 		// do nothing
 	}
+
+	@Override
+	public void setRxDifferentialEncoding(boolean differentialEncoding) {
+		// do nothing
+	}
+
+	@Override
+	public void setTxDifferentialEncoding(boolean differentialEncoding) {
+		// do nothing
+	}
 }

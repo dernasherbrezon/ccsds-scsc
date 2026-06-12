@@ -25,6 +25,7 @@ public interface Transceiver {
 	void setRxCarrierModulation(CarrierModulation carrierModulation);
 	void setRxModulationIndex(ModulationIndex modulationIndex);
 	void setRxScrambler(ScramblerType scrambler);
+	void setRxDifferentialEncoding(boolean differentialEncoding);
 
 	// TX parameters
 	void setTxSymbolRate(float baud);
@@ -36,6 +37,7 @@ public interface Transceiver {
 	void setTxCarrierModulation(CarrierModulation carrierModulation);
 	void setTxModulationIndex(ModulationIndex modulationIndex);
 	void setTxScrambler(ScramblerType scrambler);
+	void setTxDifferentialEncoding(boolean differentialEncoding);
 
 	// callbacks
 	void setRxCallback(RxCallback callback);
