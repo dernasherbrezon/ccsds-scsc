@@ -17,7 +17,7 @@ public interface Transceiver {
 	void setRxSymbolRate(float baud);
 	void setRxLineCoding(LineCoding modulation);
 	void setRxFrequency(float frequency);
-	void setRxDataEncoding(Coding encoding);
+	void setRxCoding(Coding encoding);
 	void setRxPolarization(Polarization polarization);
 	void setRxModulation(Modulation modulation);
 	void setRxCarrierModulation(CarrierModulation carrierModulation);
@@ -29,7 +29,7 @@ public interface Transceiver {
 	void setTxSymbolRate(float baud);
 	void setTxLineCoding(LineCoding modulation);
 	void setTxFrequency(float frequency);
-	void setTxDataEncoding(Coding encoding);
+	void setTxCoding(Coding encoding);
 	void setTxPolarization(Polarization polarization);
 	void setTxModulation(Modulation modulation);	
 	void setTxCarrierModulation(CarrierModulation carrierModulation);

@@ -95,7 +95,7 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxDataEncoding(Coding encoding) {
+	public void setRxCoding(Coding encoding) {
 		// do nothing
 	}
 
@@ -135,7 +135,7 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxDataEncoding(Coding encoding) {
+	public void setTxCoding(Coding encoding) {
 		// do nothing
 	}
 

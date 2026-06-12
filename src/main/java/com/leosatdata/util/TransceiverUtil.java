@@ -152,7 +152,7 @@ public class TransceiverUtil {
 		}
 		String direction = invert ? "f" : "r";
 		transceiver.setRxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
-		transceiver.setRxDataEncoding(convertDataEncoding(commParams.getDataEncoding()));
+		transceiver.setRxCoding(convertDataEncoding(commParams.getDataEncoding()));
 		transceiver.setRxModulation(commParams.getModulation());
 		transceiver.setRxPolarization(Polarization.RHCP); // defined in 211.1
 	}
@@ -173,7 +173,7 @@ public class TransceiverUtil {
 		}
 		String direction = invert ? "r" : "f";
 		transceiver.setTxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
-		transceiver.setTxDataEncoding(convertDataEncoding(commParams.getDataEncoding()));
+		transceiver.setTxCoding(convertDataEncoding(commParams.getDataEncoding()));
 		transceiver.setTxModulation(commParams.getModulation());
 		transceiver.setTxPolarization(Polarization.RHCP); // defined in 211.1
 	}
@@ -257,7 +257,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
-		transceiver.setRxDataEncoding(params.getCoding());
+		transceiver.setRxCoding(params.getCoding());
 		transceiver.setRxPolarization(params.getPolarization());
 	}
 
@@ -273,7 +273,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
-		transceiver.setTxDataEncoding(params.getCoding());
+		transceiver.setTxCoding(params.getCoding());
 		transceiver.setTxPolarization(params.getPolarization());
 	}
 
@@ -289,7 +289,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxFrequency(params.getFrequency());
-		transceiver.setRxDataEncoding(params.getCoding());
+		transceiver.setRxCoding(params.getCoding());
 		transceiver.setRxPolarization(params.getPolarization());
 		transceiver.setRxModulation(params.getCoherency());
 	}
@@ -306,7 +306,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxFrequency(params.getFrequency());
-		transceiver.setTxDataEncoding(params.getCoding());
+		transceiver.setTxCoding(params.getCoding());
 		transceiver.setTxPolarization(params.getPolarization());
 		transceiver.setTxModulation(params.getCoherency());
 	}

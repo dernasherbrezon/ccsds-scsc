@@ -135,7 +135,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxDataEncoding(Coding dataEncoding) {
+	public void setRxCoding(Coding dataEncoding) {
 		// do nothing
 	}
 
@@ -199,7 +199,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxDataEncoding(Coding encoding) {
+	public void setTxCoding(Coding encoding) {
 		// do nothing
 	}
 
