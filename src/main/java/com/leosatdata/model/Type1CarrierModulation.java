@@ -1,16 +1,16 @@
 package com.leosatdata.model;
 
-public enum CarrierModulation {
+public enum Type1CarrierModulation {
 
 	NO_MODULATION(0b00), 
-	PSK(0b01), // Used is PM (phase modulation) in CCSDS 211.1
+	PCM_PSK_PM(0b01), // Used as PM (phase modulation) in CCSDS 211.1
 	FSK(0b10),
 	QPSK(0b11),
 	UNKNOWN(255);
 
 	private final int code;
 
-	private CarrierModulation(int code) {
+	private Type1CarrierModulation(int code) {
 		this.code = code;
 	}
 
@@ -18,8 +18,8 @@ public enum CarrierModulation {
 		return code;
 	}
 
-	public static CarrierModulation valueOfCode(int code) {
-		for (CarrierModulation cur : values()) {
+	public static Type1CarrierModulation valueOfCode(int code) {
+		for (Type1CarrierModulation cur : values()) {
 			if (cur.code == code) {
 				return cur;
 			}

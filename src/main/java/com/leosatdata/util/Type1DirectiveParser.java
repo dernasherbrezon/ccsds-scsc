@@ -2,7 +2,7 @@ package com.leosatdata.util;
 
 import java.io.IOException;
 
-import com.leosatdata.model.CarrierModulation;
+import com.leosatdata.model.Type1CarrierModulation;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.LineCoding;
@@ -78,7 +78,7 @@ public class Type1DirectiveParser {
 				plExtensions.setDirection(Direction.valueOfCode(dirStream.readUnsignedInt(1)));
 				plExtensions.setUseExtendedFreqSet(dirStream.readBoolean());
 				plExtensions.setUseExtendedDataRate(dirStream.readBoolean());
-				plExtensions.setCarrierModulation(CarrierModulation.valueOfCode(dirStream.readUnsignedInt(2)));
+				plExtensions.setCarrierModulation(Type1CarrierModulation.valueOfCode(dirStream.readUnsignedInt(2)));
 				plExtensions.setLineCoding(LineCoding.valueOfCode(dirStream.readUnsignedInt(2)));
 				plExtensions.setModeSelect(ModeSelect.valueOfCode(dirStream.readUnsignedInt(2)));
 				plExtensions.setScrambler(ScramblerType.valueOfCode(dirStream.readUnsignedInt(2)));

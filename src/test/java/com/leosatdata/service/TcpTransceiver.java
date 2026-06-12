@@ -19,6 +19,7 @@ import com.leosatdata.model.Coding;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.Polarization;
+import com.leosatdata.model.Type1CarrierModulation;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
 
@@ -294,5 +295,15 @@ public class TcpTransceiver implements Transceiver {
 
 	public void setTxDelay(Long txDelay) {
 		this.txDelay = txDelay;
+	}
+
+	@Override
+	public void setRxCarrierModulation(Type1CarrierModulation carrierModulation) {
+		// do nothing
+	}
+
+	@Override
+	public void setTxCarrierModulation(Type1CarrierModulation carrierModulation) {
+		// do nothing
 	}
 }

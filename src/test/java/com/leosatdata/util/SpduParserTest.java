@@ -9,7 +9,7 @@ import java.util.Properties;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.leosatdata.model.CarrierModulation;
+import com.leosatdata.model.Type1CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
@@ -22,7 +22,7 @@ import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
-import com.leosatdata.model.LinkModulation;
+import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.Modulation;
@@ -116,7 +116,7 @@ public class SpduParserTest {
 		rx.setSymbolRate(8400);
 		rx.setDemandQuery(NegotiationType2.DEMAND);
 		rx.setModulationIndex(ModulationIndex.M0);
-		rx.setModulation(LinkModulation.BPSK);
+		rx.setCarrierModulation(Type4CarrierModulation.BPSK);
 		rx.setPolarization(Polarization.LHCP);
 		rx.setTransmitToken(false);
 		rx.setAosFrameLength(23);
@@ -133,7 +133,7 @@ public class SpduParserTest {
 		tx.setSymbolRate(8400);
 		tx.setDemandQuery(NegotiationType2.DEMAND);
 		tx.setModulationIndex(ModulationIndex.M0);
-		tx.setModulation(LinkModulation.BPSK);
+		tx.setCarrierModulation(Type4CarrierModulation.BPSK);
 		tx.setPolarization(Polarization.LHCP);
 		tx.setTransmitToken(false);
 		tx.setAosFrameLength(23);
@@ -189,7 +189,7 @@ public class SpduParserTest {
 		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setFreqChannel(3);
 		rx.setLinkSnr(5);
-		rx.setModulation(LinkModulation.BPSK);
+		rx.setCarrierModulation(Type4CarrierModulation.BPSK);
 		rx.setModulationIndex(ModulationIndex.M0);
 		rx.setPolarization(Polarization.LHCP);
 		rx.setQueryResponse(QueryResponse.UNKNOWN);
@@ -204,7 +204,7 @@ public class SpduParserTest {
 		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setFreqChannel(5);
 		tx.setLinkSnr(1);
-		tx.setModulation(LinkModulation.BPSK);
+		tx.setCarrierModulation(Type4CarrierModulation.BPSK);
 		tx.setModulationIndex(ModulationIndex.M0);
 		tx.setPolarization(Polarization.LHCP);
 		tx.setQueryResponse(QueryResponse.UNKNOWN);
@@ -285,7 +285,7 @@ public class SpduParserTest {
 		rxParams.setModulation(Modulation.COHERENT_PSK);
 
 		PlExtensions rxPlExt = new PlExtensions();
-		rxPlExt.setCarrierModulation(CarrierModulation.PSK);
+		rxPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		rxPlExt.setLineCoding(LineCoding.MANCHESTER);
 		rxPlExt.setDifferentialEncoding(true);
 		rxPlExt.setDirection(Direction.RECEIVER);
@@ -303,7 +303,7 @@ public class SpduParserTest {
 		txParams.setModulation(Modulation.COHERENT_PSK);
 
 		PlExtensions txPlExt = new PlExtensions();
-		txPlExt.setCarrierModulation(CarrierModulation.PSK);
+		txPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		txPlExt.setLineCoding(LineCoding.NRZ_L);
 		txPlExt.setDifferentialEncoding(true);
 		txPlExt.setDirection(Direction.RECEIVER);

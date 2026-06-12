@@ -3,7 +3,7 @@ package com.leosatdata.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.leosatdata.model.CarrierModulation;
+import com.leosatdata.model.Type1CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataEncoding;
@@ -14,7 +14,7 @@ import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
-import com.leosatdata.model.LinkModulation;
+import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.Modulation;
@@ -98,7 +98,7 @@ public class TransceiverUtil {
 
 	private static PlExtensions createType1PlExtensions(Direction direction) {
 		PlExtensions result = new PlExtensions();
-		result.setCarrierModulation(CarrierModulation.PSK);
+		result.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		result.setLineCoding(LineCoding.MANCHESTER);
 		result.setDifferentialEncoding(false);
 		result.setDirection(direction);
@@ -206,7 +206,7 @@ public class TransceiverUtil {
 
 		// use the same channel for type 4 and type 5 directives
 		result.setFrequency(config.getLong("frequency.4.ch" + hailingChannel + direction.getShortCode(), 0));
-		result.setModulation(LinkModulation.PCM_PM_BI_PHASE);
+		result.setCarrierModulation(Type4CarrierModulation.PCM_PM_BI_PHASE);
 		result.setCoding(Coding.LDPC2048_1024);
 		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
 		return result;
@@ -238,7 +238,7 @@ public class TransceiverUtil {
 		}
 
 		result.setFreqChannel(hailingChannel);
-		result.setModulation(LinkModulation.PCM_PM_BI_PHASE);
+		result.setCarrierModulation(Type4CarrierModulation.PCM_PM_BI_PHASE);
 		result.setCoding(Coding.LDPC2048_1024);
 		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
 		return result;
@@ -247,9 +247,9 @@ public class TransceiverUtil {
 	private void applyType4RxParameters(Type4Directive directive, boolean invert) {
 		LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
-		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
+		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
-		} else if (params.getModulation().equals(LinkModulation.PCM_PM_NRZL)) {
+		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
 			transceiver.setRxLineCoding(LineCoding.NRZ_L);
 		} else {
 			transceiver.setRxLineCoding(LineCoding.NONE);
@@ -262,9 +262,9 @@ public class TransceiverUtil {
 	private void applyType4TxParameters(Type4Directive directive, boolean invert) {
 		LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		transceiver.setTxSymbolRate(params.getSymbolRate());
-		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
+		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
-		} else if (params.getModulation().equals(LinkModulation.PCM_PM_NRZL)) {
+		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
 			transceiver.setTxLineCoding(LineCoding.NRZ_L);
 		} else {
 			transceiver.setTxLineCoding(LineCoding.NONE);
@@ -277,9 +277,9 @@ public class TransceiverUtil {
 	private void applyType5RxParameters(Type5Directive directive, boolean invert) {
 		Link2Establishment params = invert ? directive.getTxLink() : directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
-		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
+		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
-		} else if (params.getModulation().equals(LinkModulation.PCM_PM_NRZL)) {
+		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
 			transceiver.setRxLineCoding(LineCoding.NRZ_L);
 		} else {
 			transceiver.setRxLineCoding(LineCoding.NONE);
@@ -293,9 +293,9 @@ public class TransceiverUtil {
 	private void applyType5TxParameters(Type5Directive directive, boolean invert) {
 		Link2Establishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		transceiver.setTxSymbolRate(params.getSymbolRate());
-		if (params.getModulation().equals(LinkModulation.PCM_PM_BI_PHASE)) {
+		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
-		} else if (params.getModulation().equals(LinkModulation.PCM_PM_NRZL)) {
+		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
 			transceiver.setTxLineCoding(LineCoding.NRZ_L);
 		} else {
 			transceiver.setTxLineCoding(LineCoding.NONE);

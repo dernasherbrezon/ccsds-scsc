@@ -9,7 +9,7 @@ public class Link2Establishment {
 	private Duplex duplex;
 	private Polarization polarization;
 	private Modulation coherency;
-	private LinkModulation modulation;
+	private Type4CarrierModulation carrierModulation;
 	private ModulationIndex modulationIndex;
 	private Coding coding;
 	private int linkSnr;
@@ -33,7 +33,7 @@ public class Link2Establishment {
 		this.duplex = other.duplex;
 		this.polarization = other.polarization;
 		this.coherency = other.coherency;
-		this.modulation = other.modulation;
+		this.carrierModulation = other.carrierModulation;
 		this.modulationIndex = other.modulationIndex;
 		this.coding = other.coding;
 		this.linkSnr = other.linkSnr;
@@ -99,12 +99,12 @@ public class Link2Establishment {
 		this.coherency = coherency;
 	}
 
-	public LinkModulation getModulation() {
-		return modulation;
+	public Type4CarrierModulation getCarrierModulation() {
+		return carrierModulation;
 	}
 
-	public void setModulation(LinkModulation modulation) {
-		this.modulation = modulation;
+	public void setCarrierModulation(Type4CarrierModulation carrierModulation) {
+		this.carrierModulation = carrierModulation;
 	}
 
 	public ModulationIndex getModulationIndex() {

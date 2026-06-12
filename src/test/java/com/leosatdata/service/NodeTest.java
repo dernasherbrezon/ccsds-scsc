@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
-import com.leosatdata.model.CarrierModulation;
+import com.leosatdata.model.Type1CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
@@ -40,7 +40,7 @@ import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
-import com.leosatdata.model.LinkModulation;
+import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.Modulation;
@@ -734,7 +734,7 @@ public class NodeTest {
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setFrequency(2_100_000_000f);
 		rx.setLinkSnr(0);
-		rx.setModulation(LinkModulation.GMSK);
+		rx.setCarrierModulation(Type4CarrierModulation.GMSK);
 		rx.setModulationIndex(ModulationIndex.M0_4);
 		rx.setPolarization(Polarization.LHCP);
 		rx.setRnmd(false);
@@ -750,7 +750,7 @@ public class NodeTest {
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFrequency(2_200_000_000f);
 		tx.setLinkSnr(0);
-		tx.setModulation(LinkModulation.GMSK);
+		tx.setCarrierModulation(Type4CarrierModulation.GMSK);
 		tx.setModulationIndex(ModulationIndex.M0_4);
 		tx.setPolarization(Polarization.LHCP);
 		tx.setRnmd(false);
@@ -771,7 +771,7 @@ public class NodeTest {
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setFreqChannel(1);
 		rx.setLinkSnr(0);
-		rx.setModulation(LinkModulation.GMSK);
+		rx.setCarrierModulation(Type4CarrierModulation.GMSK);
 		rx.setModulationIndex(ModulationIndex.M0_4);
 		rx.setPolarization(Polarization.LHCP);
 		rx.setQueryResponse(QueryResponse.ACK);
@@ -785,7 +785,7 @@ public class NodeTest {
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFreqChannel(1);
 		tx.setLinkSnr(0);
-		tx.setModulation(LinkModulation.GMSK);
+		tx.setCarrierModulation(Type4CarrierModulation.GMSK);
 		tx.setModulationIndex(ModulationIndex.M0_4);
 		tx.setPolarization(Polarization.LHCP);
 		tx.setQueryResponse(QueryResponse.ACK);
@@ -808,7 +808,7 @@ public class NodeTest {
 		tx.setModulation(Modulation.COHERENT_PSK);
 
 		PlExtensions txExt = new PlExtensions();
-		txExt.setCarrierModulation(CarrierModulation.PSK);
+		txExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		txExt.setLineCoding(LineCoding.MANCHESTER);
 		txExt.setDifferentialEncoding(false);
 		txExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
@@ -825,7 +825,7 @@ public class NodeTest {
 		rx.setModulation(Modulation.COHERENT_PSK);
 
 		PlExtensions rxExt = new PlExtensions();
-		rxExt.setCarrierModulation(CarrierModulation.PSK);
+		rxExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		rxExt.setLineCoding(LineCoding.MANCHESTER);
 		rxExt.setDifferentialEncoding(false);
 		rxExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);

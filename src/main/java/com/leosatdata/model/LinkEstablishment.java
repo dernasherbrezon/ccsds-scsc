@@ -11,7 +11,7 @@ public class LinkEstablishment {
 	private int freqChannel;
 	private Polarization polarization;
 	private ModulationIndex modulationIndex;
-	private LinkModulation modulation;
+	private Type4CarrierModulation carrierModulation;
 	private Coding coding;
 	private int linkSnr;
 	private float symbolRate; // IEEE 754 standard for half-precision floating point numbers
@@ -33,7 +33,7 @@ public class LinkEstablishment {
 		this.freqChannel = other.freqChannel;
 		this.polarization = other.polarization;
 		this.modulationIndex = other.modulationIndex;
-		this.modulation = other.modulation;
+		this.carrierModulation = other.carrierModulation;
 		this.coding = other.coding;
 		this.linkSnr = other.linkSnr;
 		this.symbolRate = other.symbolRate;
@@ -111,12 +111,12 @@ public class LinkEstablishment {
 		this.modulationIndex = modulationIndex;
 	}
 
-	public LinkModulation getModulation() {
-		return modulation;
+	public Type4CarrierModulation getCarrierModulation() {
+		return carrierModulation;
 	}
 
-	public void setModulation(LinkModulation modulation) {
-		this.modulation = modulation;
+	public void setCarrierModulation(Type4CarrierModulation modulation) {
+		this.carrierModulation = modulation;
 	}
 
 	public Coding getCoding() {
@@ -146,7 +146,7 @@ public class LinkEstablishment {
 	@Override
 	public String toString() {
 		return "[direction=" + direction + ", demandQuery=" + demandQuery + ", queryResponse=" + queryResponse + ", rnmd=" + rnmd + ", transmitToken=" + transmitToken + ", duplex=" + duplex + ", freqChannel=" + freqChannel + ", polarization=" + polarization + ", modulationIndex=" + modulationIndex
-				+ ", modulation=" + modulation + ", coding=" + coding + ", linkSnr=" + linkSnr + ", symbolRate=" + symbolRate + "]";
+				+ ", modulation=" + carrierModulation + ", coding=" + coding + ", linkSnr=" + linkSnr + ", symbolRate=" + symbolRate + "]";
 	}
 
 }

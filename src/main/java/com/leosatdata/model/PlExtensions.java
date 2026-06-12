@@ -7,7 +7,7 @@ public class PlExtensions {
 	private ScramblerType scrambler;
 	private ModeSelect modeSelect;
 	private LineCoding lineCoding; // or "Data Modulation" as defined in the spec
-	private CarrierModulation carrierModulation;
+	private Type1CarrierModulation carrierModulation;
 	private boolean useExtendedDataRate;
 	private boolean useExtendedFreqSet;
 	private Direction direction;
@@ -52,11 +52,11 @@ public class PlExtensions {
 		this.lineCoding = lineCoding;
 	}
 
-	public CarrierModulation getCarrierModulation() {
+	public Type1CarrierModulation getCarrierModulation() {
 		return carrierModulation;
 	}
 
-	public void setCarrierModulation(CarrierModulation carrierModulation) {
+	public void setCarrierModulation(Type1CarrierModulation carrierModulation) {
 		this.carrierModulation = carrierModulation;
 	}
 

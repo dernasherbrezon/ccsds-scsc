@@ -7,7 +7,7 @@ import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
-import com.leosatdata.model.LinkModulation;
+import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Modulation;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType2;
@@ -55,7 +55,7 @@ public class Type5DirectiveParser {
 				link2.setPolarization(Polarization.valueOfCode(bis.readUnsignedInt(1)));
 				link2.setCoherency(Modulation.valueOfCode(bis.readUnsignedInt(1)));
 				bis.skipBits(1);
-				link2.setModulation(LinkModulation.valueOfCode(bis.readUnsignedInt(4)));
+				link2.setCarrierModulation(Type4CarrierModulation.valueOfCode(bis.readUnsignedInt(4)));
 				link2.setModulationIndex(ModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
 				bis.skipBits(1);
 				link2.setCoding(Coding.valueOfCode(bis.readUnsignedInt(5)));
@@ -164,7 +164,7 @@ public class Type5DirectiveParser {
 		bos.writeUnsignedInt(1, params.getPolarization().getCode());
 		bos.writeUnsignedInt(1, params.getCoherency().getCode());
 		bos.writeUnsignedInt(1, 0); // unused
-		bos.writeUnsignedInt(4, params.getModulation().getCode());
+		bos.writeUnsignedInt(4, params.getCarrierModulation().getCode());
 		bos.writeUnsignedInt(3, params.getModulationIndex().getCode());
 		bos.writeUnsignedInt(1, 0); // unused
 		bos.writeUnsignedInt(5, params.getCoding().getCode());
