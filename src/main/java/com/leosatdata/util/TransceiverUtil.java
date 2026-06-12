@@ -16,7 +16,7 @@ import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
-import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType;
 import com.leosatdata.model.NegotiationType2;
@@ -93,7 +93,7 @@ public class TransceiverUtil {
 			result.setFrequency(Frequency.CH1);
 		}
 		result.setMode(Mode.PROXIMITY1);
-		result.setModulation(Modulation.NON_COHERENT_PSK);
+		result.setCoherency(Coherency.NON_COHERENT_PSK);
 		return result;
 	}
 
@@ -153,7 +153,7 @@ public class TransceiverUtil {
 		String direction = invert ? "f" : "r";
 		transceiver.setRxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
 		transceiver.setRxCoding(convertDataEncoding(commParams.getDataEncoding()));
-		transceiver.setRxModulation(commParams.getModulation());
+		transceiver.setRxCoherency(commParams.getCoherency());
 		transceiver.setRxPolarization(Polarization.RHCP); // defined in 211.1
 	}
 
@@ -174,7 +174,7 @@ public class TransceiverUtil {
 		String direction = invert ? "r" : "f";
 		transceiver.setTxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
 		transceiver.setTxCoding(convertDataEncoding(commParams.getDataEncoding()));
-		transceiver.setTxModulation(commParams.getModulation());
+		transceiver.setTxCoherency(commParams.getCoherency());
 		transceiver.setTxPolarization(Polarization.RHCP); // defined in 211.1
 	}
 
@@ -198,7 +198,7 @@ public class TransceiverUtil {
 		result.setPolarization(Polarization.LHCP);
 		result.setRnmd(false);
 		result.setTransmitToken(false);
-		result.setCoherency(Modulation.NON_COHERENT_PSK);
+		result.setCoherency(Coherency.NON_COHERENT_PSK);
 
 		int hailingChannel = channel;
 		if (channel == -1) {
@@ -258,6 +258,7 @@ public class TransceiverUtil {
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setRxCoding(params.getCoding());
+		transceiver.setRxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setRxPolarization(params.getPolarization());
 	}
 
@@ -274,6 +275,7 @@ public class TransceiverUtil {
 		transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
 		transceiver.setTxCoding(params.getCoding());
+		transceiver.setTxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setTxPolarization(params.getPolarization());
 	}
 
@@ -290,8 +292,8 @@ public class TransceiverUtil {
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxFrequency(params.getFrequency());
 		transceiver.setRxCoding(params.getCoding());
+		transceiver.setRxCoherency(params.getCoherency());
 		transceiver.setRxPolarization(params.getPolarization());
-		transceiver.setRxModulation(params.getCoherency());
 	}
 
 	private void applyType5TxParameters(Type5Directive directive, boolean invert) {
@@ -307,8 +309,8 @@ public class TransceiverUtil {
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxFrequency(params.getFrequency());
 		transceiver.setTxCoding(params.getCoding());
+		transceiver.setTxCoherency(params.getCoherency());
 		transceiver.setTxPolarization(params.getPolarization());
-		transceiver.setTxModulation(params.getCoherency());
 	}
 
 	private static Coding convertDataEncoding(DataEncoding encoding) {

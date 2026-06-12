@@ -25,7 +25,7 @@ import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
-import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType;
 import com.leosatdata.model.NegotiationType2;
@@ -110,7 +110,7 @@ public class SpduParserTest {
 		rx.setCoding(Coding.CONVOLUTIONAL);
 		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setLinkSnr(2);
-		rx.setCoherency(Modulation.COHERENT_PSK);
+		rx.setCoherency(Coherency.COHERENT_PSK);
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setFrequency(2240000000f);
 		rx.setSymbolRate(8400);
@@ -127,7 +127,7 @@ public class SpduParserTest {
 		tx.setCoding(Coding.CONVOLUTIONAL);
 		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setLinkSnr(2);
-		tx.setCoherency(Modulation.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT_PSK);
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFrequency(2250000000f);
 		tx.setSymbolRate(8400);
@@ -282,7 +282,7 @@ public class SpduParserTest {
 		rxParams.setDataRate(DataRate.R128NC);
 		rxParams.setFrequency(Frequency.CH3);
 		rxParams.setMode(Mode.PROXIMITY1);
-		rxParams.setModulation(Modulation.COHERENT_PSK);
+		rxParams.setCoherency(Coherency.COHERENT_PSK);
 
 		PlExtensions rxPlExt = new PlExtensions();
 		rxPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
@@ -300,7 +300,7 @@ public class SpduParserTest {
 		txParams.setDataRate(DataRate.R128NC);
 		txParams.setFrequency(Frequency.CH6);
 		txParams.setMode(Mode.PROXIMITY1);
-		txParams.setModulation(Modulation.COHERENT_PSK);
+		txParams.setCoherency(Coherency.COHERENT_PSK);
 
 		PlExtensions txPlExt = new PlExtensions();
 		txPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);

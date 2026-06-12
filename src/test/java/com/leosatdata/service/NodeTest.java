@@ -43,7 +43,7 @@ import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
-import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType;
 import com.leosatdata.model.NegotiationType2;
@@ -185,7 +185,7 @@ public class NodeTest {
 		tx.setDataRate(DataRate.R8C);
 		tx.setFrequency(Frequency.CH5);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setModulation(Modulation.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT_PSK);
 		Type1Directive result = new Type1Directive();
 		result.setTxParams(tx);
 
@@ -729,7 +729,7 @@ public class NodeTest {
 		Link2Establishment rx = new Link2Establishment();
 		rx.setAosFrameLength(0);
 		rx.setCoding(Coding.CONVOLUTIONAL);
-		rx.setCoherency(Modulation.COHERENT_PSK);
+		rx.setCoherency(Coherency.COHERENT_PSK);
 		rx.setDemandQuery(NegotiationType2.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setFrequency(2_100_000_000f);
@@ -745,7 +745,7 @@ public class NodeTest {
 		Link2Establishment tx = new Link2Establishment();
 		tx.setAosFrameLength(0);
 		tx.setCoding(Coding.CONVOLUTIONAL);
-		tx.setCoherency(Modulation.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT_PSK);
 		tx.setDemandQuery(NegotiationType2.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFrequency(2_200_000_000f);
@@ -805,7 +805,7 @@ public class NodeTest {
 		tx.setDataRate(dataRate);
 		tx.setFrequency(Frequency.CH3);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setModulation(Modulation.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT_PSK);
 
 		PlExtensions txExt = new PlExtensions();
 		txExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
@@ -822,7 +822,7 @@ public class NodeTest {
 		rx.setDataRate(dataRate);
 		rx.setFrequency(Frequency.CH3);
 		rx.setMode(Mode.PROXIMITY1);
-		rx.setModulation(Modulation.COHERENT_PSK);
+		rx.setCoherency(Coherency.COHERENT_PSK);
 
 		PlExtensions rxExt = new PlExtensions();
 		rxExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);

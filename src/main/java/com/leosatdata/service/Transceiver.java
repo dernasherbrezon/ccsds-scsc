@@ -3,7 +3,7 @@ package com.leosatdata.service;
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.Polarization;
 
 // i.e PhysicalChannel
@@ -19,7 +19,7 @@ public interface Transceiver {
 	void setRxFrequency(float frequency);
 	void setRxCoding(Coding encoding);
 	void setRxPolarization(Polarization polarization);
-	void setRxModulation(Modulation modulation);
+	void setRxCoherency(Coherency modulation);
 	void setRxCarrierModulation(CarrierModulation carrierModulation);
 
 	void setRxCallback(RxCallback callback);
@@ -31,7 +31,7 @@ public interface Transceiver {
 	void setTxFrequency(float frequency);
 	void setTxCoding(Coding encoding);
 	void setTxPolarization(Polarization polarization);
-	void setTxModulation(Modulation modulation);	
+	void setTxCoherency(Coherency modulation);	
 	void setTxCarrierModulation(CarrierModulation carrierModulation);
 	
 	void setTxCallback(TxCallback callback);

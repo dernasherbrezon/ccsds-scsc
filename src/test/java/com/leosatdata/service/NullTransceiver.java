@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
@@ -145,7 +145,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxModulation(Modulation modulation) {
+	public void setRxCoherency(Coherency modulation) {
 		// do nothing
 	}
 
@@ -209,7 +209,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxModulation(Modulation modulation) {
+	public void setTxCoherency(Coherency modulation) {
 		// do nothing
 	}
 

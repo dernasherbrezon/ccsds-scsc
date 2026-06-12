@@ -8,7 +8,7 @@ public class Link2Establishment {
 	private boolean transmitToken;
 	private Duplex duplex;
 	private Polarization polarization;
-	private Modulation coherency;
+	private Coherency coherency;
 	private Type4CarrierModulation carrierModulation;
 	private ModulationIndex modulationIndex;
 	private Coding coding;
@@ -91,11 +91,11 @@ public class Link2Establishment {
 		this.polarization = polarization;
 	}
 
-	public Modulation getCoherency() {
+	public Coherency getCoherency() {
 		return coherency;
 	}
 
-	public void setCoherency(Modulation coherency) {
+	public void setCoherency(Coherency coherency) {
 		this.coherency = coherency;
 	}
 

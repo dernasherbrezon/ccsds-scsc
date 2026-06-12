@@ -12,7 +12,7 @@ import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
-import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.ReportRequest;
 import com.leosatdata.model.RsCodeType;
@@ -149,7 +149,7 @@ public class Type1DirectiveParser {
 		TxRxParameters message = new TxRxParameters();
 		message.setMode(Mode.valueOfCode(dirStream.readUnsignedInt(3)));
 		message.setDataRate(DataRate.valueOfCode(dirStream.readUnsignedInt(4)));
-		message.setModulation(Modulation.valueOfCode(dirStream.readUnsignedInt(1)));
+		message.setCoherency(Coherency.valueOfCode(dirStream.readUnsignedInt(1)));
 		message.setDataEncoding(DataEncoding.valueOfCode(dirStream.readUnsignedInt(2)));
 		message.setFrequency(Frequency.valueOfCode(dirStream.readUnsignedInt(3)));
 		return message;
@@ -158,7 +158,7 @@ public class Type1DirectiveParser {
 	private static void encodeTxRxParameters(int type, TxRxParameters params, BitOutputStream bos) throws IOException {
 		bos.writeUnsignedInt(3, params.getMode().getCode());
 		bos.writeUnsignedInt(4, params.getDataRate().getCode());
-		bos.writeUnsignedInt(1, params.getModulation().getCode());
+		bos.writeUnsignedInt(1, params.getCoherency().getCode());
 		bos.writeUnsignedInt(2, params.getDataEncoding().getCode());
 		bos.writeUnsignedInt(3, params.getFrequency().getCode());
 		bos.writeUnsignedInt(3, type);

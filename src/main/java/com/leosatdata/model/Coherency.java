@@ -1,10 +1,12 @@
 package com.leosatdata.model;
 
-public enum Modulation {
+// B4.5 RECEIVER MODULATION
+// E2.2.10 Coherent/Non-coherent
+public enum Coherency {
 
 	COHERENT_PSK, NON_COHERENT_PSK, UNKNOWN;
 
-	public static Modulation valueOfCode(int code) {
+	public static Coherency valueOfCode(int code) {
 		if (code == 0) {
 			return COHERENT_PSK;
 		}

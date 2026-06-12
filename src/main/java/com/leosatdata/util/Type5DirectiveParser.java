@@ -8,7 +8,7 @@ import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.Type4CarrierModulation;
-import com.leosatdata.model.Modulation;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType2;
 import com.leosatdata.model.PnRaging;
@@ -53,7 +53,7 @@ public class Type5DirectiveParser {
 				link2.setTransmitToken(bis.readBoolean());
 				link2.setDuplex(Duplex.valueOfCode(bis.readUnsignedInt(3)));
 				link2.setPolarization(Polarization.valueOfCode(bis.readUnsignedInt(1)));
-				link2.setCoherency(Modulation.valueOfCode(bis.readUnsignedInt(1)));
+				link2.setCoherency(Coherency.valueOfCode(bis.readUnsignedInt(1)));
 				bis.skipBits(1);
 				link2.setCarrierModulation(Type4CarrierModulation.valueOfCode(bis.readUnsignedInt(4)));
 				link2.setModulationIndex(ModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
