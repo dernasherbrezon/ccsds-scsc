@@ -17,9 +17,9 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.Coherency;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;

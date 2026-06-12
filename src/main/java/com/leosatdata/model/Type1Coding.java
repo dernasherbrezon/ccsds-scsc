@@ -1,12 +1,12 @@
 package com.leosatdata.model;
 
-public enum DataEncoding {
+public enum Type1Coding {
 
 	LDPC(0b00), CONVOLUTIONAL(0b01), NONE(0b10), CONCANTENATED(0b11), UNKNOWN(255);
 
 	private final int code;
 
-	private DataEncoding(int code) {
+	private Type1Coding(int code) {
 		this.code = code;
 	}
 
@@ -14,8 +14,8 @@ public enum DataEncoding {
 		return code;
 	}
 
-	public static DataEncoding valueOfCode(int code) {
-		for (DataEncoding cur : values()) {
+	public static Type1Coding valueOfCode(int code) {
+		for (Type1Coding cur : values()) {
 			if (cur.code == code) {
 				return cur;
 			}

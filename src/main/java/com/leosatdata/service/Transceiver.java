@@ -2,9 +2,9 @@ package com.leosatdata.service;
 
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.Coherency;
 import com.leosatdata.model.Polarization;
 
 // i.e PhysicalChannel

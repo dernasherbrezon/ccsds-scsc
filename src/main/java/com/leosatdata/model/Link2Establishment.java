@@ -11,7 +11,7 @@ public class Link2Establishment {
 	private Coherency coherency;
 	private Type4CarrierModulation carrierModulation;
 	private ModulationIndex modulationIndex;
-	private Coding coding;
+	private Type4Coding coding;
 	private int linkSnr;
 	private TransceiverMode transceiverMode;
 	private int aosFrameLength;
@@ -115,11 +115,11 @@ public class Link2Establishment {
 		this.modulationIndex = modulationIndex;
 	}
 
-	public Coding getCoding() {
+	public Type4Coding getCoding() {
 		return coding;
 	}
 
-	public void setCoding(Coding coding) {
+	public void setCoding(Type4Coding coding) {
 		this.coding = coding;
 	}
 

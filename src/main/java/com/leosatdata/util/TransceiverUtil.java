@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ControlParameters;
-import com.leosatdata.model.DataEncoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Direction;
 import com.leosatdata.model.Frequency;
@@ -16,7 +16,6 @@ import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModeSelect;
-import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType;
 import com.leosatdata.model.NegotiationType2;
@@ -28,8 +27,10 @@ import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1CarrierModulation;
+import com.leosatdata.model.Type1Coding;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4CarrierModulation;
+import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
 import com.leosatdata.service.Transceiver;
@@ -81,7 +82,7 @@ public class TransceiverUtil {
 	private TxRxParameters createType1TxRx() {
 		// TODO not clear why hailing_data_rate exist
 		TxRxParameters result = new TxRxParameters();
-		result.setDataEncoding(DataEncoding.NONE);
+		result.setCoding(Type1Coding.NONE);
 		if (symbolRate != -1) {
 			result.setDataRate(DataRate.valueOfCode(symbolRate));
 		} else {
@@ -153,7 +154,7 @@ public class TransceiverUtil {
 		}
 		String direction = invert ? "f" : "r";
 		transceiver.setRxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
-		transceiver.setRxCoding(convertDataEncoding(commParams.getDataEncoding()));
+		transceiver.setRxCoding(convertType1Coding(commParams.getCoding(), plParams));
 		transceiver.setRxCoherency(commParams.getCoherency());
 		transceiver.setRxPolarization(Polarization.RHCP); // defined in 211.1
 	}
@@ -175,7 +176,7 @@ public class TransceiverUtil {
 		}
 		String direction = invert ? "r" : "f";
 		transceiver.setTxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
-		transceiver.setTxCoding(convertDataEncoding(commParams.getDataEncoding()));
+		transceiver.setTxCoding(convertType1Coding(commParams.getCoding(), plParams));
 		transceiver.setTxCoherency(commParams.getCoherency());
 		transceiver.setTxPolarization(Polarization.RHCP); // defined in 211.1
 	}
@@ -210,7 +211,7 @@ public class TransceiverUtil {
 		// use the same channel for type 4 and type 5 directives
 		result.setFrequency(config.getLong("frequency.4.ch" + hailingChannel + direction.getShortCode(), 0));
 		result.setCarrierModulation(Type4CarrierModulation.PCM_PM_BI_PHASE);
-		result.setCoding(Coding.LDPC2048_1024);
+		result.setCoding(Type4Coding.LDPC2048_1024);
 		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
 		return result;
 	}
@@ -242,7 +243,7 @@ public class TransceiverUtil {
 
 		result.setFreqChannel(hailingChannel);
 		result.setCarrierModulation(Type4CarrierModulation.PCM_PM_BI_PHASE);
-		result.setCoding(Coding.LDPC2048_1024);
+		result.setCoding(Type4Coding.LDPC2048_1024);
 		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
 		return result;
 	}
@@ -260,7 +261,7 @@ public class TransceiverUtil {
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxModulationIndex(params.getModulationIndex());
 		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
-		transceiver.setRxCoding(params.getCoding());
+		transceiver.setRxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setRxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setRxPolarization(params.getPolarization());
 	}
@@ -278,7 +279,7 @@ public class TransceiverUtil {
 		transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxModulationIndex(params.getModulationIndex());
 		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
-		transceiver.setTxCoding(params.getCoding());
+		transceiver.setTxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setTxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setTxPolarization(params.getPolarization());
 	}
@@ -296,7 +297,7 @@ public class TransceiverUtil {
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxModulationIndex(params.getModulationIndex());
 		transceiver.setRxFrequency(params.getFrequency());
-		transceiver.setRxCoding(params.getCoding());
+		transceiver.setRxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setRxCoherency(params.getCoherency());
 		transceiver.setRxPolarization(params.getPolarization());
 	}
@@ -314,18 +315,46 @@ public class TransceiverUtil {
 		transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxModulationIndex(params.getModulationIndex());
 		transceiver.setTxFrequency(params.getFrequency());
-		transceiver.setTxCoding(params.getCoding());
+		transceiver.setTxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setTxCoherency(params.getCoherency());
 		transceiver.setTxPolarization(params.getPolarization());
 	}
 
-	private static Coding convertDataEncoding(DataEncoding encoding) {
-		switch (encoding) {
+	private static Coding convertType1Coding(Type1Coding encoding, PlExtensions params) {
+		if (encoding.equals(Type1Coding.CONVOLUTIONAL)) {
+			return Coding.CONVOLUTIONAL;
+		} else if (encoding.equals(Type1Coding.LDPC)) {
+			return Coding.LDPC2048_1024;
+		} else if (encoding.equals(Type1Coding.CONCANTENATED)) {
+			if (params != null && params.getRsCode().equals(RsCodeType.RS255_239)) {
+				return Coding.CONCANTENATED_RS255_239;
+			}
+			// default if PlExtensions missing
+			return Coding.CONCANTENATED_RS204_188;
+		} else {
+			return Coding.UNCODED;
+		}
+	}
+
+	private static Coding convertType4Coding(Type4Coding coding) {
+		switch (coding) {
 		case CONVOLUTIONAL:
 			return Coding.CONVOLUTIONAL;
-		case LDPC:
+		case LDPC20480_16384:
+			return Coding.LDPC20480_16384;
+		case LDPC2048_1024:
 			return Coding.LDPC2048_1024;
-		case NONE:
+		case LDPC24576_16384:
+			return Coding.LDPC24576_16384;
+		case LDPC32768_16384:
+			return Coding.LDPC32768_16384;
+		case LDPC6144_4096:
+			return Coding.LDPC6144_4096;
+		case LDPC8160_7136:
+			return Coding.LDPC8160_7136;
+		case LDPC8192_4096:
+			return Coding.LDPC8192_4096;
+		case UNCODED:
 			return Coding.UNCODED;
 		default:
 			return Coding.UNKNOWN;

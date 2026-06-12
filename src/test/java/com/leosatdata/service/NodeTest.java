@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.Type1CarrierModulation;
-import com.leosatdata.model.Coding;
+import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
-import com.leosatdata.model.DataEncoding;
+import com.leosatdata.model.Type1Coding;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Duplex;
@@ -181,7 +181,7 @@ public class NodeTest {
 
 		// switch to the different tx channel. rx stays the same
 		TxRxParameters tx = new TxRxParameters();
-		tx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
+		tx.setCoding(Type1Coding.CONVOLUTIONAL);
 		tx.setDataRate(DataRate.R8C);
 		tx.setFrequency(Frequency.CH5);
 		tx.setMode(Mode.PROXIMITY1);
@@ -728,7 +728,7 @@ public class NodeTest {
 	public static Type5Directive createType5CommParameters() {
 		Link2Establishment rx = new Link2Establishment();
 		rx.setAosFrameLength(0);
-		rx.setCoding(Coding.CONVOLUTIONAL);
+		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setCoherency(Coherency.COHERENT_PSK);
 		rx.setDemandQuery(NegotiationType2.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
@@ -744,7 +744,7 @@ public class NodeTest {
 
 		Link2Establishment tx = new Link2Establishment();
 		tx.setAosFrameLength(0);
-		tx.setCoding(Coding.CONVOLUTIONAL);
+		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setCoherency(Coherency.COHERENT_PSK);
 		tx.setDemandQuery(NegotiationType2.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
@@ -766,7 +766,7 @@ public class NodeTest {
 
 	public static Type4Directive createType4CommParameters() {
 		LinkEstablishment rx = new LinkEstablishment();
-		rx.setCoding(Coding.CONVOLUTIONAL);
+		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setDemandQuery(NegotiationType.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setFreqChannel(1);
@@ -780,7 +780,7 @@ public class NodeTest {
 		rx.setTransmitToken(false);
 
 		LinkEstablishment tx = new LinkEstablishment();
-		tx.setCoding(Coding.CONVOLUTIONAL);
+		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setDemandQuery(NegotiationType.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFreqChannel(1);
@@ -801,7 +801,7 @@ public class NodeTest {
 
 	public static Type1Directive createType1CommParameters(DataRate dataRate) {
 		TxRxParameters tx = new TxRxParameters();
-		tx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
+		tx.setCoding(Type1Coding.CONVOLUTIONAL);
 		tx.setDataRate(dataRate);
 		tx.setFrequency(Frequency.CH3);
 		tx.setMode(Mode.PROXIMITY1);
@@ -818,7 +818,7 @@ public class NodeTest {
 		txExt.setUseExtendedFreqSet(false);
 
 		TxRxParameters rx = new TxRxParameters();
-		rx.setDataEncoding(DataEncoding.CONVOLUTIONAL);
+		rx.setCoding(Type1Coding.CONVOLUTIONAL);
 		rx.setDataRate(dataRate);
 		rx.setFrequency(Frequency.CH3);
 		rx.setMode(Mode.PROXIMITY1);

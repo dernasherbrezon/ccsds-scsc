@@ -2,7 +2,7 @@ package com.leosatdata.util;
 
 import java.io.IOException;
 
-import com.leosatdata.model.Coding;
+import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
@@ -49,7 +49,7 @@ public class Type4DirectiveParser {
 				linkEstablishment.setModulationIndex(ModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
 				linkEstablishment.setCarrierModulation(Type4CarrierModulation.valueOfCode(bis.readUnsignedInt(4)));
 				bis.skipBits(2);
-				linkEstablishment.setCoding(Coding.valueOfCode(bis.readUnsignedInt(6)));
+				linkEstablishment.setCoding(Type4Coding.valueOfCode(bis.readUnsignedInt(6)));
 				linkEstablishment.setLinkSnr(bis.readUnsignedInt(8));
 				linkEstablishment.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
 				if (linkEstablishment.getDirection().equals(LinkDirection.RETURN)) {

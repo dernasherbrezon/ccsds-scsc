@@ -5,7 +5,7 @@ public class TxRxParameters {
 	private Mode mode;
 	private DataRate dataRate;
 	private Coherency coherency;
-	private DataEncoding dataEncoding;
+	private Type1Coding coding;
 	private Frequency frequency;
 
 	public Mode getMode() {
@@ -40,16 +40,16 @@ public class TxRxParameters {
 		this.frequency = frequency;
 	}
 
-	public DataEncoding getDataEncoding() {
-		return dataEncoding;
+	public Type1Coding getCoding() {
+		return coding;
 	}
 	
-	public void setDataEncoding(DataEncoding dataEncoding) {
-		this.dataEncoding = dataEncoding;
+	public void setCoding(Type1Coding coding) {
+		this.coding = coding;
 	}
 
 	@Override
 	public String toString() {
-		return "[mode=" + mode + ", dataRate=" + dataRate + ", modulation=" + coherency + ", dataEncoding=" + dataEncoding + ", frequency=" + frequency + "]";
+		return "[mode=" + mode + ", dataRate=" + dataRate + ", coherency=" + coherency + ", coding=" + coding + ", frequency=" + frequency + "]";
 	}
 }

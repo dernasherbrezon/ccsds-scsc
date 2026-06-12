@@ -2,7 +2,7 @@ package com.leosatdata.util;
 
 import java.io.IOException;
 
-import com.leosatdata.model.Coding;
+import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Link2Establishment;
@@ -58,7 +58,7 @@ public class Type5DirectiveParser {
 				link2.setCarrierModulation(Type4CarrierModulation.valueOfCode(bis.readUnsignedInt(4)));
 				link2.setModulationIndex(ModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
 				bis.skipBits(1);
-				link2.setCoding(Coding.valueOfCode(bis.readUnsignedInt(5)));
+				link2.setCoding(Type4Coding.valueOfCode(bis.readUnsignedInt(5)));
 				link2.setLinkSnr(bis.readUnsignedInt(8));
 				link2.setTransceiverMode(TransceiverMode.valueOfCode(bis.readUnsignedInt(3)));
 				link2.setAosFrameLength(bis.readUnsignedInt(16));

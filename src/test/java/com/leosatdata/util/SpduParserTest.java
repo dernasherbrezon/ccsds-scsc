@@ -10,9 +10,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.leosatdata.model.Type1CarrierModulation;
-import com.leosatdata.model.Coding;
+import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.ControlParameters;
-import com.leosatdata.model.DataEncoding;
+import com.leosatdata.model.Type1Coding;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.DaySegmented;
@@ -107,7 +107,7 @@ public class SpduParserTest {
 
 		Link2Establishment rx = new Link2Establishment();
 		rx.setRnmd(false);
-		rx.setCoding(Coding.CONVOLUTIONAL);
+		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setLinkSnr(2);
 		rx.setCoherency(Coherency.COHERENT_PSK);
@@ -124,7 +124,7 @@ public class SpduParserTest {
 
 		Link2Establishment tx = new Link2Establishment();
 		tx.setRnmd(false);
-		tx.setCoding(Coding.CONVOLUTIONAL);
+		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setLinkSnr(2);
 		tx.setCoherency(Coherency.COHERENT_PSK);
@@ -183,7 +183,7 @@ public class SpduParserTest {
 		reportReq.setTimeTagRequest(2);
 
 		LinkEstablishment rx = new LinkEstablishment();
-		rx.setCoding(Coding.CONVOLUTIONAL);
+		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setDemandQuery(NegotiationType.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setDuplex(Duplex.FULL_DUPLEX);
@@ -198,7 +198,7 @@ public class SpduParserTest {
 		rx.setTransmitToken(false);
 
 		LinkEstablishment tx = new LinkEstablishment();
-		tx.setCoding(Coding.CONVOLUTIONAL);
+		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setDemandQuery(NegotiationType.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setDuplex(Duplex.FULL_DUPLEX);
@@ -278,7 +278,7 @@ public class SpduParserTest {
 		reportReq.setTimeTagRequest(2);
 
 		TxRxParameters rxParams = new TxRxParameters();
-		rxParams.setDataEncoding(DataEncoding.CONCANTENATED);
+		rxParams.setCoding(Type1Coding.CONCANTENATED);
 		rxParams.setDataRate(DataRate.R128NC);
 		rxParams.setFrequency(Frequency.CH3);
 		rxParams.setMode(Mode.PROXIMITY1);
@@ -296,7 +296,7 @@ public class SpduParserTest {
 		rxPlExt.setUseExtendedFreqSet(false);
 
 		TxRxParameters txParams = new TxRxParameters();
-		txParams.setDataEncoding(DataEncoding.CONCANTENATED);
+		txParams.setCoding(Type1Coding.CONCANTENATED);
 		txParams.setDataRate(DataRate.R128NC);
 		txParams.setFrequency(Frequency.CH6);
 		txParams.setMode(Mode.PROXIMITY1);

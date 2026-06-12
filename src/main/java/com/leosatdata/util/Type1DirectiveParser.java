@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.leosatdata.model.Type1CarrierModulation;
 import com.leosatdata.model.ControlParameters;
-import com.leosatdata.model.DataEncoding;
+import com.leosatdata.model.Type1Coding;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Direction;
@@ -150,7 +150,7 @@ public class Type1DirectiveParser {
 		message.setMode(Mode.valueOfCode(dirStream.readUnsignedInt(3)));
 		message.setDataRate(DataRate.valueOfCode(dirStream.readUnsignedInt(4)));
 		message.setCoherency(Coherency.valueOfCode(dirStream.readUnsignedInt(1)));
-		message.setDataEncoding(DataEncoding.valueOfCode(dirStream.readUnsignedInt(2)));
+		message.setCoding(Type1Coding.valueOfCode(dirStream.readUnsignedInt(2)));
 		message.setFrequency(Frequency.valueOfCode(dirStream.readUnsignedInt(3)));
 		return message;
 	}
@@ -159,7 +159,7 @@ public class Type1DirectiveParser {
 		bos.writeUnsignedInt(3, params.getMode().getCode());
 		bos.writeUnsignedInt(4, params.getDataRate().getCode());
 		bos.writeUnsignedInt(1, params.getCoherency().getCode());
-		bos.writeUnsignedInt(2, params.getDataEncoding().getCode());
+		bos.writeUnsignedInt(2, params.getCoding().getCode());
 		bos.writeUnsignedInt(3, params.getFrequency().getCode());
 		bos.writeUnsignedInt(3, type);
 	}
