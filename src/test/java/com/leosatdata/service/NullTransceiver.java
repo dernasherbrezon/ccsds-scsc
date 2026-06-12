@@ -10,6 +10,7 @@ import com.leosatdata.model.Coherency;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.Polarization;
+import com.leosatdata.model.ScramblerType;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
 
@@ -190,11 +191,11 @@ public class NullTransceiver implements Transceiver {
 	public float getTxFrequency() {
 		return txFrequency;
 	}
-	
+
 	public float getRxSymbolRate() {
 		return rxSymbolRate;
 	}
-	
+
 	public float getTxSymbolRate() {
 		return txSymbolRate;
 	}
@@ -317,24 +318,34 @@ public class NullTransceiver implements Transceiver {
 	public void setTxDelay(Long txDelay) {
 		this.txDelay = txDelay;
 	}
-	
+
 	@Override
 	public void setRxCarrierModulation(CarrierModulation carrierModulation) {
-		//do nothing
+		// do nothing
 	}
-	
+
 	@Override
 	public void setTxCarrierModulation(CarrierModulation carrierModulation) {
-		//do nothing
+		// do nothing
 	}
-	
+
 	@Override
 	public void setRxModulationIndex(ModulationIndex modulationIndex) {
-		//do nothing		
+		// do nothing
 	}
-	
+
 	@Override
 	public void setTxModulationIndex(ModulationIndex modulationIndex) {
-		//do nothing		
+		// do nothing
+	}
+
+	@Override
+	public void setRxScrambler(ScramblerType scrambler) {
+		// do nothing
+	}
+
+	@Override
+	public void setTxScrambler(ScramblerType scrambler) {
+		// do nothing
 	}
 }

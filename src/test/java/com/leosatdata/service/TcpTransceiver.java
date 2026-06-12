@@ -21,6 +21,7 @@ import com.leosatdata.model.Coherency;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.Polarization;
+import com.leosatdata.model.ScramblerType;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
 
@@ -315,6 +316,16 @@ public class TcpTransceiver implements Transceiver {
 
 	@Override
 	public void setTxModulationIndex(ModulationIndex modulationIndex) {
+		// do nothing
+	}
+
+	@Override
+	public void setRxScrambler(ScramblerType scrambler) {
+		// do nothing
+	}
+
+	@Override
+	public void setTxScrambler(ScramblerType scrambler) {
 		// do nothing
 	}
 }

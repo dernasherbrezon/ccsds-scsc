@@ -5,7 +5,7 @@ public class PlExtensions {
 	private RsCodeType rsCode;
 	private boolean differentialEncoding;
 	private ScramblerType scrambler;
-	private ModeSelect modeSelect;
+	private CarrierSuppression carrierSuppression;
 	private LineCoding lineCoding; // or "Data Modulation" as defined in the spec
 	private Type1CarrierModulation carrierModulation;
 	private boolean useExtendedDataRate;
@@ -36,12 +36,12 @@ public class PlExtensions {
 		this.scrambler = scrambler;
 	}
 
-	public ModeSelect getModeSelect() {
-		return modeSelect;
+	public CarrierSuppression getCarrierSuppression() {
+		return carrierSuppression;
 	}
 
-	public void setModeSelect(ModeSelect modeSelect) {
-		this.modeSelect = modeSelect;
+	public void setCarrierSuppression(CarrierSuppression carrierSuppression) {
+		this.carrierSuppression = carrierSuppression;
 	}
 
 	public LineCoding getLineCoding() {
@@ -86,7 +86,7 @@ public class PlExtensions {
 
 	@Override
 	public String toString() {
-		return "[rsCode=" + rsCode + ", differentialEncoding=" + differentialEncoding + ", scrambler=" + scrambler + ", modeSelect=" + modeSelect + ", dataModulation=" + lineCoding + ", carrierModulation=" + carrierModulation + ", useExtendedDataRate=" + useExtendedDataRate
+		return "[rsCode=" + rsCode + ", differentialEncoding=" + differentialEncoding + ", scrambler=" + scrambler + ", carrierSuppression=" + carrierSuppression + ", dataModulation=" + lineCoding + ", carrierModulation=" + carrierModulation + ", useExtendedDataRate=" + useExtendedDataRate
 				+ ", useExtendedFreqSet=" + useExtendedFreqSet + ", direction=" + direction + "]";
 	}
 

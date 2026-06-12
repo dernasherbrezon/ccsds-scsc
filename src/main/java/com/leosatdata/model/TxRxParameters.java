@@ -2,7 +2,7 @@ package com.leosatdata.model;
 
 public class TxRxParameters {
 
-	private Mode mode;
+	private Mode mode; // the purpose is unclear
 	private DataRate dataRate;
 	private Coherency coherency;
 	private Type1Coding coding;

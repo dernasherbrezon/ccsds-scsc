@@ -24,7 +24,7 @@ import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
-import com.leosatdata.model.ModeSelect;
+import com.leosatdata.model.CarrierSuppression;
 import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType;
@@ -289,7 +289,7 @@ public class SpduParserTest {
 		rxPlExt.setLineCoding(LineCoding.MANCHESTER);
 		rxPlExt.setDifferentialEncoding(true);
 		rxPlExt.setDirection(Direction.RECEIVER);
-		rxPlExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
+		rxPlExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		rxPlExt.setRsCode(RsCodeType.RS255_239);
 		rxPlExt.setScrambler(ScramblerType.CCITT);
 		rxPlExt.setUseExtendedDataRate(false);
@@ -307,7 +307,7 @@ public class SpduParserTest {
 		txPlExt.setLineCoding(LineCoding.NRZ_L);
 		txPlExt.setDifferentialEncoding(true);
 		txPlExt.setDirection(Direction.RECEIVER);
-		txPlExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
+		txPlExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		txPlExt.setRsCode(RsCodeType.RS255_239);
 		txPlExt.setScrambler(ScramblerType.CCITT);
 		txPlExt.setUseExtendedDataRate(false);

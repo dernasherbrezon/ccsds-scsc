@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.CarrierModulation;
+import com.leosatdata.model.CarrierSuppression;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ControlParameters;
@@ -15,7 +16,6 @@ import com.leosatdata.model.Link2Establishment;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.Mode;
-import com.leosatdata.model.ModeSelect;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType;
 import com.leosatdata.model.NegotiationType2;
@@ -104,7 +104,7 @@ public class TransceiverUtil {
 		result.setLineCoding(LineCoding.MANCHESTER);
 		result.setDifferentialEncoding(false);
 		result.setDirection(direction);
-		result.setModeSelect(ModeSelect.RESIDUAL_CARRIER); // default is unclear from the spec
+		result.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER); // default is unclear from the spec
 		result.setRsCode(RsCodeType.UNKNOWN);
 		result.setScrambler(ScramblerType.NONE);
 		result.setUseExtendedDataRate(false);
@@ -147,7 +147,7 @@ public class TransceiverUtil {
 		transceiver.setRxSymbolRate(symbolRate);
 		transceiver.setRxLineCoding(plParams.getLineCoding());
 		transceiver.setRxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
-		transceiver.setRxModulationIndex(ModulationIndex.MPI_3); // 60deg according to CCSDS 211.1
+		transceiver.setRxModulationIndex(convertType1ModulationIndex(plParams));
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -170,7 +170,7 @@ public class TransceiverUtil {
 		transceiver.setTxSymbolRate(symbolRate);
 		transceiver.setTxLineCoding(plParams.getLineCoding());
 		transceiver.setTxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
-		transceiver.setTxModulationIndex(ModulationIndex.MPI_3); // 60deg according to CCSDS 211.1
+		transceiver.setTxModulationIndex(convertType1ModulationIndex(plParams));
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
@@ -324,6 +324,13 @@ public class TransceiverUtil {
 		transceiver.setTxCoherency(params.getCoherency());
 		transceiver.setTxPolarization(params.getPolarization());
 		transceiver.setTxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
+	}
+
+	private static ModulationIndex convertType1ModulationIndex(PlExtensions params) {
+		if (params != null && params.getCarrierSuppression().equals(CarrierSuppression.SUPPRESSED_CARRIER)) {
+			return ModulationIndex.MPI_2; // Suppressed Carrier (Requires transmit side utilize Modulation Index of 90°)
+		}
+		return ModulationIndex.MPI_3; // 60deg according to CCSDS 211.1
 	}
 
 	private static Coding convertType1Coding(Type1Coding encoding, PlExtensions params) {

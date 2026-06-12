@@ -1,10 +1,10 @@
 package com.leosatdata.model;
 
-public enum ModeSelect {
+public enum CarrierSuppression {
 
 	SUPPRESSED_CARRIER, RESIDUAL_CARRIER, RESERVED, UNKNOWN;
 
-	public static ModeSelect valueOfCode(int code) {
+	public static CarrierSuppression valueOfCode(int code) {
 		switch (code) {
 		case 0b00:
 			return SUPPRESSED_CARRIER;

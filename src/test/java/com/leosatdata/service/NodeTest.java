@@ -42,7 +42,7 @@ import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.LinkEstablishment;
 import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
-import com.leosatdata.model.ModeSelect;
+import com.leosatdata.model.CarrierSuppression;
 import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.NegotiationType;
@@ -811,7 +811,7 @@ public class NodeTest {
 		txExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		txExt.setLineCoding(LineCoding.MANCHESTER);
 		txExt.setDifferentialEncoding(false);
-		txExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
+		txExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		txExt.setRsCode(RsCodeType.RS255_239);
 		txExt.setScrambler(ScramblerType.CCITT);
 		txExt.setUseExtendedDataRate(false);
@@ -828,7 +828,7 @@ public class NodeTest {
 		rxExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		rxExt.setLineCoding(LineCoding.MANCHESTER);
 		rxExt.setDifferentialEncoding(false);
-		rxExt.setModeSelect(ModeSelect.RESIDUAL_CARRIER);
+		rxExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		rxExt.setRsCode(RsCodeType.RS255_239);
 		rxExt.setScrambler(ScramblerType.CCITT);
 		rxExt.setUseExtendedDataRate(false);
