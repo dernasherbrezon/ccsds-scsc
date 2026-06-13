@@ -15,7 +15,7 @@ public class Type5LinkEstablishment {
 	private int linkSnr;
 	private TransceiverMode transceiverMode;
 	private int aosFrameLength;
-	private float symbolRate; // IEEE 754 standard for half-precision floating point numbers
+	private float symbolRate;
 	private float frequency;
 
 	public Type5LinkEstablishment() {

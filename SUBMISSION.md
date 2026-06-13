@@ -55,8 +55,10 @@ Key features:
 The build requires maven and jdk installed. Here is sample installation in Debian-based distributions:
 
 ```
-sudo apt install maven openjdk-17-jre-headless
+sudo apt install maven openjdk-20-jre-headless
 ```
+
+Java version 20 is the minimum requirement.
 
 #### Build
 

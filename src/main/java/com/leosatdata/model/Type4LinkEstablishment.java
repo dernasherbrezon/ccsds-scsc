@@ -14,7 +14,7 @@ public class Type4LinkEstablishment {
 	private Type4CarrierModulation carrierModulation;
 	private Type4Coding coding;
 	private int linkSnr;
-	private float symbolRate; // IEEE 754 standard for half-precision floating point numbers
+	private float symbolRate;
 
 	public Type4LinkEstablishment() {
 		// do nothing

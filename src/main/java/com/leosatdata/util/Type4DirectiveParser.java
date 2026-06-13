@@ -51,7 +51,8 @@ public class Type4DirectiveParser {
 				bis.skipBits(2);
 				linkEstablishment.setCoding(Type4Coding.valueOfCode(bis.readUnsignedInt(6)));
 				linkEstablishment.setLinkSnr(bis.readUnsignedInt(8));
-				linkEstablishment.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
+				// IEEE 754 standard for half-precision floating point numbers
+				linkEstablishment.setSymbolRate(Float.float16ToFloat((short) bis.readUnsignedInt(16)));
 				if (linkEstablishment.getDirection().equals(LinkDirection.RETURN)) {
 					result.setRxLink(linkEstablishment);
 				} else {
@@ -125,7 +126,7 @@ public class Type4DirectiveParser {
 		bos.writeUnsignedInt(2, 0); // unused
 		bos.writeUnsignedInt(6, params.getCoding().getCode());
 		bos.writeUnsignedInt(8, params.getLinkSnr());
-		bos.writeUnsignedInt(16, (int) params.getSymbolRate()); // FIXME convert from float
+		bos.writeUnsignedInt(16, (int) Float.floatToFloat16(params.getSymbolRate()));
 	}
 
 }

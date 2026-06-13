@@ -37,7 +37,7 @@ public class Type5DirectiveParser {
 	public Type5DirectiveParser(Configuration config) {
 		this.maximumFrameSequenceLengthBits = config.getInteger("maximum_frame_sequence_length", 1) * 8;
 	}
-	
+
 	public Type5Directive decode(SpduHeader header, BitInputStream bis) throws IOException {
 		Type5Directive result = new Type5Directive();
 		result.setHeader(header);
@@ -45,29 +45,30 @@ public class Type5DirectiveParser {
 			int type = bis.readUnsignedInt(3);
 			switch (type) {
 			case LINK2_ESTABLISHMENT_CONTROL:
-				Type5LinkEstablishment link2 = new Type5LinkEstablishment();
+				Type5LinkEstablishment link = new Type5LinkEstablishment();
 				bis.skipBits(1);
-				link2.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
-				link2.setDemandQuery(Type5NegotiationType.valueOfCode(bis.readUnsignedInt(3)));
-				link2.setRnmd(bis.readBoolean());
-				link2.setTransmitToken(bis.readBoolean());
-				link2.setDuplex(Duplex.valueOfCode(bis.readUnsignedInt(3)));
-				link2.setPolarization(Polarization.valueOfCode(bis.readUnsignedInt(1)));
-				link2.setCoherency(Coherency.valueOfCode(bis.readUnsignedInt(1)));
+				link.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
+				link.setDemandQuery(Type5NegotiationType.valueOfCode(bis.readUnsignedInt(3)));
+				link.setRnmd(bis.readBoolean());
+				link.setTransmitToken(bis.readBoolean());
+				link.setDuplex(Duplex.valueOfCode(bis.readUnsignedInt(3)));
+				link.setPolarization(Polarization.valueOfCode(bis.readUnsignedInt(1)));
+				link.setCoherency(Coherency.valueOfCode(bis.readUnsignedInt(1)));
 				bis.skipBits(1);
-				link2.setCarrierModulation(Type4CarrierModulation.valueOfCode(bis.readUnsignedInt(4)));
-				link2.setModulationIndex(ModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
+				link.setCarrierModulation(Type4CarrierModulation.valueOfCode(bis.readUnsignedInt(4)));
+				link.setModulationIndex(ModulationIndex.valueOfCode(bis.readUnsignedInt(3)));
 				bis.skipBits(1);
-				link2.setCoding(Type4Coding.valueOfCode(bis.readUnsignedInt(5)));
-				link2.setLinkSnr(bis.readUnsignedInt(8));
-				link2.setTransceiverMode(TransceiverMode.valueOfCode(bis.readUnsignedInt(3)));
-				link2.setAosFrameLength(bis.readUnsignedInt(16));
-				link2.setSymbolRate(bis.readUnsignedInt(16)); // FIXME convert to float
-				link2.setFrequency(bis.readFloat());
-				if (link2.getDirection().equals(LinkDirection.RETURN)) {
-					result.setRxLink(link2);
+				link.setCoding(Type4Coding.valueOfCode(bis.readUnsignedInt(5)));
+				link.setLinkSnr(bis.readUnsignedInt(8));
+				link.setTransceiverMode(TransceiverMode.valueOfCode(bis.readUnsignedInt(3)));
+				link.setAosFrameLength(bis.readUnsignedInt(16));
+				// IEEE 754 standard for half-precision floating point numbers
+				link.setSymbolRate(Float.float16ToFloat((short) bis.readUnsignedInt(16)));
+				link.setFrequency(bis.readFloat());
+				if (link.getDirection().equals(LinkDirection.RETURN)) {
+					result.setRxLink(link);
 				} else {
-					result.setTxLink(link2);
+					result.setTxLink(link);
 				}
 				break;
 			case LINK2_REPORT_REQUEST:
@@ -171,7 +172,7 @@ public class Type5DirectiveParser {
 		bos.writeUnsignedInt(8, params.getLinkSnr());
 		bos.writeUnsignedInt(3, params.getTransceiverMode().getCode());
 		bos.writeUnsignedInt(16, params.getAosFrameLength());
-		bos.writeUnsignedInt(16, (int) params.getSymbolRate()); // FIXME convert from float
+		bos.writeUnsignedInt(16, (int) Float.floatToFloat16(params.getSymbolRate()));
 		bos.writeFloat(params.getFrequency());
 	}
 
