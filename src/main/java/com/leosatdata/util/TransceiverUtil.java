@@ -12,13 +12,13 @@ import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Direction;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.Link2Establishment;
+import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.LinkDirection;
-import com.leosatdata.model.LinkEstablishment;
+import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.NegotiationType;
-import com.leosatdata.model.NegotiationType2;
+import com.leosatdata.model.Type4NegotiationType;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.RsCodeType;
@@ -223,8 +223,8 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	private Link2Establishment createType5TxRx(LinkDirection direction) {
-		Link2Establishment result = new Link2Establishment();
+	private Type5LinkEstablishment createType5TxRx(LinkDirection direction) {
+		Type5LinkEstablishment result = new Type5LinkEstablishment();
 		if (symbolRate != -1) {
 			result.setSymbolRate(symbolRate);
 		} else {
@@ -232,7 +232,7 @@ public class TransceiverUtil {
 		}
 		result.setDirection(direction);
 		result.setTransceiverMode(TransceiverMode.USLP);
-		result.setDemandQuery(NegotiationType2.DEMAND); // not specified in the spec
+		result.setDemandQuery(Type5NegotiationType.DEMAND); // not specified in the spec
 		result.setPolarization(Polarization.LHCP);
 		result.setRnmd(false);
 		result.setTransmitToken(false);
@@ -258,15 +258,15 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	private LinkEstablishment createType4TxRx(LinkDirection direction) {
-		LinkEstablishment result = new LinkEstablishment();
+	private Type4LinkEstablishment createType4TxRx(LinkDirection direction) {
+		Type4LinkEstablishment result = new Type4LinkEstablishment();
 		if (symbolRate != -1) {
 			result.setSymbolRate(symbolRate);
 		} else {
 			result.setSymbolRate(2000);
 		}
 		result.setDirection(direction);
-		result.setDemandQuery(NegotiationType.DEMAND); // not specified in the spec
+		result.setDemandQuery(Type4NegotiationType.DEMAND); // not specified in the spec
 		result.setPolarization(Polarization.LHCP);
 		result.setRnmd(false);
 		result.setTransmitToken(false);
@@ -284,7 +284,7 @@ public class TransceiverUtil {
 	}
 
 	private void applyType4RxParameters(Type4Directive directive, boolean invert) {
-		LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
+		Type4LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
@@ -304,7 +304,7 @@ public class TransceiverUtil {
 	}
 
 	private void applyType4TxParameters(Type4Directive directive, boolean invert) {
-		LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
+		Type4LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
@@ -324,7 +324,7 @@ public class TransceiverUtil {
 	}
 
 	private void applyType5RxParameters(Type5Directive directive, boolean invert) {
-		Link2Establishment params = invert ? directive.getTxLink() : directive.getRxLink();
+		Type5LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
@@ -344,7 +344,7 @@ public class TransceiverUtil {
 	}
 
 	private void applyType5TxParameters(Type5Directive directive, boolean invert) {
-		Link2Establishment params = invert ? directive.getRxLink() : directive.getTxLink();
+		Type5LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxLineCoding(LineCoding.MANCHESTER);

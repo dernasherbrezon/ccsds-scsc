@@ -19,16 +19,16 @@ import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Direction;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
-import com.leosatdata.model.Link2Establishment;
+import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.LinkDirection;
-import com.leosatdata.model.LinkEstablishment;
+import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.CarrierSuppression;
 import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.NegotiationType;
-import com.leosatdata.model.NegotiationType2;
+import com.leosatdata.model.Type4NegotiationType;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.PnRaging;
@@ -105,7 +105,7 @@ public class SpduParserTest {
 		header.setFormat(SpduParser.VARIABLE_SPDU);
 		header.setType(SpduParser.TYPE5_DIRECTIVE);
 
-		Link2Establishment rx = new Link2Establishment();
+		Type5LinkEstablishment rx = new Type5LinkEstablishment();
 		rx.setRnmd(false);
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setDuplex(Duplex.FULL_DUPLEX);
@@ -114,7 +114,7 @@ public class SpduParserTest {
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setFrequency(2240000000f);
 		rx.setSymbolRate(8400);
-		rx.setDemandQuery(NegotiationType2.DEMAND);
+		rx.setDemandQuery(Type5NegotiationType.DEMAND);
 		rx.setModulationIndex(ModulationIndex.M0);
 		rx.setCarrierModulation(Type4CarrierModulation.BPSK);
 		rx.setPolarization(Polarization.LHCP);
@@ -122,7 +122,7 @@ public class SpduParserTest {
 		rx.setAosFrameLength(23);
 		rx.setTransceiverMode(TransceiverMode.USLP);
 
-		Link2Establishment tx = new Link2Establishment();
+		Type5LinkEstablishment tx = new Type5LinkEstablishment();
 		tx.setRnmd(false);
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setDuplex(Duplex.FULL_DUPLEX);
@@ -131,7 +131,7 @@ public class SpduParserTest {
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFrequency(2250000000f);
 		tx.setSymbolRate(8400);
-		tx.setDemandQuery(NegotiationType2.DEMAND);
+		tx.setDemandQuery(Type5NegotiationType.DEMAND);
 		tx.setModulationIndex(ModulationIndex.M0);
 		tx.setCarrierModulation(Type4CarrierModulation.BPSK);
 		tx.setPolarization(Polarization.LHCP);
@@ -182,9 +182,9 @@ public class SpduParserTest {
 		reportReq.setStatusReportRequest(1);
 		reportReq.setTimeTagRequest(2);
 
-		LinkEstablishment rx = new LinkEstablishment();
+		Type4LinkEstablishment rx = new Type4LinkEstablishment();
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
-		rx.setDemandQuery(NegotiationType.DEMAND);
+		rx.setDemandQuery(Type4NegotiationType.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setFreqChannel(3);
@@ -197,9 +197,9 @@ public class SpduParserTest {
 		rx.setSymbolRate(4800);
 		rx.setTransmitToken(false);
 
-		LinkEstablishment tx = new LinkEstablishment();
+		Type4LinkEstablishment tx = new Type4LinkEstablishment();
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
-		tx.setDemandQuery(NegotiationType.DEMAND);
+		tx.setDemandQuery(Type4NegotiationType.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setFreqChannel(5);

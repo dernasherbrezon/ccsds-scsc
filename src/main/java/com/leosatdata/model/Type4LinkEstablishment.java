@@ -1,9 +1,9 @@
 package com.leosatdata.model;
 
-public class LinkEstablishment {
+public class Type4LinkEstablishment {
 
 	private LinkDirection direction;
-	private NegotiationType demandQuery;
+	private Type4NegotiationType demandQuery;
 	private QueryResponse queryResponse;
 	private boolean rnmd; // Remote Node has No More Data to Send
 	private boolean transmitToken;
@@ -16,11 +16,11 @@ public class LinkEstablishment {
 	private int linkSnr;
 	private float symbolRate; // IEEE 754 standard for half-precision floating point numbers
 
-	public LinkEstablishment() {
+	public Type4LinkEstablishment() {
 		// do nothing
 	}
 
-	public LinkEstablishment(LinkEstablishment other) {
+	public Type4LinkEstablishment(Type4LinkEstablishment other) {
 		if (other == null) {
 			return;
 		}
@@ -47,11 +47,11 @@ public class LinkEstablishment {
 		this.direction = direction;
 	}
 
-	public NegotiationType getDemandQuery() {
+	public Type4NegotiationType getDemandQuery() {
 		return demandQuery;
 	}
 
-	public void setDemandQuery(NegotiationType demandQuery) {
+	public void setDemandQuery(Type4NegotiationType demandQuery) {
 		this.demandQuery = demandQuery;
 	}
 

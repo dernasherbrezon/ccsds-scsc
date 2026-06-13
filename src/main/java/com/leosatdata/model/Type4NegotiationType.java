@@ -1,10 +1,10 @@
 package com.leosatdata.model;
 
-public enum NegotiationType {
+public enum Type4NegotiationType {
 
 	DEMAND, QUERY, UNKNOWN;
 
-	public static NegotiationType valueOfCode(int code) {
+	public static Type4NegotiationType valueOfCode(int code) {
 		if (code == 0) {
 			return DEMAND;
 		} else if (code == 1) {

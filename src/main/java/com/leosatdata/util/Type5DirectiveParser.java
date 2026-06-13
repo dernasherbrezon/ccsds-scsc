@@ -5,12 +5,12 @@ import java.io.IOException;
 import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Duplex;
-import com.leosatdata.model.Link2Establishment;
+import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.NegotiationType2;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.PnRaging;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.RangingCode;
@@ -45,10 +45,10 @@ public class Type5DirectiveParser {
 			int type = bis.readUnsignedInt(3);
 			switch (type) {
 			case LINK2_ESTABLISHMENT_CONTROL:
-				Link2Establishment link2 = new Link2Establishment();
+				Type5LinkEstablishment link2 = new Type5LinkEstablishment();
 				bis.skipBits(1);
 				link2.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
-				link2.setDemandQuery(NegotiationType2.valueOfCode(bis.readUnsignedInt(3)));
+				link2.setDemandQuery(Type5NegotiationType.valueOfCode(bis.readUnsignedInt(3)));
 				link2.setRnmd(bis.readBoolean());
 				link2.setTransmitToken(bis.readBoolean());
 				link2.setDuplex(Duplex.valueOfCode(bis.readUnsignedInt(3)));
@@ -153,7 +153,7 @@ public class Type5DirectiveParser {
 
 	}
 
-	private static void encodeLink(Link2Establishment params, BitOutputStream bos) throws IOException {
+	private static void encodeLink(Type5LinkEstablishment params, BitOutputStream bos) throws IOException {
 		bos.writeUnsignedInt(3, LINK2_ESTABLISHMENT_CONTROL);
 		bos.writeUnsignedInt(1, 0); // unused
 		bos.writeUnsignedInt(1, params.getDirection().getCode());

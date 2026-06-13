@@ -44,6 +44,10 @@ Key features:
  * Sending data is asynchronous operation: transceiver will generate TX_COMPLETE event when data physically fully modulated and sent over radio
  * All notifications to the vehicle controller executed on the TX thread. 
 
+#### Implementation details
+
+ * pcid not supported. Not clear if transceiver is shared between several OBC or each OBC has own transceiver.
+
 ### Build & Run Instructions
 
 #### Prerequisites

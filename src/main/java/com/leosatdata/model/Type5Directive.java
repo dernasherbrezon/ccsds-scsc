@@ -5,8 +5,8 @@ public class Type5Directive implements Spdu {
 	public static final int SPDU_VERSION = 3;
 	
 	private SpduHeader header;
-	private Link2Establishment rxLink;
-	private Link2Establishment txLink;
+	private Type5LinkEstablishment rxLink;
+	private Type5LinkEstablishment txLink;
 	private ReportRequest reportRequest;
 	private Vr vr;
 	private Integer sourceSpacecraftId;
@@ -21,19 +21,19 @@ public class Type5Directive implements Spdu {
 		}
 	}
 
-	public Link2Establishment getRxLink() {
+	public Type5LinkEstablishment getRxLink() {
 		return rxLink;
 	}
 
-	public void setRxLink(Link2Establishment rxLink) {
+	public void setRxLink(Type5LinkEstablishment rxLink) {
 		this.rxLink = rxLink;
 	}
 
-	public Link2Establishment getTxLink() {
+	public Type5LinkEstablishment getTxLink() {
 		return txLink;
 	}
 
-	public void setTxLink(Link2Establishment txLink) {
+	public void setTxLink(Type5LinkEstablishment txLink) {
 		this.txLink = txLink;
 	}
 

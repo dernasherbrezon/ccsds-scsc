@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.Duplex;
-import com.leosatdata.model.Link2Establishment;
-import com.leosatdata.model.LinkEstablishment;
+import com.leosatdata.model.Type5LinkEstablishment;
+import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
@@ -47,8 +47,8 @@ public class SpduUtil {
 		}
 		if (obj instanceof Type4Directive) {
 			Type4Directive directive = (Type4Directive) obj;
-			LinkEstablishment rx = null;
-			LinkEstablishment tx = null;
+			Type4LinkEstablishment rx = null;
+			Type4LinkEstablishment tx = null;
 			if (directive.getRxLink() != null) {
 				rx = directive.getRxLink();
 				rx.setRnmd(rnmd);
@@ -67,8 +67,8 @@ public class SpduUtil {
 		}
 		if (obj instanceof Type5Directive) {
 			Type5Directive directive = (Type5Directive) obj;
-			Link2Establishment rx = null;
-			Link2Establishment tx = null;
+			Type5LinkEstablishment rx = null;
+			Type5LinkEstablishment tx = null;
 			if (directive.getRxLink() != null) {
 				rx = directive.getRxLink();
 				rx.setRnmd(rnmd);
@@ -278,12 +278,12 @@ public class SpduUtil {
 			Type4Directive type4 = (Type4Directive) params;
 			Type4Directive result = new Type4Directive();
 			if (type4.getRxLink() != null) {
-				LinkEstablishment link = new LinkEstablishment(type4.getRxLink());
+				Type4LinkEstablishment link = new Type4LinkEstablishment(type4.getRxLink());
 				link.setTransmitToken(transmitToken);
 				result.setRxLink(link);
 			}
 			if (type4.getTxLink() != null) {
-				LinkEstablishment link = new LinkEstablishment(type4.getTxLink());
+				Type4LinkEstablishment link = new Type4LinkEstablishment(type4.getTxLink());
 				link.setTransmitToken(transmitToken);
 				result.setTxLink(link);
 			}
@@ -293,12 +293,12 @@ public class SpduUtil {
 			Type5Directive type5 = (Type5Directive) params;
 			Type5Directive result = new Type5Directive();
 			if (type5.getRxLink() != null) {
-				Link2Establishment link = new Link2Establishment(type5.getRxLink());
+				Type5LinkEstablishment link = new Type5LinkEstablishment(type5.getRxLink());
 				link.setTransmitToken(transmitToken);
 				result.setRxLink(link);
 			}
 			if (type5.getTxLink() != null) {
-				Link2Establishment link = new Link2Establishment(type5.getTxLink());
+				Type5LinkEstablishment link = new Type5LinkEstablishment(type5.getTxLink());
 				link.setTransmitToken(transmitToken);
 				result.setTxLink(link);
 			}

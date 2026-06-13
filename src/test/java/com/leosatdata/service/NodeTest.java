@@ -37,16 +37,16 @@ import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
-import com.leosatdata.model.Link2Establishment;
+import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.LinkDirection;
-import com.leosatdata.model.LinkEstablishment;
+import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.CarrierSuppression;
 import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.NegotiationType;
-import com.leosatdata.model.NegotiationType2;
+import com.leosatdata.model.Type4NegotiationType;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
@@ -739,11 +739,11 @@ public class NodeTest {
 	}
 
 	public static Type5Directive createType5CommParameters() {
-		Link2Establishment rx = new Link2Establishment();
+		Type5LinkEstablishment rx = new Type5LinkEstablishment();
 		rx.setAosFrameLength(0);
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setCoherency(Coherency.COHERENT_PSK);
-		rx.setDemandQuery(NegotiationType2.DEMAND);
+		rx.setDemandQuery(Type5NegotiationType.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setFrequency(2_100_000_000f);
 		rx.setLinkSnr(0);
@@ -755,11 +755,11 @@ public class NodeTest {
 		rx.setTransceiverMode(TransceiverMode.USLP);
 		rx.setTransmitToken(false);
 
-		Link2Establishment tx = new Link2Establishment();
+		Type5LinkEstablishment tx = new Type5LinkEstablishment();
 		tx.setAosFrameLength(0);
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setCoherency(Coherency.COHERENT_PSK);
-		tx.setDemandQuery(NegotiationType2.DEMAND);
+		tx.setDemandQuery(Type5NegotiationType.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFrequency(2_200_000_000f);
 		tx.setLinkSnr(0);
@@ -778,9 +778,9 @@ public class NodeTest {
 	}
 
 	public static Type4Directive createType4CommParameters() {
-		LinkEstablishment rx = new LinkEstablishment();
+		Type4LinkEstablishment rx = new Type4LinkEstablishment();
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
-		rx.setDemandQuery(NegotiationType.DEMAND);
+		rx.setDemandQuery(Type4NegotiationType.DEMAND);
 		rx.setDirection(LinkDirection.RETURN);
 		rx.setFreqChannel(1);
 		rx.setLinkSnr(0);
@@ -792,9 +792,9 @@ public class NodeTest {
 		rx.setSymbolRate(9600);
 		rx.setTransmitToken(false);
 
-		LinkEstablishment tx = new LinkEstablishment();
+		Type4LinkEstablishment tx = new Type4LinkEstablishment();
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
-		tx.setDemandQuery(NegotiationType.DEMAND);
+		tx.setDemandQuery(Type4NegotiationType.DEMAND);
 		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFreqChannel(1);
 		tx.setLinkSnr(0);
