@@ -197,12 +197,25 @@ public class NodeTest {
 	}
 
 	// TODO test failed comm change
-	// TODO type 1 without plextensions
-	// default pl extension:
-	// result.setCarrierModulation(CarrierModulation.PSK);
-	// result.setLineCoding(LineCoding.MANCHESTER);
-	// RESIDUAL_CARRIER - i guess derived from PM modulation
-	// modulation index of 60° ± 5%.
+
+	@Test
+	public void testNoPlExtensions() throws Exception {
+		Type1Directive type1Comm = createType1CommParameters(DataRate.R8C);
+		type1Comm.setRxPlExtensions(null);
+		type1Comm.setTxPlExtensions(null);
+		
+		satellite.setDuplex(duplex);
+		satellite.waitForSession();
+		ground.setDuplex(duplex);
+		ground.setCommParameters(type1Comm);
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+
+		waitPersistenceActivityCompletion();
+		
+		assertTestExpPacket();
+	}
 	
 	@Test
 	public void testValidateSourceFrame() throws Exception {

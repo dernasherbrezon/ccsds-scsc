@@ -80,7 +80,6 @@ public class TransceiverUtil {
 	}
 
 	private TxRxParameters createType1TxRx() {
-		// TODO not clear why hailing_data_rate exist
 		TxRxParameters result = new TxRxParameters();
 		result.setCoding(Type1Coding.NONE);
 		if (symbolRate != -1) {
@@ -141,15 +140,23 @@ public class TransceiverUtil {
 		TxRxParameters commParams = invert ? params.getTxParams() : params.getRxParams();
 		PlExtensions plParams = invert ? params.getTxPlExtensions() : params.getRxPlExtensions();
 		int symbolRate = commParams.getDataRate().getRate();
-		if (plParams.isUseExtendedDataRate()) {
+		if (plParams != null && plParams.isUseExtendedDataRate()) {
 			symbolRate = commParams.getDataRate().getExtendedRate();
 		}
 		transceiver.setRxSymbolRate(symbolRate);
-		transceiver.setRxLineCoding(plParams.getLineCoding());
-		transceiver.setRxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
+		if (plParams != null) {
+			transceiver.setRxLineCoding(plParams.getLineCoding());
+		} else {
+			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
+		}
+		if (plParams != null) {
+			transceiver.setRxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
+		} else {
+			transceiver.setRxCarrierModulation(convertType1CarrierModulation(Type1CarrierModulation.PCM_PSK_PM));
+		}
 		transceiver.setRxModulationIndex(convertType1ModulationIndex(plParams));
 		int channelId = commParams.getFrequency().getCode();
-		if (plParams.isUseExtendedFreqSet()) {
+		if (plParams != null && plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
 		}
 		String direction = invert ? "f" : "r";
@@ -157,23 +164,39 @@ public class TransceiverUtil {
 		transceiver.setRxCoding(convertType1Coding(commParams.getCoding(), plParams));
 		transceiver.setRxCoherency(commParams.getCoherency());
 		transceiver.setRxPolarization(Polarization.RHCP); // defined in 211.1
-		transceiver.setRxScrambler(plParams.getScrambler());
-		transceiver.setRxDifferentialEncoding(plParams.isDifferentialEncoding());
+		if (plParams != null) {
+			transceiver.setRxScrambler(plParams.getScrambler());
+		} else {
+			transceiver.setRxScrambler(ScramblerType.NONE);
+		}
+		if (plParams != null) {
+			transceiver.setRxDifferentialEncoding(plParams.isDifferentialEncoding());
+		} else {
+			transceiver.setRxDifferentialEncoding(false);
+		}
 	}
 
 	private void applyType1TxParameters(Type1Directive params, boolean invert) {
 		TxRxParameters commParams = invert ? params.getRxParams() : params.getTxParams();
 		PlExtensions plParams = invert ? params.getRxPlExtensions() : params.getTxPlExtensions();
 		int symbolRate = commParams.getDataRate().getRate();
-		if (plParams.isUseExtendedDataRate()) {
+		if (plParams != null && plParams.isUseExtendedDataRate()) {
 			symbolRate = commParams.getDataRate().getExtendedRate();
 		}
 		transceiver.setTxSymbolRate(symbolRate);
-		transceiver.setTxLineCoding(plParams.getLineCoding());
-		transceiver.setTxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
+		if (plParams != null) {
+			transceiver.setTxLineCoding(plParams.getLineCoding());
+		} else {
+			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
+		}
+		if (plParams != null) {
+			transceiver.setTxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
+		} else {
+			transceiver.setTxCarrierModulation(CarrierModulation.PCM_PSK_PM);
+		}
 		transceiver.setTxModulationIndex(convertType1ModulationIndex(plParams));
 		int channelId = commParams.getFrequency().getCode();
-		if (plParams.isUseExtendedFreqSet()) {
+		if (plParams != null && plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
 		}
 		String direction = invert ? "r" : "f";
@@ -181,8 +204,16 @@ public class TransceiverUtil {
 		transceiver.setTxCoding(convertType1Coding(commParams.getCoding(), plParams));
 		transceiver.setTxCoherency(commParams.getCoherency());
 		transceiver.setTxPolarization(Polarization.RHCP); // defined in 211.1
-		transceiver.setTxScrambler(plParams.getScrambler());
-		transceiver.setTxDifferentialEncoding(plParams.isDifferentialEncoding());
+		if (plParams != null) {
+			transceiver.setTxScrambler(plParams.getScrambler());
+		} else {
+			transceiver.setTxScrambler(ScramblerType.NONE);
+		}
+		if (plParams != null) {
+			transceiver.setTxDifferentialEncoding(plParams.isDifferentialEncoding());
+		} else {
+			transceiver.setTxDifferentialEncoding(false);
+		}
 	}
 
 	private Type5Directive createHailType5() {
