@@ -5,12 +5,9 @@ public class TimeDistribution implements Spdu {
 	private SpduHeader header;
 
 	private TimeDistributionType type;
-	// FIXME see reference 3. 5bytes coarse, 3bytes fine
 	private long transceiverClock; // clock corresponding to when the trailing edge of the last bit of the ASM of
 	// the transmitted PLTU crosses the clock capture point within the transceiver;
-	// FIXME 1 coarse, 2 bytes fine
 	private int sendSideDelay;
-	// FIXME 1 coarse, 2 bytes fine
 	private int oneWayLightTime;
 
 	@Override

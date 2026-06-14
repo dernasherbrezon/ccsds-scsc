@@ -4,7 +4,8 @@ public class ReportRequest {
 
 	private boolean pcid1PlcwRequest;
 	private boolean pcid0PlcwRequest;
-	private int timeTagRequest; // FIXME implement reference 6 section 5
+	// number of transfer frames to capture for time correlation service
+	private int timeTagRequest;
 	private int statusReportRequest; // 0x0 indicate report is not required. Everything else is reserved
 
 	public boolean isPcid1PlcwRequest() {
