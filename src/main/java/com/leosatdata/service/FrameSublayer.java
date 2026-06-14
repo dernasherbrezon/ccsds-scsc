@@ -93,6 +93,24 @@ class FrameSublayer {
 		// always attempt to send frame after handling event
 		handleFopp(e);
 
+		// assume max_frame_length on startup
+		// update aos frame length once received
+		switch (e.getType()) {
+		case SPDU:
+			if (e.getArg() instanceof Type5Directive) {
+				Type5Directive type5 = (Type5Directive) e.getArg();
+				if (type5.getRxLink() != null && type5.getRxLink().getAosFrameLength() != 0) {
+					framev2Parser.setFrameLength(type5.getRxLink().getAosFrameLength());
+				}
+				if (type5.getTxLink() != null && type5.getTxLink().getAosFrameLength() != 0) {
+					framev2Parser.setFrameLength(type5.getTxLink().getAosFrameLength());
+				}
+			}
+			break;
+		default:
+			break;
+		}
+
 		if (!state.isTxReady()) {
 			return;
 		}
@@ -471,7 +489,7 @@ class FrameSublayer {
 	@SuppressWarnings("rawtypes")
 	public List createUFrame(byte[] payload, QualityOfService qos, int portId) {
 		if (uFrameVersion == 2) {
-			return framev2Parser.createUFrame(payload, qos, portId);
+			return framev2Parser.createUFrame(payload, portId);
 		}
 		if (uFrameVersion == 3) {
 			return framev3Parser.createUFrame(payload, qos, portId);
@@ -507,8 +525,8 @@ class FrameSublayer {
 			return null;
 		}
 		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data)) {
-			if (uFrameVersion != 2) {
-				LOG.info("version mismatch. expected: {} got {}", uFrameVersion, 2);
+			if (uFrameVersion != 2 && pFrameVersion != 2) {
+				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, 2);
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
@@ -519,8 +537,8 @@ class FrameSublayer {
 			}
 		}
 		if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data)) {
-			if (uFrameVersion != 3) {
-				LOG.info("version mismatch. expected: {} got {}", uFrameVersion, 3);
+			if (uFrameVersion != 3 && pFrameVersion != 3) {
+				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, 3);
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
@@ -531,8 +549,8 @@ class FrameSublayer {
 			}
 		}
 		if (com.leosatdata.ccsds7321b3.util.TransferFrameParser.accept(data)) {
-			if (uFrameVersion != 4) {
-				LOG.info("version mismatch. expected: {} got {}", uFrameVersion, 4);
+			if (uFrameVersion != 4 && pFrameVersion != 4) {
+				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, 4);
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {

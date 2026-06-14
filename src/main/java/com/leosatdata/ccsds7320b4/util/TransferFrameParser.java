@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
@@ -15,13 +14,15 @@ public class TransferFrameParser {
 
 	private final int insertZoneLength;
 	private final boolean frameHeaderErrorControl;
-	private final int maxDataLength;
 	private final int dataUnitType;
 	private final boolean ocf;
 	private final boolean frameErrorControl;
 	private final int localScid;
 	private final int remoteScid;
 	private final SourceDestination sourceDestination;
+	private final int headerLength;
+
+	private int maxDataLength;
 
 	public TransferFrameParser(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
@@ -38,11 +39,16 @@ public class TransferFrameParser {
 		headerLength += (dataUnitType == 1 || dataUnitType == 2) ? 2 : 0;
 		headerLength += ocf ? TransferFrame.OCF_LENGTH : 0;
 		headerLength += frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
+		this.headerLength = headerLength;
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
 		this.maxDataLength = maxFrameLength - headerLength;
 		if (maxDataLength <= 0) {
 			throw new IllegalArgumentException("maximum_frame_length is too small: " + maxFrameLength);
 		}
+	}
+
+	public void setFrameLength(int frameLength) {
+		this.maxDataLength = frameLength - this.headerLength;
 	}
 
 	public static boolean accept(byte[] data) {
@@ -165,7 +171,10 @@ public class TransferFrameParser {
 		return maxDataLength;
 	}
 
-	public List createUFrame(byte[] payload, QualityOfService qos, int portId) {
+	public List<TransferFrame> createUFrame(byte[] payload, int portId) {
+		if (payload.length > maxDataLength) {
+			throw new IllegalArgumentException("payload length " + payload.length + " is no more than maximum frame length " + maxDataLength);
+		}
 		TransferFrame frame = new TransferFrame();
 		frame.setReplay(false);
 		if (sourceDestination.equals(SourceDestination.SOURCE)) {
@@ -176,14 +185,14 @@ public class TransferFrameParser {
 		frame.setVcFrameCountCycleUsed(false);
 		frame.setVcid(portId);
 		frame.setDataField(payload);
-		// FIXME v2 doesn't have segments. Fixed-length M_PDU should split incoming
-		// packets
 		return Collections.singletonList(frame);
 	}
 
-	public byte[] assemblePacket(Object frame) {
-		// TODO Auto-generated method stub
-		return null;
+	// Packet service and packet processing function is outside of scope of this implementation
+	// pass data as-is
+	public byte[] assemblePacket(Object obj) {
+		TransferFrame frame = (TransferFrame) obj;
+		return frame.getDataField();
 	}
 
 }
