@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
 import org.junit.Before;
@@ -127,6 +128,46 @@ public class TransferFrameParserTest {
 		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
 	}
 
+	@Test
+	public void testCreateUFrame() throws Exception {
+		List<TransferFrame> frames = parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);
+		// concat 3 frames
+		assertEquals(0, frames.size());
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);
+		assertEquals(0, frames.size());
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength() - 2 * parser.getMaxDataLength() / 3], 0);
+		assertEquals(1, frames.size());
+		assertEquals(0, frames.get(0).getFirstHeaderPointer());
+
+		// packet fill whole frame
+		parser = new TransferFrameParser(config);
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
+		assertEquals(1, frames.size());
+		assertEquals(0, frames.get(0).getFirstHeaderPointer());
+
+		// packet overflow to the next frame
+		parser = new TransferFrameParser(config);
+		parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);
+		parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
+		assertEquals(1, frames.size());
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
+		assertEquals(1, frames.size());
+		assertEquals(1356, frames.get(0).getFirstHeaderPointer());
+
+		// packet more than a frame
+		parser = new TransferFrameParser(config);
+		parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);
+		frames = parser.createUFrame(new byte[3 * parser.getMaxDataLength()], 0);
+		assertEquals(3, frames.size());
+		assertEquals(0, frames.get(0).getFirstHeaderPointer());
+		assertEquals(0x7FF, frames.get(1).getFirstHeaderPointer());
+		assertEquals(0x7FF, frames.get(2).getFirstHeaderPointer());
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
+		assertEquals(1, frames.size());
+		assertEquals(678, frames.get(0).getFirstHeaderPointer());
+	}
+
 	private static TransferFrame createFrame() {
 		byte[] data = new byte[4];
 		for (int i = 0; i < data.length; i++) {
@@ -178,4 +219,5 @@ public class TransferFrameParserTest {
 		config = new Configuration(props);
 		parser = new TransferFrameParser(config);
 	}
+
 }

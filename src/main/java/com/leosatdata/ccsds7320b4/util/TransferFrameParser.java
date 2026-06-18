@@ -1,7 +1,7 @@
 package com.leosatdata.ccsds7320b4.util;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
@@ -23,6 +23,10 @@ public class TransferFrameParser {
 	private final int headerLength;
 
 	private int maxDataLength;
+	private byte[] currentDataField;
+	private int currentSize;
+	private boolean storeFirstHeaderPointer = true;
+	private int firstHeaderPointer = 0;
 
 	public TransferFrameParser(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
@@ -42,6 +46,8 @@ public class TransferFrameParser {
 		this.headerLength = headerLength;
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
 		this.maxDataLength = maxFrameLength - headerLength;
+		this.currentDataField = new byte[this.maxDataLength];
+		this.currentSize = 0;
 		if (maxDataLength <= 0) {
 			throw new IllegalArgumentException("maximum_frame_length is too small: " + maxFrameLength);
 		}
@@ -49,6 +55,11 @@ public class TransferFrameParser {
 
 	public void setFrameLength(int frameLength) {
 		this.maxDataLength = frameLength - this.headerLength;
+		// change of frame will reset current buffer
+		if (this.currentDataField.length != this.maxDataLength) {
+			this.currentDataField = new byte[this.maxDataLength];
+			this.currentSize = 0;
+		}
 	}
 
 	public static boolean accept(byte[] data) {
@@ -145,11 +156,6 @@ public class TransferFrameParser {
 		}
 		// every other dataUnitTypes are just bytes
 		bos.writeFully(frame.getDataField());
-		int padding = maxDataLength - frame.getDataField().length;
-		if (padding > 0) {
-			// TODO follow spec and write pseudo-random instead of zeroes
-			bos.writeFully(new byte[padding]);
-		}
 
 		if (ocf) {
 			if (frame.getOperationalControl() != null) {
@@ -171,21 +177,48 @@ public class TransferFrameParser {
 		return maxDataLength;
 	}
 
-	public List<TransferFrame> createUFrame(byte[] payload, int portId) {
-		if (payload.length > maxDataLength) {
-			throw new IllegalArgumentException("payload length " + payload.length + " is no more than maximum frame length " + maxDataLength);
+	public List<TransferFrame> createUFrame(byte[] packet, int portId) {
+		int toWrite = packet.length;
+		int alreadyWrote = 0;
+		List<TransferFrame> result = new ArrayList<>();
+		if (storeFirstHeaderPointer) {
+			firstHeaderPointer = currentSize;
+			storeFirstHeaderPointer = false;
 		}
-		TransferFrame frame = new TransferFrame();
-		frame.setReplay(false);
-		if (sourceDestination.equals(SourceDestination.SOURCE)) {
-			frame.setScid(localScid);
-		} else {
-			frame.setScid(remoteScid);
+		while (toWrite > 0) {
+			int remaining = currentDataField.length - currentSize;
+			if (toWrite < remaining) {
+				System.arraycopy(packet, alreadyWrote, currentDataField, currentSize, toWrite);
+				currentSize += toWrite;
+				alreadyWrote += toWrite;
+				toWrite = 0;
+			} else {
+				System.arraycopy(packet, alreadyWrote, currentDataField, currentSize, remaining);
+				byte[] frameDataField = new byte[currentDataField.length];
+				System.arraycopy(currentDataField, 0, frameDataField, 0, frameDataField.length);
+				TransferFrame frame = new TransferFrame();
+				frame.setReplay(false);
+				if (sourceDestination.equals(SourceDestination.SOURCE)) {
+					frame.setScid(localScid);
+				} else {
+					frame.setScid(remoteScid);
+				}
+				frame.setVcFrameCountCycleUsed(false);
+				frame.setVcid(portId);
+				frame.setDataField(frameDataField);
+				if (currentSize == 0 && toWrite > currentDataField.length) {
+					frame.setFirstHeaderPointer(0x7FF);
+				} else {
+					frame.setFirstHeaderPointer(firstHeaderPointer);
+				}
+				result.add(frame);
+				currentSize = 0;
+				storeFirstHeaderPointer = true;
+				alreadyWrote += remaining;
+				toWrite -= remaining;
+			}
 		}
-		frame.setVcFrameCountCycleUsed(false);
-		frame.setVcid(portId);
-		frame.setDataField(payload);
-		return Collections.singletonList(frame);
+		return result;
 	}
 
 	// Packet service and packet processing function is outside of scope of this implementation
