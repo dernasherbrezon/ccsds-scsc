@@ -207,6 +207,10 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 			throw new IllegalArgumentException("port id cannot exceed: " + 0b111);
 		}
 		List<Object> frames = frameSublayer.createUFrame(packet, qos, portId);
+		// can be empty when current v2 frame buffer was not fully filled
+		if (frames.isEmpty()) {
+			return;
+		}
 		// will lock if no free space available in queues
 		if (qos.equals(QualityOfService.EXPEDITED)) {
 			for (Object cur : frames) {
