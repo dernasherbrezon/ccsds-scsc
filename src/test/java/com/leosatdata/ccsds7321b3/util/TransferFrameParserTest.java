@@ -90,6 +90,11 @@ public class TransferFrameParserTest {
 		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testInvalidPort() throws Exception {
+		parser.createUFrame(new byte[10], QualityOfService.EXPEDITED, 31);
+	}
+
 	private TransferFrame encodeDecode(TransferFrame input) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (BitOutputStream bos = new BitOutputStream(baos)) {

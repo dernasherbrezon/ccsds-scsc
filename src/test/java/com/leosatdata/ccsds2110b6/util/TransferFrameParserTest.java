@@ -40,7 +40,7 @@ public class TransferFrameParserTest {
 	public void testPFrame() throws Exception {
 		assertDirectives(parser.createPFrame(new byte[] { 0 }));
 	}
-	
+
 	@Test
 	public void testSegmented() throws Exception {
 		TransferFrame frame = createFrame();
@@ -55,6 +55,11 @@ public class TransferFrameParserTest {
 		assertFalse(TransferFrameParser.accept(null));
 		assertFalse(TransferFrameParser.accept(new byte[0]));
 		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testInvalidPort() throws Exception {
+		parser.createUFrame(new byte[10], QualityOfService.EXPEDITED, 15);
 	}
 
 	@Test

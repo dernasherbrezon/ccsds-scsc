@@ -128,6 +128,11 @@ public class TransferFrameParserTest {
 		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testInvalidPort() throws Exception {
+		parser.createUFrame(new byte[10], 64);
+	}
+
 	@Test
 	public void testCreateUFrame() throws Exception {
 		List<TransferFrame> frames = parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);

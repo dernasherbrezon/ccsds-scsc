@@ -18,10 +18,12 @@ import com.leosatdata.ccsds2110b6.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.Util;
 
 public class TransferFrameParser {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
+	private final static int PORTID_LENGTH_BITS = 3;
 
 	private final int maxDataLength;
 	private final int localScid;
@@ -65,7 +67,7 @@ public class TransferFrameParser {
 		result.setDfcId(DfcId.valueOfCode(bis.readUnsignedInt(2)));
 		result.setScid(bis.readUnsignedInt(10));
 		result.setPcid(bis.readUnsignedInt(1));
-		result.setPortId(bis.readUnsignedInt(3));
+		result.setPortId(bis.readUnsignedInt(PORTID_LENGTH_BITS));
 		result.setSourceOrDestination(SourceDestination.valueOfCode(bis.readUnsignedInt(1)));
 		result.setFrameLength(bis.readUnsignedInt(11));
 		result.setFrameSequenceNumber(bis.readUnsignedInt(8));
@@ -95,7 +97,7 @@ public class TransferFrameParser {
 		bos.writeUnsignedInt(2, frame.getDfcId().getCode());
 		bos.writeUnsignedInt(10, frame.getScid());
 		bos.writeUnsignedInt(1, frame.getPcid());
-		bos.writeUnsignedInt(3, frame.getPortId());
+		bos.writeUnsignedInt(PORTID_LENGTH_BITS, frame.getPortId());
 		bos.writeUnsignedInt(1, frame.getSourceOrDestination().getCode());
 		bos.writeUnsignedInt(11, frame.getFrameLength());
 		bos.writeUnsignedInt(8, frame.getFrameSequenceNumber());
@@ -128,6 +130,7 @@ public class TransferFrameParser {
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
+		Util.validateInt(PORTID_LENGTH_BITS, "portId", portId);
 		if (packet.length < maxDataLength) {
 			TransferFrame frame = new TransferFrame();
 			frame.setQualityOfService(qos);

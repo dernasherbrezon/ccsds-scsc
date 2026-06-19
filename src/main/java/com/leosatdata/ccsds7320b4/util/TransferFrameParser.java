@@ -9,8 +9,11 @@ import com.leosatdata.ccsds7320b4.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.Util;
 
 public class TransferFrameParser {
+
+	private static final int VCID_LENGTH_BITS = 6;
 
 	private final int insertZoneLength;
 	private final boolean frameHeaderErrorControl;
@@ -73,7 +76,7 @@ public class TransferFrameParser {
 		TransferFrame result = new TransferFrame();
 		result.setVersionNumber(bis.readUnsignedInt(2));
 		result.setScid(bis.readUnsignedInt(8));
-		result.setVcid(bis.readUnsignedInt(6));
+		result.setVcid(bis.readUnsignedInt(VCID_LENGTH_BITS));
 		result.setVcFrameCount(bis.readUnsignedInt(24));
 		result.setReplay(bis.readBoolean());
 		result.setVcFrameCountCycleUsed(bis.readBoolean());
@@ -122,7 +125,7 @@ public class TransferFrameParser {
 		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		bos.writeUnsignedInt(2, frame.getVersionNumber());
 		bos.writeUnsignedInt(8, frame.getScid());
-		bos.writeUnsignedInt(6, frame.getVcid());
+		bos.writeUnsignedInt(VCID_LENGTH_BITS, frame.getVcid());
 		bos.writeUnsignedInt(24, frame.getVcFrameCount());
 		bos.writeBoolean(frame.isReplay());
 		bos.writeBoolean(frame.isVcFrameCountCycleUsed());
@@ -178,6 +181,7 @@ public class TransferFrameParser {
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, int portId) {
+		Util.validateInt(VCID_LENGTH_BITS, "portId", portId);
 		int toWrite = packet.length;
 		int alreadyWrote = 0;
 		List<TransferFrame> result = new ArrayList<>();
@@ -223,6 +227,7 @@ public class TransferFrameParser {
 
 	// Packet service and packet processing function is outside of scope of this implementation
 	// pass data as-is
+	// FIXME re-deserialize from stream
 	public byte[] assemblePacket(Object obj) {
 		TransferFrame frame = (TransferFrame) obj;
 		return frame.getDataField();

@@ -17,10 +17,12 @@ import com.leosatdata.ccsds7321b3.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
+import com.leosatdata.util.Util;
 
 public class TransferFrameParser {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
+	private final static int MAPID_LENGTH_BITS = 4;
 
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
@@ -75,7 +77,7 @@ public class TransferFrameParser {
 		result.setScid(bis.readUnsignedInt(16));
 		result.setSourceOrDestination(SourceDestination.valueOfCode(bis.readUnsignedInt(1)));
 		result.setVcid(bis.readUnsignedInt(6));
-		result.setMapid(bis.readUnsignedInt(4));
+		result.setMapid(bis.readUnsignedInt(MAPID_LENGTH_BITS));
 		result.setHeaderTruncated(bis.readBoolean());
 		if (!result.isHeaderTruncated()) {
 			result.setFrameLength(bis.readUnsignedInt(16));
@@ -153,7 +155,7 @@ public class TransferFrameParser {
 		bos.writeUnsignedInt(16, frame.getScid());
 		bos.writeUnsignedInt(1, frame.getSourceOrDestination().getCode());
 		bos.writeUnsignedInt(6, frame.getVcid());
-		bos.writeUnsignedInt(4, frame.getMapid());
+		bos.writeUnsignedInt(MAPID_LENGTH_BITS, frame.getMapid());
 		bos.writeBoolean(frame.isHeaderTruncated());
 		if (!frame.isHeaderTruncated()) {
 			bos.writeUnsignedInt(16, frame.getFrameLength());
@@ -235,6 +237,7 @@ public class TransferFrameParser {
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
+		Util.validateInt(MAPID_LENGTH_BITS, "portId", portId);
 		if (packet.length < maxDataLength) {
 			TransferFrame frame = new TransferFrame();
 			frame.setSourceOrDestination(sourceDestination);
