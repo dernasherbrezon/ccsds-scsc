@@ -162,7 +162,7 @@ public class TransferFrameParserTest {
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
 		assertEquals(1, frames.size());
 		assertEquals(1, frames.get(0).getVcFrameCount());
-		assertEquals(1350, frames.get(0).getFirstHeaderPointer());
+		assertEquals(1356, frames.get(0).getFirstHeaderPointer());
 
 		// packet more than a frame
 		parser = new TransferFrameParser(config);
@@ -177,7 +177,7 @@ public class TransferFrameParserTest {
 		assertEquals(2, frames.get(2).getVcFrameCount());
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
 		assertEquals(1, frames.size());
-		assertEquals(675, frames.get(0).getFirstHeaderPointer());
+		assertEquals(678, frames.get(0).getFirstHeaderPointer());
 
 		// different vcid produce packets separately
 		parser = new TransferFrameParser(config);
@@ -204,8 +204,8 @@ public class TransferFrameParserTest {
 		assertEquals(0, frames.get(0).getVcFrameCount());
 	}
 
-	private static TransferFrame createFrame() {
-		byte[] data = new byte[4];
+	private TransferFrame createFrame() {
+		byte[] data = new byte[parser.getMaxDataLength()];
 		for (int i = 0; i < data.length; i++) {
 			data[i] = (byte) i;
 		}

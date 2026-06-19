@@ -42,16 +42,14 @@ public class TransferFrameParser {
 		headerLength += ocf ? TransferFrame.OCF_LENGTH : 0;
 		headerLength += frameErrorControl ? TransferFrame.FEC_LENGTH : 0;
 		this.headerLength = headerLength;
-		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
-		this.maxDataLength = maxFrameLength - headerLength;
-		if (maxDataLength <= 0) {
-			throw new IllegalArgumentException("maximum_frame_length is too small: " + maxFrameLength);
-		}
-		setFrameLength(this.maxDataLength);
+		setFrameLength(config.getInteger("maximum_frame_length", 0));
 	}
 
 	public void setFrameLength(int frameLength) {
 		this.maxDataLength = frameLength - this.headerLength;
+		if (maxDataLength <= 0) {
+			throw new IllegalArgumentException("maximum_frame_length is too small: " + frameLength);
+		}
 		for (PacketService cur : serviceByVcid.values()) {
 			cur.setMaxDataLength(maxDataLength);
 		}
