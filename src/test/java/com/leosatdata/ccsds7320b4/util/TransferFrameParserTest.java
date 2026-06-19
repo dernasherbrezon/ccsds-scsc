@@ -142,12 +142,14 @@ public class TransferFrameParserTest {
 		assertEquals(0, frames.size());
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength() - 2 * (parser.getMaxDataLength() / 3)], 0);
 		assertEquals(1, frames.size());
+		assertEquals(0, frames.get(0).getVcFrameCount());
 		assertEquals(0, frames.get(0).getFirstHeaderPointer());
 
 		// packet fill whole frame
 		parser = new TransferFrameParser(config);
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
 		assertEquals(1, frames.size());
+		assertEquals(0, frames.get(0).getVcFrameCount());
 		assertEquals(0, frames.get(0).getFirstHeaderPointer());
 
 		// packet overflow to the next frame
@@ -156,8 +158,10 @@ public class TransferFrameParserTest {
 		parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
 		assertEquals(1, frames.size());
+		assertEquals(0, frames.get(0).getVcFrameCount());
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
 		assertEquals(1, frames.size());
+		assertEquals(1, frames.get(0).getVcFrameCount());
 		assertEquals(1350, frames.get(0).getFirstHeaderPointer());
 
 		// packet more than a frame
@@ -166,11 +170,38 @@ public class TransferFrameParserTest {
 		frames = parser.createUFrame(new byte[3 * parser.getMaxDataLength()], 0);
 		assertEquals(3, frames.size());
 		assertEquals(0, frames.get(0).getFirstHeaderPointer());
+		assertEquals(0, frames.get(0).getVcFrameCount());
 		assertEquals(0x7FF, frames.get(1).getFirstHeaderPointer());
+		assertEquals(1, frames.get(1).getVcFrameCount());
 		assertEquals(0x7FF, frames.get(2).getFirstHeaderPointer());
+		assertEquals(2, frames.get(2).getVcFrameCount());
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
 		assertEquals(1, frames.size());
 		assertEquals(675, frames.get(0).getFirstHeaderPointer());
+
+		// different vcid produce packets separately
+		parser = new TransferFrameParser(config);
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);
+		assertEquals(0, frames.size());
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength() - (parser.getMaxDataLength() / 3)], 1);
+		assertEquals(0, frames.size());
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength() - (parser.getMaxDataLength() / 3)], 0);
+		assertEquals(1, frames.size());
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 1);
+		assertEquals(1, frames.size());
+	}
+
+	@Test
+	public void testFrameCounterOverflow() throws Exception {
+		parser.setVcFrameCounter(16_777_215, 0);
+		byte[] packet = new byte[parser.getMaxDataLength()];
+		List<TransferFrame> frames = parser.createUFrame(packet, 0);
+		assertEquals(1, frames.size());
+		assertEquals(16_777_215, frames.get(0).getVcFrameCount());
+		frames = parser.createUFrame(packet, 0);
+		assertEquals(1, frames.size());
+		// overflow to zero
+		assertEquals(0, frames.get(0).getVcFrameCount());
 	}
 
 	private static TransferFrame createFrame() {

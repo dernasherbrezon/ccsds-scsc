@@ -14,6 +14,7 @@ import com.leosatdata.util.Util;
 public class TransferFrameParser {
 
 	static final int VCID_LENGTH_BITS = 6;
+	static final int VCFRAME_COUNT_LENGTH_BITS = 24;
 
 	private final Configuration config;
 	private final int insertZoneLength;
@@ -55,6 +56,17 @@ public class TransferFrameParser {
 		}
 	}
 
+	// used in tests only
+	void setVcFrameCounter(int vcFrameCounter, int vcid) {
+		PacketService service = serviceByVcid.get(vcid);
+		if (service == null) {
+			service = new PacketService(config);
+			service.setMaxDataLength(this.maxDataLength);
+			serviceByVcid.put(vcid, service);
+		}
+		service.setVcFrameCounter(vcFrameCounter);
+	}
+
 	public static boolean accept(byte[] data) {
 		if (data == null || data.length == 0) {
 			return false;
@@ -67,7 +79,7 @@ public class TransferFrameParser {
 		result.setVersionNumber(bis.readUnsignedInt(2));
 		result.setScid(bis.readUnsignedInt(8));
 		result.setVcid(bis.readUnsignedInt(VCID_LENGTH_BITS));
-		result.setVcFrameCount(bis.readUnsignedInt(24));
+		result.setVcFrameCount(bis.readUnsignedInt(VCFRAME_COUNT_LENGTH_BITS));
 		result.setReplay(bis.readBoolean());
 		result.setVcFrameCountCycleUsed(bis.readBoolean());
 		bis.skipBits(2);
@@ -116,7 +128,7 @@ public class TransferFrameParser {
 		bos.writeUnsignedInt(2, frame.getVersionNumber());
 		bos.writeUnsignedInt(8, frame.getScid());
 		bos.writeUnsignedInt(VCID_LENGTH_BITS, frame.getVcid());
-		bos.writeUnsignedInt(24, frame.getVcFrameCount());
+		bos.writeUnsignedInt(VCFRAME_COUNT_LENGTH_BITS, frame.getVcFrameCount());
 		bos.writeBoolean(frame.isReplay());
 		bos.writeBoolean(frame.isVcFrameCountCycleUsed());
 		bos.writeUnsignedInt(2, 0); // unused

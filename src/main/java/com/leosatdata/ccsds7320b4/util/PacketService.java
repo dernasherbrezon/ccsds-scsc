@@ -12,10 +12,14 @@ import com.leosatdata.util.Util;
 // Data link layer still need to somehow signal upper layer if stream of packets has gaps and how to recover first header pointer
 public class PacketService {
 
+	private final static int MAX_FRAME_COUNT = (1 << TransferFrameParser.VCFRAME_COUNT_LENGTH_BITS) - 1;
+
 	private final int localScid;
 	private final int remoteScid;
 	private final SourceDestination sourceDestination;
+	private final boolean useframeCountCycle;
 
+	private int vcFrameCounterCycle = 0;
 	private int vcFrameCounter = 0;
 	private byte[] currentDataField;
 	private int currentSize;
@@ -26,6 +30,7 @@ public class PacketService {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.remoteScid = config.getInteger("remote_spacecraft_id", 0);
 		this.sourceDestination = SourceDestination.valueOfCode(config.getInteger("source_destination_id", 0));
+		this.useframeCountCycle = config.getBoolean("aos.frameCountCycle");
 	}
 
 	public void setMaxDataLength(int maxDataLength) {
@@ -35,6 +40,11 @@ public class PacketService {
 		// change of frame will reset current buffer
 		this.currentDataField = new byte[maxDataLength];
 		this.currentSize = 0;
+	}
+	
+	// used in tests only
+	void setVcFrameCounter(int vcFrameCounter) {
+		this.vcFrameCounter = vcFrameCounter;
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, int portId) {
@@ -64,10 +74,19 @@ public class PacketService {
 				} else {
 					frame.setScid(remoteScid);
 				}
-				frame.setVcFrameCountCycleUsed(false);
+				frame.setVcFrameCountCycleUsed(useframeCountCycle);
 				frame.setVcid(portId);
+				if (vcFrameCounter > MAX_FRAME_COUNT) {
+					vcFrameCounter = 0;
+					vcFrameCounterCycle++;
+				}
 				frame.setVcFrameCount(vcFrameCounter);
-				// FIXME check boundaries / increment cycle count if use
+				if (useframeCountCycle) {
+					frame.setVcFrameCountCycle(vcFrameCounterCycle);
+				} else {
+					// be explicit
+					frame.setVcFrameCountCycle(0);
+				}
 				vcFrameCounter++;
 				frame.setDataField(frameDataField);
 				if (currentSize == 0 && toWrite > currentDataField.length) {
