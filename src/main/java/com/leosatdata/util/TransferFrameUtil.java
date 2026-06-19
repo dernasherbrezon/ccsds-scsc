@@ -85,8 +85,9 @@ public class TransferFrameUtil {
 
 	public static void setSequenceNumber(Object obj, int nextSeqNumber) {
 		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
-			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
-			frame.setVcFrameCount(nextSeqNumber);
+			// ignore. AOS v2 frames are always expedited and do not require retransmittion
+			// thus do not need globally ever incrementing sequence numbers
+			// and they don't have specific field for that anyway
 		}
 		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
 			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;

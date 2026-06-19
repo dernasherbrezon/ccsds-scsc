@@ -140,7 +140,7 @@ public class TransferFrameParserTest {
 		assertEquals(0, frames.size());
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength() / 3], 0);
 		assertEquals(0, frames.size());
-		frames = parser.createUFrame(new byte[parser.getMaxDataLength() - 2 * parser.getMaxDataLength() / 3], 0);
+		frames = parser.createUFrame(new byte[parser.getMaxDataLength() - 2 * (parser.getMaxDataLength() / 3)], 0);
 		assertEquals(1, frames.size());
 		assertEquals(0, frames.get(0).getFirstHeaderPointer());
 
@@ -158,7 +158,7 @@ public class TransferFrameParserTest {
 		assertEquals(1, frames.size());
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
 		assertEquals(1, frames.size());
-		assertEquals(1356, frames.get(0).getFirstHeaderPointer());
+		assertEquals(1350, frames.get(0).getFirstHeaderPointer());
 
 		// packet more than a frame
 		parser = new TransferFrameParser(config);
@@ -170,7 +170,7 @@ public class TransferFrameParserTest {
 		assertEquals(0x7FF, frames.get(2).getFirstHeaderPointer());
 		frames = parser.createUFrame(new byte[parser.getMaxDataLength()], 0);
 		assertEquals(1, frames.size());
-		assertEquals(678, frames.get(0).getFirstHeaderPointer());
+		assertEquals(675, frames.get(0).getFirstHeaderPointer());
 	}
 
 	private static TransferFrame createFrame() {

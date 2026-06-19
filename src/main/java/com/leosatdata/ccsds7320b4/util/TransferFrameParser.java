@@ -1,10 +1,10 @@
 package com.leosatdata.ccsds7320b4.util;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
@@ -13,28 +13,21 @@ import com.leosatdata.util.Util;
 
 public class TransferFrameParser {
 
-	private static final int VCID_LENGTH_BITS = 6;
+	static final int VCID_LENGTH_BITS = 6;
 
+	private final Configuration config;
 	private final int insertZoneLength;
 	private final boolean frameHeaderErrorControl;
 	private final int dataUnitType;
 	private final boolean ocf;
 	private final boolean frameErrorControl;
-	private final int localScid;
-	private final int remoteScid;
-	private final SourceDestination sourceDestination;
 	private final int headerLength;
+	private final Map<Integer, PacketService> serviceByVcid = new HashMap<>();
 
 	private int maxDataLength;
-	private byte[] currentDataField;
-	private int currentSize;
-	private boolean storeFirstHeaderPointer = true;
-	private int firstHeaderPointer = 0;
 
 	public TransferFrameParser(Configuration config) {
-		this.localScid = config.getInteger("local_spacecraft_id", 0);
-		this.remoteScid = config.getInteger("remote_spacecraft_id", 0);
-		this.sourceDestination = SourceDestination.valueOfCode(config.getInteger("source_destination_id", 0));
+		this.config = config;
 		this.insertZoneLength = config.getInteger("aos.insertZoneLength", 0);
 		this.frameHeaderErrorControl = config.getBoolean("aos.frameHeaderErrorControl");
 		this.dataUnitType = config.getInteger("aos.dataUnitType", 1);
@@ -49,19 +42,16 @@ public class TransferFrameParser {
 		this.headerLength = headerLength;
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
 		this.maxDataLength = maxFrameLength - headerLength;
-		this.currentDataField = new byte[this.maxDataLength];
-		this.currentSize = 0;
 		if (maxDataLength <= 0) {
 			throw new IllegalArgumentException("maximum_frame_length is too small: " + maxFrameLength);
 		}
+		setFrameLength(this.maxDataLength);
 	}
 
 	public void setFrameLength(int frameLength) {
 		this.maxDataLength = frameLength - this.headerLength;
-		// change of frame will reset current buffer
-		if (this.currentDataField.length != this.maxDataLength) {
-			this.currentDataField = new byte[this.maxDataLength];
-			this.currentSize = 0;
+		for (PacketService cur : serviceByVcid.values()) {
+			cur.setMaxDataLength(maxDataLength);
 		}
 	}
 
@@ -182,47 +172,13 @@ public class TransferFrameParser {
 
 	public List<TransferFrame> createUFrame(byte[] packet, int portId) {
 		Util.validateInt(VCID_LENGTH_BITS, "portId", portId);
-		int toWrite = packet.length;
-		int alreadyWrote = 0;
-		List<TransferFrame> result = new ArrayList<>();
-		if (storeFirstHeaderPointer) {
-			firstHeaderPointer = currentSize;
-			storeFirstHeaderPointer = false;
+		PacketService service = serviceByVcid.get(portId);
+		if (service == null) {
+			service = new PacketService(config);
+			service.setMaxDataLength(this.maxDataLength);
+			serviceByVcid.put(portId, service);
 		}
-		while (toWrite > 0) {
-			int remaining = currentDataField.length - currentSize;
-			if (toWrite < remaining) {
-				System.arraycopy(packet, alreadyWrote, currentDataField, currentSize, toWrite);
-				currentSize += toWrite;
-				alreadyWrote += toWrite;
-				toWrite = 0;
-			} else {
-				System.arraycopy(packet, alreadyWrote, currentDataField, currentSize, remaining);
-				byte[] frameDataField = new byte[currentDataField.length];
-				System.arraycopy(currentDataField, 0, frameDataField, 0, frameDataField.length);
-				TransferFrame frame = new TransferFrame();
-				frame.setReplay(false);
-				if (sourceDestination.equals(SourceDestination.SOURCE)) {
-					frame.setScid(localScid);
-				} else {
-					frame.setScid(remoteScid);
-				}
-				frame.setVcFrameCountCycleUsed(false);
-				frame.setVcid(portId);
-				frame.setDataField(frameDataField);
-				if (currentSize == 0 && toWrite > currentDataField.length) {
-					frame.setFirstHeaderPointer(0x7FF);
-				} else {
-					frame.setFirstHeaderPointer(firstHeaderPointer);
-				}
-				result.add(frame);
-				currentSize = 0;
-				storeFirstHeaderPointer = true;
-				alreadyWrote += remaining;
-				toWrite -= remaining;
-			}
-		}
-		return result;
+		return service.createUFrame(packet, portId);
 	}
 
 	// Packet service and packet processing function is outside of scope of this implementation
