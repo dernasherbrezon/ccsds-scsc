@@ -13,7 +13,7 @@ public class Util {
 		}
 		return new String(hexChars);
 	}
-	
+
 	public static byte[] hexToBytes(String s) {
 		int len = 0;
 		for (int i = 0; i < s.length(); i++) {
@@ -35,7 +35,14 @@ public class Util {
 		}
 		return data;
 	}
-	
+
+	public static void validateInt(int numberOfBits, String fieldName, int value) {
+		int maxValue = (1 << numberOfBits) - 1;
+		if (maxValue < value) {
+			throw new IllegalArgumentException("invalid " + fieldName + ": " + value + " maxValue: " + maxValue);
+		}
+	}
+
 	private Util() {
 		// do nothing
 	}

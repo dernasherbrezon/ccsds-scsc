@@ -46,7 +46,9 @@ Key features:
 
 #### Implementation details
 
- * pcid not supported. Not clear if transceiver is shared between several OBC or each OBC has own transceiver.
+ * pcid not supported. Not clear if transceiver is shared between several OBC or each OBC has own transceiver
+ * virtual channel mux/demux is not supported for AOS
+ * only packet mode is supported (bit stream (B_PDU) is not)
 
 ### Build & Run Instructions
 
