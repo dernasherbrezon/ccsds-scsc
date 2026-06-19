@@ -58,8 +58,12 @@ public class CliNode {
 		groundDataCallback = new UserDataCallback() {
 
 			@Override
-			public void onUserData(byte[] payload, int portId) {
-				System.out.println("Received: \"" + new String(payload) + "\" (" + Util.bytesToHex(payload) + ")");
+			public void onPacketData(byte[] packet, int portId) {
+				System.out.println("Received: \"" + new String(packet) + "\" (" + Util.bytesToHex(packet) + ")");
+			}
+			@Override
+			public void onPacketStream(byte[] data, int portId, int gapFramesCount, int firstHeaderPointer) {
+				System.out.println("Received: \"" + new String(data) + "\" (" + Util.bytesToHex(data) + ")");
 			}
 		};
 		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);

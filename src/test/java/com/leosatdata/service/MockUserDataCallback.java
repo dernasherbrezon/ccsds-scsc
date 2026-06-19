@@ -11,11 +11,16 @@ public class MockUserDataCallback implements UserDataCallback {
 	private boolean collectMulti = false;
 
 	@Override
-	public void onUserData(byte[] payload, int portId) {
+	public void onPacketData(byte[] payload, int portId) {
 		synchronized (lock) {
 			data.add(payload);
 			lock.notifyAll();
 		}
+	}
+
+	@Override
+	public void onPacketStream(byte[] data, int portId, int gapFramesCount, int firstHeaderPointer) {
+		// do nothing yet
 	}
 
 	public byte[] waitForData() {

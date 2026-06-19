@@ -623,17 +623,16 @@ class FrameSublayer {
 		return 0;
 	}
 
-	public byte[] assemblePacket(Object frame) {
+	public void onFrame(UserDataCallback callback, Object frame) {
 		if (uFrameVersion == 2) {
-			return framev2Parser.assemblePacket(frame);
+			framev2Parser.onFrame(callback, frame);
 		}
 		if (uFrameVersion == 3) {
-			return framev3Parser.assemblePacket(frame);
+			framev3Parser.onFrame(callback, frame);
 		}
 		if (uFrameVersion == 4) {
-			return framev4Parser.assemblePacket(frame);
+			framev4Parser.onFrame(callback, frame);
 		}
-		return null;
 	}
 
 	private void scheduleWait(EventType type, long duration) {

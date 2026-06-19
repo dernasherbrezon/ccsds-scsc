@@ -4,8 +4,13 @@ public class PerfUserDataCallback implements UserDataCallback {
 	private long bytesReceived = 0;
 
 	@Override
-	public synchronized void onUserData(byte[] payload, int portId) {
+	public synchronized void onPacketData(byte[] payload, int portId) {
 		bytesReceived += payload.length;
+	}
+
+	@Override
+	public void onPacketStream(byte[] data, int portId, int gapFramesCount, int firstHeaderPointer) {
+		bytesReceived += data.length;
 	}
 
 	public synchronized long getBytesReceived() {

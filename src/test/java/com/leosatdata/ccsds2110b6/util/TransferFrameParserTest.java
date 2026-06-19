@@ -21,6 +21,7 @@ import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SegmentFlags;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds2110b6.model.TransferFrame;
+import com.leosatdata.service.OnePacketUserDataCallback;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -30,6 +31,7 @@ public class TransferFrameParserTest {
 
 	private Configuration config;
 	private TransferFrameParser parser;
+	private OnePacketUserDataCallback callback;
 
 	@Test
 	public void testSuccess() throws Exception {
@@ -73,8 +75,8 @@ public class TransferFrameParserTest {
 		assertEquals(packet, frames.get(0).getDataField());
 		assertEquals(SegmentFlags.NO_SEGMENTATION, frames.get(0).getSegmentFlags());
 
-		byte[] actualPacket = parser.assemblePacket(frames.get(0));
-		assertArrayEquals(packet, actualPacket);
+		parser.onFrame(callback, frames.get(0));
+		assertArrayEquals(packet, callback.getPacket());
 
 		packet = TestUtil.createTestData(100);
 		frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
@@ -83,39 +85,57 @@ public class TransferFrameParserTest {
 		assertEquals(SegmentFlags.CONTINUING, frames.get(1).getSegmentFlags());
 		assertEquals(SegmentFlags.LAST, frames.get(2).getSegmentFlags());
 
-		assertNull(parser.assemblePacket(frames.get(0)));
-		assertNull(parser.assemblePacket(frames.get(1)));
-		assertArrayEquals(packet, parser.assemblePacket(frames.get(2)));
+		assertPacket(null, frames.get(0));
+		assertPacket(null, frames.get(1));
+		assertPacket(packet, frames.get(2));
+
 		// multiple LAST won't produce anything
-		assertNull(parser.assemblePacket(frames.get(2)));
-		assertNull(parser.assemblePacket(frames.get(2)));
+		assertPacket(null, frames.get(2));
+		assertPacket(null, frames.get(2));
 
 		int pseudoPacketId = frames.get(0).getPseudoPacketId();
-		assertNull(parser.assemblePacket(frames.get(0)));
+		assertPacket(null, frames.get(0));
 		frames.get(1).setPseudoPacketId(pseudoPacketId + 1);
-		assertNull(parser.assemblePacket(frames.get(1)));
-		assertNull(parser.assemblePacket(frames.get(2)));
+		assertPacket(null, frames.get(1));
+		assertPacket(null, frames.get(2));
 
 		// reset back and test order is important
 		frames.get(1).setPseudoPacketId(pseudoPacketId);
-		assertNull(parser.assemblePacket(frames.get(2)));
-		assertNull(parser.assemblePacket(frames.get(0)));
-		assertNull(parser.assemblePacket(frames.get(1)));
+		assertPacket(null, frames.get(2));
+		assertPacket(null, frames.get(0));
+		assertPacket(null, frames.get(1));
 
 		// good assembly when order is right again
-		assertNull(parser.assemblePacket(frames.get(0)));
-		assertNull(parser.assemblePacket(frames.get(1)));
-		assertArrayEquals(packet, parser.assemblePacket(frames.get(2)));
+		assertPacket(null, frames.get(0));
+		assertPacket(null, frames.get(1));
+		assertPacket(packet, frames.get(2));
 
 		// several continue
-		assertNull(parser.assemblePacket(frames.get(0)));
-		assertNull(parser.assemblePacket(frames.get(1)));
-		assertNull(parser.assemblePacket(frames.get(1)));
-		assertNotNull(parser.assemblePacket(frames.get(2)));
+		assertPacket(null, frames.get(0));
+		assertPacket(null, frames.get(1));
+		assertPacket(null, frames.get(1));
+		assertNotNullPacket(frames.get(2));
 
 		// frst last only
-		assertNull(parser.assemblePacket(frames.get(0)));
-		assertNotNull(parser.assemblePacket(frames.get(2)));
+		assertPacket(null, frames.get(0));
+		assertNotNullPacket(frames.get(2));
+	}
+
+	private void assertNotNullPacket(TransferFrame frame) {
+		callback = new OnePacketUserDataCallback();
+		parser.onFrame(callback, frame);
+		assertNotNull(callback.getPacket());
+	}
+
+	private void assertPacket(byte[] expected, TransferFrame frame) {
+		callback = new OnePacketUserDataCallback();
+		parser.onFrame(callback, frame);
+		if (expected == null) {
+			assertNull(callback.getPacket());
+		} else {
+			assertArrayEquals(expected, callback.getPacket());
+		}
+
 	}
 
 	@Before
@@ -127,6 +147,7 @@ public class TransferFrameParserTest {
 		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
 		config = new Configuration(props);
 		parser = new TransferFrameParser(config);
+		callback = new OnePacketUserDataCallback();
 	}
 
 	private static TransferFrame createFrame() {

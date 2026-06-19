@@ -200,7 +200,6 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		sendEvent(new Event(EventType.DUPLEX, duplex));
 	}
 
-	// TODO pcid parameter? should it be hardcoded local? or specific remote pcid?
 	@SuppressWarnings("unchecked")
 	public void send(byte[] packet, QualityOfService qos, int portId) {
 		if (portId > 0b111) {
@@ -295,10 +294,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 				}
 			}
 			if (acceptFrame) {
-				byte[] packet = frameSublayer.assemblePacket(frame);
-				if (packet != null) {
-					rxCallback.onUserData(packet, TransferFrameUtil.getPortId(frame));
-				}
+				frameSublayer.onFrame(rxCallback, frame);
 			}
 		}
 	}

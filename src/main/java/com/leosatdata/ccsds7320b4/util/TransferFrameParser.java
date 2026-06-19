@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
+import com.leosatdata.service.UserDataCallback;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -196,9 +197,9 @@ public class TransferFrameParser {
 	// Packet service and packet processing function is outside of scope of this implementation
 	// pass data as-is
 	// FIXME re-deserialize from stream
-	public byte[] assemblePacket(Object obj) {
+	public void onFrame(UserDataCallback callback, Object obj) {
 		TransferFrame frame = (TransferFrame) obj;
-		return frame.getDataField();
+//		return frame.getDataField();
 	}
 
 }

@@ -14,6 +14,7 @@ import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7321b3.model.ConstructionRules;
 import com.leosatdata.ccsds7321b3.model.TransferFrame;
+import com.leosatdata.service.UserDataCallback;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -301,10 +302,11 @@ public class TransferFrameParser {
 		return result;
 	}
 
-	public byte[] assemblePacket(Object obj) {
+	public void onFrame(UserDataCallback callback, Object obj) {
 		TransferFrame frame = (TransferFrame) obj;
 		if (frame.getConstructionRule().equals(ConstructionRules.NO_SEGMENTATION)) {
-			return frame.getDataField();
+			callback.onPacketData(frame.getDataField(), frame.getMapid());
+			return;
 		}
 		boolean transitionState = false;
 		if (frame.getConstructionRule().equals(ConstructionRules.STARTING_SEGMENT)) {
@@ -322,14 +324,14 @@ public class TransferFrameParser {
 		if (!transitionState) {
 			currentBuffer.reset();
 			previousFlag = ConstructionRules.LAST_SEGMENT;
-			return null;
+			return;
 		}
 
 		if (currentPseudoPacketId != frame.getUpid()) {
 			LOG.info("invalid pseudo packet id received: {} expected {}", frame.getUpid(), currentPseudoPacketId);
 			currentBuffer.reset();
 			previousFlag = ConstructionRules.LAST_SEGMENT;
-			return null;
+			return;
 		}
 
 		previousFlag = frame.getConstructionRule();
@@ -340,15 +342,15 @@ public class TransferFrameParser {
 			LOG.error("can't output to bytes", e);
 			currentBuffer.reset();
 			previousFlag = ConstructionRules.LAST_SEGMENT;
-			return null;
+			return;
 		}
 
 		if (previousFlag.equals(ConstructionRules.LAST_SEGMENT)) {
 			byte[] result = currentBuffer.toByteArray();
 			currentBuffer.reset();
-			return result;
+			callback.onPacketData(result, frame.getMapid());
+			return;
 		}
-		return null;
 	}
 
 }

@@ -115,20 +115,4 @@ public class TransferFrameUtil {
 		return 0;
 	}
 
-	public static int getPortId(Object obj) {
-		if (obj instanceof com.leosatdata.ccsds7320b4.model.TransferFrame) {
-			com.leosatdata.ccsds7320b4.model.TransferFrame frame = (com.leosatdata.ccsds7320b4.model.TransferFrame) obj;
-			return frame.getVcid();
-		}
-		if (obj instanceof com.leosatdata.ccsds2110b6.model.TransferFrame) {
-			com.leosatdata.ccsds2110b6.model.TransferFrame frame = (com.leosatdata.ccsds2110b6.model.TransferFrame) obj;
-			return frame.getPortId();
-		}
-		if (obj instanceof com.leosatdata.ccsds7321b3.model.TransferFrame) {
-			com.leosatdata.ccsds7321b3.model.TransferFrame frame = (com.leosatdata.ccsds7321b3.model.TransferFrame) obj;
-			return frame.getMapid();
-		}
-		return 0;
-	}
-
 }
