@@ -46,9 +46,10 @@ Key features:
 
 #### Implementation details
 
- * pcid not supported. Not clear if transceiver is shared between several OBC or each OBC has own transceiver
  * virtual channel mux/demux is not supported for AOS
  * only packet mode is supported (bit stream (B_PDU) is not)
+ * idle frames do not discarded
+ * All implementation-specific properties defined under ./src/main/resources/custom.properties
 
 ### Build & Run Instructions
 

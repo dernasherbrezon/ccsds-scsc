@@ -114,9 +114,19 @@ public class Configuration {
 			result = false;
 			LOG.error("hail_wait_duration should be more than carrier_only_duration + acquisition_idle_duration");
 		}
+		int pcid = getInteger("local_pcid", 0);
+		if (pcid > 1) {
+			result = false;
+			LOG.error("invalid local_pcid value: {}. Supported: 0 or 1", pcid);
+		}
+		pcid = getInteger("remote_pcid", 0);
+		if (pcid > 1) {
+			result = false;
+			LOG.error("invalid remote_pcid value: {}. Supported: 0 or 1", pcid);
+		}
 		return result;
 	}
-	
+
 	public ControllerEvent createNotification(String prefix, boolean success) {
 		PersistentActivity activity = new PersistentActivity();
 		activity.setSuccess(success);
