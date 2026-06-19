@@ -192,12 +192,15 @@ public class TransferFrameParser {
 		return service.createUFrame(packet, portId);
 	}
 
-	// Packet service and packet processing function is outside of scope of this implementation
-	// pass data as-is
-	// FIXME re-deserialize from stream
 	public void onFrame(UserDataCallback callback, Object obj) {
 		TransferFrame frame = (TransferFrame) obj;
-//		return frame.getDataField();
+		PacketService service = serviceByVcid.get(frame.getVcid());
+		if (service == null) {
+			service = new PacketService(config);
+			service.setMaxDataLength(this.maxDataLength);
+			serviceByVcid.put(frame.getVcid(), service);
+		}
+		service.onFrame(callback, frame);
 	}
 
 }

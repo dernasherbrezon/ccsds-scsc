@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
+import com.leosatdata.service.UserDataCallback;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.Util;
 
@@ -19,12 +20,14 @@ public class PacketService {
 	private final SourceDestination sourceDestination;
 	private final boolean useframeCountCycle;
 
-	private int vcFrameCounterCycle = 0;
-	private int vcFrameCounter = 0;
+	private int txVcFrameCounterCycle = 0;
+	private int txVcFrameCounter = 0;
 	private byte[] currentDataField;
 	private int currentSize;
 	private boolean storeFirstHeaderPointer = true;
 	private int firstHeaderPointer = 0;
+
+	private int previousVcFrameCounter = -1;
 
 	public PacketService(Configuration config) {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
@@ -41,10 +44,10 @@ public class PacketService {
 		this.currentDataField = new byte[maxDataLength];
 		this.currentSize = 0;
 	}
-	
+
 	// used in tests only
 	void setVcFrameCounter(int vcFrameCounter) {
-		this.vcFrameCounter = vcFrameCounter;
+		this.txVcFrameCounter = vcFrameCounter;
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, int portId) {
@@ -76,18 +79,18 @@ public class PacketService {
 				}
 				frame.setVcFrameCountCycleUsed(useframeCountCycle);
 				frame.setVcid(portId);
-				if (vcFrameCounter > MAX_FRAME_COUNT) {
-					vcFrameCounter = 0;
-					vcFrameCounterCycle++;
+				if (txVcFrameCounter > MAX_FRAME_COUNT) {
+					txVcFrameCounter = 0;
+					txVcFrameCounterCycle++;
 				}
-				frame.setVcFrameCount(vcFrameCounter);
+				frame.setVcFrameCount(txVcFrameCounter);
 				if (useframeCountCycle) {
-					frame.setVcFrameCountCycle(vcFrameCounterCycle);
+					frame.setVcFrameCountCycle(txVcFrameCounterCycle);
 				} else {
 					// be explicit
 					frame.setVcFrameCountCycle(0);
 				}
-				vcFrameCounter++;
+				txVcFrameCounter++;
 				frame.setDataField(frameDataField);
 				if (currentSize == 0 && toWrite > currentDataField.length) {
 					frame.setFirstHeaderPointer(0x7FF);
@@ -102,6 +105,27 @@ public class PacketService {
 			}
 		}
 		return result;
+	}
+
+	public void onFrame(UserDataCallback callback, TransferFrame frame) {
+		int diff;
+		if (previousVcFrameCounter != -1) {
+			if (frame.getVcFrameCount() >= previousVcFrameCounter) {
+				diff = frame.getVcFrameCount() - previousVcFrameCounter;
+			} else {
+				// before the wrap-around + after wrap-around
+				diff = (MAX_FRAME_COUNT + 1 - previousVcFrameCounter) + (frame.getVcFrameCount() - 0);
+				// when calculating diff, doesn't really care about frame count cycle
+			}
+		} else {
+			diff = 1;
+		}
+		// duplicate frame. discard
+		if (diff == 0) {
+			return;
+		}
+		callback.onPacketStream(frame.getDataField(), frame.getVcid(), diff - 1, frame.getFirstHeaderPointer());
+		previousVcFrameCounter = frame.getVcFrameCount();
 	}
 
 }

@@ -1,8 +1,10 @@
 package com.leosatdata.ccsds7320b4.util;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -14,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
+import com.leosatdata.service.OnePacketUserDataCallback;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
@@ -202,6 +205,42 @@ public class TransferFrameParserTest {
 		assertEquals(1, frames.size());
 		// overflow to zero
 		assertEquals(0, frames.get(0).getVcFrameCount());
+	}
+
+	@Test
+	public void testOnFrame() throws Exception {
+		TransferFrame frame = createFrame();
+		assertData(frame.getDataField(), 0, frame);
+		frame.setVcFrameCount(frame.getVcFrameCount() + 1);
+		assertData(frame.getDataField(), 0, frame);
+		frame.setVcFrameCount(frame.getVcFrameCount() + 2);
+		assertData(frame.getDataField(), 1, frame);
+		
+		parser = new TransferFrameParser(config);
+		int maxFrameCount = (1 << TransferFrameParser.VCFRAME_COUNT_LENGTH_BITS) - 1;
+		frame.setVcFrameCount(maxFrameCount);
+		assertData(frame.getDataField(), 0, frame);
+		// wrap-around
+		frame.setVcFrameCount(0);
+		assertData(frame.getDataField(), 0, frame);
+		
+		parser = new TransferFrameParser(config);
+		frame.setVcFrameCount(maxFrameCount - 1);
+		assertData(frame.getDataField(), 0, frame);
+		// wrap-around with gaps
+		frame.setVcFrameCount(1);
+		assertData(frame.getDataField(), 2, frame);
+	}
+
+	private void assertData(byte[] data, int gap, TransferFrame frame) {
+		OnePacketUserDataCallback callback = new OnePacketUserDataCallback();
+		parser.onFrame(callback, frame);
+		if (data == null) {
+			assertNull(callback.getData());
+		} else {
+			assertArrayEquals(data, callback.getData());
+			assertEquals(gap, callback.getGapFramesCount());
+		}
 	}
 
 	private TransferFrame createFrame() {
