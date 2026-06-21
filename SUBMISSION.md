@@ -46,8 +46,11 @@ Key features:
 
 #### Implementation details
 
- * only packet mode is supported (bit stream (B_PDU) is not)
- * idle frames do not discarded
+ * Only packet mode is supported (bit stream (B_PDU) is not)
+ * Idle frames do not produced or discarded
+ * VCID multiplexing/demultiplexing is not supported for V4 frames
+ * AOS fixed frame doesn't provide packet boundary detection. Thus packets should be received via streaming interface
+ * One or more variable-length V3/V4 TransferFrames is generated as soon as packet was submitted
  * All implementation-specific properties defined under ./src/main/resources/custom.properties
 
 ### Build & Run Instructions
