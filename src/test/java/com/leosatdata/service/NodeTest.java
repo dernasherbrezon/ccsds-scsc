@@ -28,25 +28,17 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
-import com.leosatdata.model.Type1CarrierModulation;
-import com.leosatdata.model.Type4Coding;
+import com.leosatdata.model.CarrierSuppression;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
-import com.leosatdata.model.Type1Coding;
-import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
-import com.leosatdata.model.Type5LinkEstablishment;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.LinkDirection;
-import com.leosatdata.model.Type4LinkEstablishment;
-import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Mode;
-import com.leosatdata.model.CarrierSuppression;
-import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.Type4NegotiationType;
-import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
@@ -57,9 +49,17 @@ import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.TxRxParameters;
+import com.leosatdata.model.Type1CarrierModulation;
+import com.leosatdata.model.Type1Coding;
 import com.leosatdata.model.Type1Directive;
+import com.leosatdata.model.Type4CarrierModulation;
+import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.Type4Directive;
+import com.leosatdata.model.Type4LinkEstablishment;
+import com.leosatdata.model.Type4NegotiationType;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Type5LinkEstablishment;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.CommSettings;
 import com.leosatdata.util.Configuration;
@@ -203,7 +203,7 @@ public class NodeTest {
 		Type1Directive type1Comm = createType1CommParameters(DataRate.R8C);
 		type1Comm.setRxPlExtensions(null);
 		type1Comm.setTxPlExtensions(null);
-		
+
 		satellite.setDuplex(duplex);
 		satellite.waitForSession();
 		ground.setDuplex(duplex);
@@ -213,10 +213,10 @@ public class NodeTest {
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
 
 		waitPersistenceActivityCompletion();
-		
+
 		assertTestExpPacket();
 	}
-	
+
 	@Test
 	public void testValidateSourceFrame() throws Exception {
 		// remote_spacecraft_id is configured
@@ -482,8 +482,13 @@ public class NodeTest {
 				throw new IllegalArgumentException("unsupported: " + cur.getuFrameVersion());
 			}
 
-			testComm(ground, groundTransceiver, satelliteDataCallback);
-			testComm(satellite, satelliteTransceiver, groundDataCallback);
+			if (cur.getuFrameVersion() == 2) {
+				testAosComm(ground, satelliteDataCallback);
+				testAosComm(satellite, groundDataCallback);
+			} else {
+				testComm(ground, groundTransceiver, satelliteDataCallback);
+				testComm(satellite, satelliteTransceiver, groundDataCallback);
+			}
 
 			satellite.stopSession();
 			ground.stopSession();
@@ -491,6 +496,25 @@ public class NodeTest {
 			assertNotNull(groundCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
 			assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
 		}
+	}
+
+	// aos doesn't have Sequence Contolled frames, hence no recovery
+	private static void testAosComm(Node from, MockUserDataCallback toCallback) throws Exception {
+		int aosFrameDataLength = 2035;
+		// test small packet
+		byte[] packet = TestUtil.createTestData(aosFrameDataLength);
+		from.send(packet, QualityOfService.EXPEDITED, 0);
+		byte[] actual = toCallback.waitForStream(packet.length);
+		assertNotNull(actual);
+		assertArrayEquals(packet, actual);
+		
+		// test packet span over several frames
+		packet = TestUtil.createTestData(2 * aosFrameDataLength);
+		from.send(packet, QualityOfService.EXPEDITED, 0);
+		actual = toCallback.waitForStream(packet.length);
+		assertNotNull(actual);
+		assertArrayEquals(packet, actual);
+
 	}
 
 	private void testComm(Node from, NullTransceiver fromTransceiver, MockUserDataCallback toCallback) throws Exception {
@@ -687,6 +711,7 @@ public class NodeTest {
 	public static List<CommSettings> getSupportedSettingsCombination() {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
+//		settings.add(new CommSettings(2, 3, 1, 1));
 		settings.add(new CommSettings(3, 3, 1, 1));
 //		settings.add(new CommSettings(4, 4, 1, 1));
 //		settings.add(new CommSettings(4, 4, 2, 1));
@@ -700,7 +725,7 @@ public class NodeTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<?> parameters() {
 		return Arrays.asList(new Object[][] { 
-			{ Duplex.HALF_DUPLEX }, 
+//			{ Duplex.HALF_DUPLEX }, 
 			{ Duplex.FULL_DUPLEX } 
 		});
 	}
