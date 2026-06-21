@@ -15,7 +15,7 @@ props.putAll(load("src/main/resources/transceiver.properties"));
 props.putAll(load("src/main/resources/custom.properties"));
 props.putAll(load("src/test/resources/ground.properties"));
 props.putAll(load("src/test/resources/channel.properties"));
-groundConfig = new Configuration(props);
+Configuration groundConfig = new Configuration(props);
 ```
 
 This implementation contains several .properties files:
@@ -46,7 +46,146 @@ This interface is designed to be as close as possible to the hardware. For examp
 
 #### Node
 
-TBD
+`com.leosatdata.service.Node` is the entry point to the library. This is main class responsible for initialization, handling and shutdown of all communications.
 
 ### Basic usage
+
+Basic use case can be the following:
+
+ * start responder and go into listen state (connecting-L)
+ * start caller and initiate session with responder (connecting-T)
+ * send sample packet
+ * gracefully terminate session
+ 
+First step will be loading configuration:
+
+```java
+Properties props = new Properties();
+props.putAll(load("src/main/resources/mib.properties"));
+props.putAll(load("src/main/resources/transceiver.properties"));
+props.putAll(load("src/main/resources/custom.properties"));
+props.putAll(load("src/test/resources/ground.properties"));
+props.putAll(load("src/test/resources/channel.properties"));
+Configuration groundConfig = new Configuration(props);
+```
+
+Where `load` can be defined as:
+
+```java
+public static Properties load(String file) throws Exception {
+	Properties result = new Properties();
+	try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+		result.load(is);
+	}
+	return result;
+}
+```
+
+This will set up `Configuration` class with all required (and reasonably default) properties. Both receiver and transmitter can have the same configuration. In this example, they are different to have different spacecraftId (scid).
+
+The next step is choosing and starting `Transceiver` physical layer. Since both receiver and trasmitter will be running within the same JVM, `NullTransceiver` might be a good choice. 
+
+```java
+NullTransceiver groundTransceiver = new NullTransceiver(groundConfig);
+groundTransceiver.start();
+
+NullTransceiver satelliteTransceiver = new NullTransceiver(satelliteConfig);
+satelliteTransceiver.start();
+```
+
+Both responder and caller are different instances of the same class `Node`. Each `Node` should have their own instance of `Transceiver`.
+
+```java
+NodeCallback groundCallback = new NodeCallback() {
+
+	@Override
+	public void handle(ControllerEvent event) {
+		LOG.info("received event: {}", event);
+	}
+};
+UserDataCallback groundDataCallback = new UserDataCallback() {
+
+	@Override
+	public void onPacketData(byte[] packet, int portId) {
+		System.out.println("Received: \"" + new String(packet) + "\" (" + Util.bytesToHex(packet) + ")");
+	}
+	@Override
+	public void onPacketStream(byte[] data, int portId, int gapFramesCount, int firstHeaderPointer) {
+		System.out.println("Received: \"" + new String(data) + "\" (" + Util.bytesToHex(data) + ")");
+	}
+};
+Node ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
+ground.start();
+```
+
+There are 2 notable callbacks configured:
+
+ * Instance of `com.leosatdata.service.NodeCallback`. This callback being called by Node on any system event. See Annex G "NOTIFICATIONS TO VEHICLE CONTROLLER" for all possible notification types. The main program (or vehicle controller or OBC) can decided what to do. In some scenarios notifications are recoverable, in some not.
+ * Instance of `com.leosatdata.service.UserDataCallback`. This is main callback to handle all incoming (RX) data. In the implementation above, it will log all incoming data into standard output.
+ 
+Once both nodes initialized and started, their transceivers can be cross connected. This is only required for `NullTransceiver`.
+
+```java
+groundTransceiver.setOtherSide(satelliteTransceiver);
+satelliteTransceiver.setOtherSide(groundTransceiver);
+```
+
+The next step is duplex configuration. By default Node starts in FULL_DUPLEX mode. But if any other mode is required, then it should be configured (SET DUPLEX directive):
+
+```java
+ground.setDuplex(Duplex.FULL_DUPLEX);
+satellite.setDuplex(Duplex.FULL_DUPLEX);
+```
+The next step is to put responder into "connecting-L" mode:
+
+```java
+satellite.waitForSession();
+```
+
+Responder will initialize transceiver's RX chain with default HAIL parameters. For proximity-1 it will be data rate: R8NC, channel 1, NON_COHERENT_PSK &etc. Once initialized it will wait for HAIL directive on that frequency.
+
+The next step is to configure comm parameters on the caller's side. These is where responder's and caller's transceivers will switch after performing HAIL. Setting comm parameters can be done via `setCommParameters` method (SET RECEIVER PARAMETERS directive):
+
+```java
+ground.setCommParameters(createType1CommParameters(dataRate));
+```
+
+> Note: Comm parameters should be the same as in configuration (parameter "spdu_version"). For spdu_version=1 it should be `com.leosatdata.model.Type1Directive`, for spdu_version=2 it should be `com.leosatdata.model.Type4Directive`, for spdu_version=3 it should be `com.leosatdata.model.Type5Directive`.
+
+Comm parameters should include configuration for both RX and TX chains. For example:
+
+```java
+public static Type1Directive createType1CommParameters(DataRate dataRate) {
+	TxRxParameters tx = new TxRxParameters();
+	tx.setCoding(Type1Coding.CONVOLUTIONAL);
+	tx.setDataRate(dataRate);
+	tx.setFrequency(Frequency.CH3);
+	tx.setMode(Mode.PROXIMITY1);
+	tx.setCoherency(Coherency.COHERENT_PSK);
+
+	TxRxParameters rx = new TxRxParameters();
+	rx.setCoding(Type1Coding.CONVOLUTIONAL);
+	rx.setDataRate(dataRate);
+	rx.setFrequency(Frequency.CH3);
+	rx.setMode(Mode.PROXIMITY1);
+	rx.setCoherency(Coherency.COHERENT_PSK);
+
+	Type1Directive result = new Type1Directive();
+	result.setTxParams(tx);
+	result.setRxParams(rx);
+	return result;
+}
+```
+
+Once configured, caller can start HAIL:
+
+```java
+ground.startSession();
+```
+
+
+
+
+
+
 
