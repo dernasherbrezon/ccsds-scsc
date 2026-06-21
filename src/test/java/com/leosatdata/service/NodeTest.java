@@ -498,6 +498,19 @@ public class NodeTest {
 		}
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testSeqIsNotSupportedForAos() throws Exception {
+		// aos
+		groundConfig.setProperty("u_frame_version", "2");
+		ground.stop();
+		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
+		ground.start();
+
+		establishType1Session();
+
+		ground.send(TestUtil.createTestData(10), QualityOfService.SEQUENCE_CONTROLLED, 0);
+	}
+
 	// aos doesn't have Sequence Contolled frames, hence no recovery
 	private static void testAosComm(Node from, MockUserDataCallback toCallback) throws Exception {
 		int aosFrameDataLength = 2035;
@@ -507,7 +520,7 @@ public class NodeTest {
 		byte[] actual = toCallback.waitForStream(packet.length);
 		assertNotNull(actual);
 		assertArrayEquals(packet, actual);
-		
+
 		// test packet span over several frames
 		packet = TestUtil.createTestData(2 * aosFrameDataLength);
 		from.send(packet, QualityOfService.EXPEDITED, 0);

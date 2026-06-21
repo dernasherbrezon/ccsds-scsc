@@ -489,6 +489,9 @@ class FrameSublayer {
 	@SuppressWarnings("rawtypes")
 	public List createUFrame(byte[] payload, QualityOfService qos, int portId) {
 		if (uFrameVersion == 2) {
+			if (qos.equals(QualityOfService.SEQUENCE_CONTROLLED)) {
+				throw new IllegalArgumentException("SEQUENCE_CONTROLLED qos is not supported for AOS");
+			}
 			return framev2Parser.createUFrame(payload, portId);
 		}
 		if (uFrameVersion == 3) {
