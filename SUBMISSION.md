@@ -46,7 +46,6 @@ Key features:
 
 #### Implementation details
 
- * virtual channel mux/demux is not supported for AOS
  * only packet mode is supported (bit stream (B_PDU) is not)
  * idle frames do not discarded
  * All implementation-specific properties defined under ./src/main/resources/custom.properties

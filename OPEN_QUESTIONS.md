@@ -15,7 +15,13 @@ Here is the list of questions and suggestions to the specification with no parti
 
 3. Using 2 boolean variables to define transceiver state (transmit on-off / modulation on-off) is not a good idea. Better have a model and enum. For example: off, carrier, modulation
 
-4. How pcid is actually used? Same transceiver shared between multiple OBCs or each OBC has its own transceiver?
+4. E2.2.5 Directive Function (Query Request/Response, Demand &etc). Not clear why it is needed and should be used. It seems endpoints can negotiate link, but there is no sequence diagram for that or description of the procedure. No use cases provided 
+
+5. E2.2.17 Transceiver Mode. Not clear what this mode is and how should be used. Each of the transceiver parameter is controlled by the data link layer separately via "Link Establishment" directive (i.e. baud rate, frequency &etc). What if mode specified as "Proximity-1", but coding is LDPC24576_16384 (i.e. supported only by the recent Type5 Lunar directive)?
+
+6. Is it possible to change duplex mode durnig COMM_CHANGE or once link established?
+
+7. How to recover from physical layer failures? Or internal failures? Should it be notification to OBC?
 
 ### MIB properties
 
