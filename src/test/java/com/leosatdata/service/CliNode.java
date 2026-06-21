@@ -100,6 +100,9 @@ public class CliNode {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		ground.stop();
+		groundTransceiver.stop();
 	}
 
 	private void handleInput(String input) {

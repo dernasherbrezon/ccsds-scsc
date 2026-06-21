@@ -57,7 +57,13 @@ public class TcpTransceiver implements Transceiver {
 		if (executor == null) {
 			return;
 		}
-		executor.shutdown();
+		if (rxFuture != null) {
+			rxFuture.cancel(true);
+		}
+		if (server != null) {
+			closeQuietly(server);
+		}
+		executor.shutdownNow();
 	}
 
 	@Override
@@ -231,12 +237,19 @@ public class TcpTransceiver implements Transceiver {
 								handleConnect();
 								read(client.getInputStream());
 								LOG.info("rx client disconnected: {}:{}", client.getInetAddress(), client.getPort());
+							} catch (java.net.SocketException e) {
+								if (e.getMessage().contains("Socket closed")) {
+									break;
+								}
+								LOG.error("unable to handle", e);
 							} catch (Exception e) {
 								LOG.error("unable to handle", e);
 							}
 						}
 
-						closeQuietly(server);
+						if (!server.isClosed()) {
+							closeQuietly(server);
+						}
 					}
 				});
 			} catch (IOException e) {
