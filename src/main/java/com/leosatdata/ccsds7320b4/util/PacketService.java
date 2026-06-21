@@ -7,7 +7,6 @@ import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7320b4.model.TransferFrame;
 import com.leosatdata.service.UserDataCallback;
 import com.leosatdata.util.Configuration;
-import com.leosatdata.util.Util;
 
 // This is not fully implemented packet service as it's not aware of Packets
 // Data link layer still need to somehow signal upper layer if stream of packets has gaps and how to recover first header pointer
@@ -51,7 +50,6 @@ public class PacketService {
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, int portId) {
-		Util.validateInt(TransferFrameParser.VCID_LENGTH_BITS, "portId", portId);
 		int toWrite = packet.length;
 		int alreadyWrote = 0;
 		List<TransferFrame> result = new ArrayList<>();

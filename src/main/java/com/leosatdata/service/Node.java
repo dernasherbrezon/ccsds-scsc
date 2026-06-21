@@ -202,9 +202,6 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 
 	@SuppressWarnings("unchecked")
 	public void send(byte[] packet, QualityOfService qos, int portId) {
-		if (portId > 0b111) {
-			throw new IllegalArgumentException("port id cannot exceed: " + 0b111);
-		}
 		List<Object> frames = frameSublayer.createUFrame(packet, qos, portId);
 		// can be empty when current v2 frame buffer was not fully filled
 		if (frames.isEmpty()) {

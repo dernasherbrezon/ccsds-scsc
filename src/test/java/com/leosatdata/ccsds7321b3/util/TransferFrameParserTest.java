@@ -92,7 +92,7 @@ public class TransferFrameParserTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testInvalidPort() throws Exception {
-		parser.createUFrame(new byte[10], QualityOfService.EXPEDITED, 31);
+		parser.createUFrame(new byte[10], QualityOfService.EXPEDITED, 64);
 	}
 
 	private TransferFrame encodeDecode(TransferFrame input) throws IOException {

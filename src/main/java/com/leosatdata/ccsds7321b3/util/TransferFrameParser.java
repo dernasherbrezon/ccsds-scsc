@@ -23,7 +23,6 @@ import com.leosatdata.util.Util;
 public class TransferFrameParser {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
-	private final static int MAPID_LENGTH_BITS = 4;
 
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
@@ -33,6 +32,9 @@ public class TransferFrameParser {
 	private final int remoteScid;
 	private final SourceDestination sourceDestination;
 	private final int vcfCountLength;
+	private final boolean usePcid;
+	private final int vcidLengthBits;
+	private final int localPcid;
 
 	private int pseudoPacketId = 0;
 
@@ -41,6 +43,7 @@ public class TransferFrameParser {
 	private final ByteArrayOutputStream currentBuffer = new ByteArrayOutputStream();
 
 	public TransferFrameParser(Configuration config) {
+		this.localPcid = config.getInteger("local_pcid", 0);
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.remoteScid = config.getInteger("remote_spacecraft_id", 0);
 		this.sourceDestination = SourceDestination.valueOfCode(config.getInteger("source_destination_id", 0));
@@ -57,6 +60,23 @@ public class TransferFrameParser {
 		headerLength += com.leosatdata.ccsds7321b3.model.TransferFrame.TFDF_HEADER_LENGTH;
 		headerLength += 0; // no ocf
 		headerLength += frameErrorControl ? com.leosatdata.ccsds7321b3.model.TransferFrame.FEC_LENGTH : 0;
+
+		// spec:
+		// 
+		// The MSB of the VCID field (bit 21) of the Version-4 Transfer Frame Primary Header shall
+		// be used for the PCID in the Version-3 Frame header.
+		// 
+		// commentary:
+		// 
+		// v3 obviously is not v4. I guess some kind of wire compatibility is required
+		// pcid is not defined in the TransferFrame structure
+		int spduVersion = config.getInteger("spdu_version", 1);
+		this.usePcid = (spduVersion == 1);
+		if (this.usePcid) {
+			this.vcidLengthBits = 5;
+		} else {
+			this.vcidLengthBits = 6;
+		}
 
 		this.maxDataLength = maxFrameLength - headerLength;
 		if (maxDataLength <= 0) {
@@ -78,7 +98,7 @@ public class TransferFrameParser {
 		result.setScid(bis.readUnsignedInt(16));
 		result.setSourceOrDestination(SourceDestination.valueOfCode(bis.readUnsignedInt(1)));
 		result.setVcid(bis.readUnsignedInt(6));
-		result.setMapid(bis.readUnsignedInt(MAPID_LENGTH_BITS));
+		result.setMapid(bis.readUnsignedInt(4));
 		result.setHeaderTruncated(bis.readBoolean());
 		if (!result.isHeaderTruncated()) {
 			result.setFrameLength(bis.readUnsignedInt(16));
@@ -155,8 +175,13 @@ public class TransferFrameParser {
 		bos.writeUnsignedInt(4, frame.getVersionNumber());
 		bos.writeUnsignedInt(16, frame.getScid());
 		bos.writeUnsignedInt(1, frame.getSourceOrDestination().getCode());
-		bos.writeUnsignedInt(6, frame.getVcid());
-		bos.writeUnsignedInt(MAPID_LENGTH_BITS, frame.getMapid());
+		if (usePcid) {
+			bos.writeUnsignedInt(1, localPcid);
+			bos.writeUnsignedInt(5, frame.getVcid());
+		} else {
+			bos.writeUnsignedInt(6, frame.getVcid());
+		}
+		bos.writeUnsignedInt(4, frame.getMapid());
 		bos.writeBoolean(frame.isHeaderTruncated());
 		if (!frame.isHeaderTruncated()) {
 			bos.writeUnsignedInt(16, frame.getFrameLength());
@@ -237,8 +262,8 @@ public class TransferFrameParser {
 		return frame;
 	}
 
-	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
-		Util.validateInt(MAPID_LENGTH_BITS, "portId", portId);
+	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int vcid) {
+		Util.validateInt(vcidLengthBits, "vcid", vcid);
 		if (packet.length < maxDataLength) {
 			TransferFrame frame = new TransferFrame();
 			frame.setSourceOrDestination(sourceDestination);
@@ -247,8 +272,8 @@ public class TransferFrameParser {
 			} else {
 				frame.setScid(remoteScid);
 			}
-			frame.setVcid(0); // TODO bit 21 of vcid is localPcid
-			frame.setMapid(portId);
+			frame.setVcid(vcid);
+			frame.setMapid(0);
 			frame.setHeaderTruncated(false);
 			frame.setSequenceControl(qos);
 			frame.setProtocolControl(PduTypeId.USER_DATA);
@@ -276,8 +301,8 @@ public class TransferFrameParser {
 			} else {
 				frame.setScid(remoteScid);
 			}
-			frame.setVcid(0); // TODO bit 21 of vcid is localPcid
-			frame.setMapid(portId);
+			frame.setVcid(vcid);
+			frame.setMapid(0);
 			frame.setHeaderTruncated(false);
 			frame.setSequenceControl(qos);
 			frame.setProtocolControl(PduTypeId.USER_DATA);
