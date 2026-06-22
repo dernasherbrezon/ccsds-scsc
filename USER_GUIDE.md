@@ -6,7 +6,7 @@ This document aims to cover several typical use cases. All code explained line b
 
 #### Configuration
 
-All configuration is made through .properties file. This properties can be combined from multiple locations, override each other to provide final configuration. The key class is `com.leosatdata.util.Configuration` which wraps these properties and provide some basic validation.
+All configuration is made through .properties file. These properties can be combined from multiple locations, override each other to provide final configuration. The key class is `com.leosatdata.util.Configuration` which wraps these properties and provide some basic validation.
 
 ```java
 Properties props = new Properties();
@@ -21,7 +21,7 @@ Configuration groundConfig = new Configuration(props);
 This implementation contains several .properties files:
 
  * **mib.properties** - This is set of MIB properties as defined in CCSDS 235.1
- * **transceiver.properties** - Set of pre-defined frequency channels to use for each mode. Type1 and Type4 directives use frequency channel number instead of the actual frequency value.
+ * **transceiver.properties** - Set of pre-defined frequency channels to use for each mode. Type1 and Type4 directives use frequency channel number instead of the actual frequency value. This file contains a mapping from the channel number to the actual frequency.
  * **custom.properties** - This is set of implementation-specific set of properties. All values have reasonable default and commentary
 
 #### Transceiver
@@ -120,7 +120,7 @@ ground.start();
 
 There are 2 notable callbacks configured:
 
- * Instance of `com.leosatdata.service.NodeCallback`. This callback being called by Node on any system event. See Annex G "NOTIFICATIONS TO VEHICLE CONTROLLER" for all possible notification types. The main program (or vehicle controller or OBC) can decided what to do. In some scenarios notifications are recoverable, in some not.
+ * Instance of `com.leosatdata.service.NodeCallback`. This callback being called by Node on any system event. See Annex G "NOTIFICATIONS TO VEHICLE CONTROLLER" for all possible notification types. The main program (or vehicle controller or OBC) can decide what to do. In some scenarios notifications are recoverable, in some not.
  * Instance of `com.leosatdata.service.UserDataCallback`. This is main callback to handle all incoming (RX) data. In the implementation above, it will log all incoming data into standard output.
  
 Once both nodes initialized and started, their transceivers can be cross connected. This is only required for `NullTransceiver`.
@@ -142,9 +142,9 @@ The next step is to put responder into "connecting-L" mode:
 satellite.waitForSession();
 ```
 
-Responder will initialize transceiver's RX chain with default HAIL parameters. For proximity-1 it will be data rate: R8NC, channel 1, NON_COHERENT_PSK &etc. Once initialized it will wait for HAIL directive on that frequency.
+Responder will initialize transceiver's RX chain with default HAIL parameters. For proximity-1 it will be: data rate R8NC, channel 1, NON_COHERENT_PSK &etc. Once initialized it will wait for HAIL directive on that frequency.
 
-The next step is to configure comm parameters on the caller's side. These is where responder's and caller's transceivers will switch after performing HAIL. Setting comm parameters can be done via `setCommParameters` method (SET RECEIVER PARAMETERS directive):
+The next step is to configure comm parameters on the caller's side. This is where responder's and caller's transceivers will switch after performing HAIL. Setting comm parameters can be done via `setCommParameters` method (SET RECEIVER PARAMETERS directive):
 
 ```java
 ground.setCommParameters(createType1CommParameters(dataRate));
@@ -185,7 +185,19 @@ ground.startSession();
 
 HAIL procedure is asynchronous. It might take some time before caller and responder agree on the frequency and both switch onto it. `PERSISTENT_ACTIVITY` event type received at `NodeCallback` can be used to detect successful HAIL.
 
-Once HAIL completed, it is possible to send data.
+```java
+@Override
+public void handle(ControllerEvent event) {
+	if (event.getType().equals(ControllerEventType.PERSISTENT_ACTIVITY) && event.getObj() != null) {
+		PersistentActivity activity = (PersistentActivity) event.getObj();
+		if (activity.isSuccess()) {
+			// hail completed successfully
+		}
+	}
+}
+```
+
+Once HAIL completed, it is possible to send the data.
 
 ```java
 ground.send(packet, QualityOfService.EXPEDITED, 0);
@@ -193,7 +205,7 @@ ground.send(packet, QualityOfService.EXPEDITED, 0);
 
 This operation is blocking. If internal queues are full, then the calling thread will be blocked until queues have some free space. There are 2 independent queues: one for expedited quality of service (qos), another for sequence controlled.
 
-Communication is fully asynchronous. If response data is expected, then it will be delivered to `UserDataCallback`.
+Communication is fully asynchronous. If response data is expected, then it will be delivered via `UserDataCallback`.
 
 Session can be terminated gracefully using the following code:
 
@@ -203,15 +215,80 @@ ground.stopSession();
 
 This will trigger LOCAL_NO_MORE_DATA (LNMD) directive and notify remote end to terminate the session. The session will be considered terminated if both ends stop it.
 
-Full shutdown require additional stop of `Transceiver` and `Node`:
+For the complete shutdown stop `Transceiver` and `Node`:
 
 ```java
 ground.stop();
 groundTransceiver.stop();
 ```
 
+### Communication change
 
+Communication parameters can be changed after session establishment or during the active data exchange. Just create `setCommParameters` method with new communication parameters. This will trigger local and remote communication change.
 
+```java
+ground.setCommParameters(newParameters);
+```
+
+Please note that during communication change packets will be put into the internal queues. If queues are full, then `send` method will be blocked until communication change complete.
+
+### Protocol interopability
+
+CCSDS 235.1 is designed to support interopability between different spacecrafts and ground stations. It defines several types of transfer frames and communication parameters (SPDU directives). This implementation supports them all.
+
+Transfer frames:
+
+ * AOS v2 (CCSDS 732.0)
+ * Proximity-1 v3 (CCSDS 211.1)
+ * USLP v4 (CCSDS 732.1)
+ 
+SPDU directives (communication parameters):
+
+ * Type1Directive - proximity-1
+ * Type4Directive - first generation lunar
+ * Type5Directive - second generation lunar
+ 
+Messages types must be configured in the .properties file. For example, to select USLP v4 transfer frames and second generation lunar comm parameters:
+
+```properties
+u_frame_version=4
+spdu_version=5
+frame_version=4
+```
+
+According to CCSDS 235.1 transfer frames can be two types: user frames (u_frames) and protocol frames (p_frames). AOS frames cannot be p_frames. Thus 2 separate configurations for transfer frames: **u_frame_version** for user frames and **frame_version** for protocol frames.
+
+### Frame filtering
+
+The implementation support different type of filtering based on spacecraft ids.
+
+ * By destination. All incoming frames must be addressed to the local instance of `Node`. Corresponding configuration is:
+ 
+```properties
+local_spacecraft_id=1
+source_destination_id=1
+```
+
+ * By source. Frames can be accepted only from specific spacecraft or caller:
+ 
+```properties
+test_source=true
+source_destination_id=0
+remote_spacecraft_id=1
+```
+
+ * By source, but frames accepted from the first connected caller:
+ 
+```properties
+test_source=true
+source_destination_id=0
+```
+
+ * No filtering. If the caller is broadcasting frames with its own spacecraft id and test source disabled locally, then all frames will be accepted:
+ 
+```properties
+test_source=false
+```
 
 
 
