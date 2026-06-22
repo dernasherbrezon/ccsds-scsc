@@ -183,6 +183,34 @@ Once configured, caller can start HAIL:
 ground.startSession();
 ```
 
+HAIL procedure is asynchronous. It might take some time before caller and responder agree on the frequency and both switch onto it. `PERSISTENT_ACTIVITY` event type received at `NodeCallback` can be used to detect successful HAIL.
+
+Once HAIL completed, it is possible to send data.
+
+```java
+ground.send(packet, QualityOfService.EXPEDITED, 0);
+```
+
+This operation is blocking. If internal queues are full, then the calling thread will be blocked until queues have some free space. There are 2 independent queues: one for expedited quality of service (qos), another for sequence controlled.
+
+Communication is fully asynchronous. If response data is expected, then it will be delivered to `UserDataCallback`.
+
+Session can be terminated gracefully using the following code:
+
+```java
+ground.stopSession();
+```
+
+This will trigger LOCAL_NO_MORE_DATA (LNMD) directive and notify remote end to terminate the session. The session will be considered terminated if both ends stop it.
+
+Full shutdown require additional stop of `Transceiver` and `Node`:
+
+```java
+ground.stop();
+groundTransceiver.stop();
+```
+
+
 
 
 
