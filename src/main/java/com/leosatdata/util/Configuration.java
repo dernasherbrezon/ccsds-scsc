@@ -100,6 +100,11 @@ public class Configuration {
 			result = false;
 			LOG.error("unsupported u_frame_version: {}", uFrameVersion);
 		}
+		int pFrameVersion = getInteger("frame_version", 0);
+		if (pFrameVersion < 3 || pFrameVersion > 4) {
+			result = false;
+			LOG.error("unsupported frame_version: {}", pFrameVersion);
+		}
 		// v2 (ccsds7320b4) support 24 bit
 		// v3 (ccsds2110b6) support 8 bit only
 		// v4 (ccsds7321b3) dynamic from 8 to 24 and more
@@ -115,16 +120,44 @@ public class Configuration {
 			LOG.error("hail_wait_duration should be more than carrier_only_duration + acquisition_idle_duration");
 		}
 		int pcid = getInteger("local_pcid", 0);
-		if (pcid > 1) {
+		if (pcid > 1 || pcid < 0) {
 			result = false;
 			LOG.error("invalid local_pcid value: {}. Supported: 0 or 1", pcid);
 		}
 		pcid = getInteger("remote_pcid", 0);
-		if (pcid > 1) {
+		if (pcid > 1 || pcid < 0) {
 			result = false;
 			LOG.error("invalid remote_pcid value: {}. Supported: 0 or 1", pcid);
 		}
+		int localScid = getInteger("local_spacecraft_id", 0);
+		int remoteScid = getInteger("remote_spacecraft_id", 0);
+		if (uFrameVersion == 2 || pFrameVersion == 2) {
+			result |= validate(com.leosatdata.ccsds7320b4.util.TransferFrameParser.SPACECRAFT_LENGTH_BITS, "local_spacecraft_id", localScid);
+			result |= validate(com.leosatdata.ccsds7320b4.util.TransferFrameParser.SPACECRAFT_LENGTH_BITS, "remote_spacecraft_id", remoteScid);
+		}
+		if (uFrameVersion == 3 || pFrameVersion == 3) {
+			result |= validate(com.leosatdata.ccsds2110b6.util.TransferFrameParser.SPACECRAFT_LENGTH_BITS, "local_spacecraft_id", localScid);
+			result |= validate(com.leosatdata.ccsds2110b6.util.TransferFrameParser.SPACECRAFT_LENGTH_BITS, "remote_spacecraft_id", remoteScid);
+		}
+		if (uFrameVersion == 4 || pFrameVersion == 4) {
+			result |= validate(com.leosatdata.ccsds7321b3.util.TransferFrameParser.SPACECRAFT_LENGTH_BITS, "local_spacecraft_id", localScid);
+			result |= validate(com.leosatdata.ccsds7321b3.util.TransferFrameParser.SPACECRAFT_LENGTH_BITS, "remote_spacecraft_id", remoteScid);
+		}
+		int sourceOrDestination = getInteger("source_destination_id", 0);
+		if (sourceOrDestination > 1 || sourceOrDestination < 0) {
+			result = false;
+			LOG.error("invalid source_destination_id value: {}. Supported: 0 or 1", pcid);
+		}
 		return result;
+	}
+
+	private static boolean validate(int numberOfBits, String fieldName, int value) {
+		int maxValue = (1 << numberOfBits) - 1;
+		if (maxValue < value) {
+			LOG.error("invalid " + fieldName + ": " + value + " maxValue: " + maxValue);
+			return false;
+		}
+		return true;
 	}
 
 	public ControllerEvent createNotification(String prefix, boolean success) {

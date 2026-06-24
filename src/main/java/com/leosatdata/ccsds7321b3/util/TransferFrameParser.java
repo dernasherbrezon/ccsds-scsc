@@ -23,7 +23,8 @@ import com.leosatdata.util.Util;
 public class TransferFrameParser {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
-
+	public final static int SPACECRAFT_LENGTH_BITS = 16;
+	
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
 	private final int maxDataLength;
@@ -95,7 +96,7 @@ public class TransferFrameParser {
 		int start = bis.available();
 		TransferFrame result = new TransferFrame();
 		result.setVersionNumber(bis.readUnsignedInt(4));
-		result.setScid(bis.readUnsignedInt(16));
+		result.setScid(bis.readUnsignedInt(SPACECRAFT_LENGTH_BITS));
 		result.setSourceOrDestination(SourceDestination.valueOfCode(bis.readUnsignedInt(1)));
 		result.setVcid(bis.readUnsignedInt(6));
 		result.setMapid(bis.readUnsignedInt(4));
@@ -173,7 +174,7 @@ public class TransferFrameParser {
 		frame.setFrameLength(frameLength - 1);
 		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		bos.writeUnsignedInt(4, frame.getVersionNumber());
-		bos.writeUnsignedInt(16, frame.getScid());
+		bos.writeUnsignedInt(SPACECRAFT_LENGTH_BITS, frame.getScid());
 		bos.writeUnsignedInt(1, frame.getSourceOrDestination().getCode());
 		if (usePcid) {
 			bos.writeUnsignedInt(1, localPcid);

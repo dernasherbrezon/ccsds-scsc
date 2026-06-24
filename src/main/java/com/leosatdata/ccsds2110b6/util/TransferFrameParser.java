@@ -25,6 +25,7 @@ public class TransferFrameParser {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
 	private final static int PORTID_LENGTH_BITS = 3;
+	public final static int SPACECRAFT_LENGTH_BITS = 10;
 
 	private final int maxDataLength;
 	private final int localScid;
@@ -66,7 +67,7 @@ public class TransferFrameParser {
 		result.setQualityOfService(QualityOfService.valueOfCode(bis.readUnsignedInt(1)));
 		result.setPduTypeId(PduTypeId.valueOfCode(bis.readUnsignedInt(1)));
 		result.setDfcId(DfcId.valueOfCode(bis.readUnsignedInt(2)));
-		result.setScid(bis.readUnsignedInt(10));
+		result.setScid(bis.readUnsignedInt(SPACECRAFT_LENGTH_BITS));
 		result.setPcid(bis.readUnsignedInt(1));
 		result.setPortId(bis.readUnsignedInt(PORTID_LENGTH_BITS));
 		result.setSourceOrDestination(SourceDestination.valueOfCode(bis.readUnsignedInt(1)));
@@ -96,7 +97,7 @@ public class TransferFrameParser {
 		bos.writeUnsignedInt(1, frame.getQualityOfService().getCode());
 		bos.writeUnsignedInt(1, frame.getPduTypeId().getCode());
 		bos.writeUnsignedInt(2, frame.getDfcId().getCode());
-		bos.writeUnsignedInt(10, frame.getScid());
+		bos.writeUnsignedInt(SPACECRAFT_LENGTH_BITS, frame.getScid());
 		bos.writeUnsignedInt(1, frame.getPcid());
 		bos.writeUnsignedInt(PORTID_LENGTH_BITS, frame.getPortId());
 		bos.writeUnsignedInt(1, frame.getSourceOrDestination().getCode());

@@ -16,7 +16,8 @@ public class TransferFrameParser {
 
 	static final int VCID_LENGTH_BITS = 6;
 	static final int VCFRAME_COUNT_LENGTH_BITS = 24;
-
+	public final static int SPACECRAFT_LENGTH_BITS = 8;
+	
 	private final Configuration config;
 	private final int insertZoneLength;
 	private final boolean frameHeaderErrorControl;
@@ -76,7 +77,7 @@ public class TransferFrameParser {
 	public TransferFrame decode(BitInputStream bis) throws IOException {
 		TransferFrame result = new TransferFrame();
 		result.setVersionNumber(bis.readUnsignedInt(2));
-		result.setScid(bis.readUnsignedInt(8));
+		result.setScid(bis.readUnsignedInt(SPACECRAFT_LENGTH_BITS));
 		result.setVcid(bis.readUnsignedInt(VCID_LENGTH_BITS));
 		result.setVcFrameCount(bis.readUnsignedInt(VCFRAME_COUNT_LENGTH_BITS));
 		result.setReplay(bis.readBoolean());
@@ -125,7 +126,7 @@ public class TransferFrameParser {
 		}
 		frame.setVersionNumber(TransferFrame.VERSION_NUMBER);
 		bos.writeUnsignedInt(2, frame.getVersionNumber());
-		bos.writeUnsignedInt(8, frame.getScid());
+		bos.writeUnsignedInt(SPACECRAFT_LENGTH_BITS, frame.getScid());
 		bos.writeUnsignedInt(VCID_LENGTH_BITS, frame.getVcid());
 		bos.writeUnsignedInt(VCFRAME_COUNT_LENGTH_BITS, frame.getVcFrameCount());
 		bos.writeBoolean(frame.isReplay());
