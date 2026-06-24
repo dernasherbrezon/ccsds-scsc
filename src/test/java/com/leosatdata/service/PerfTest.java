@@ -62,7 +62,7 @@ public class PerfTest {
 		props.putAll(NodeTest.load("src/main/resources/custom.properties"));
 		props.putAll(NodeTest.load("src/test/resources/ground.properties"));
 		props.putAll(NodeTest.load("src/test/resources/channel.properties"));
-		props.setProperty("channel.delayMillis", "0");
+		props.setProperty("channel_delay_duration", "0");
 		groundConfig = new Configuration(props);
 		groundConfig.setProperty("u_frame_version", String.valueOf(commSettings.getuFrameVersion()));
 		groundConfig.setProperty("spdu_version", String.valueOf(commSettings.getSpduVersion()));
@@ -82,7 +82,7 @@ public class PerfTest {
 		props.putAll(NodeTest.load("src/main/resources/custom.properties"));
 		props.putAll(NodeTest.load("src/test/resources/satellite.properties"));
 		props.putAll(NodeTest.load("src/test/resources/channel.properties"));
-		props.setProperty("channel.delayMillis", "0");
+		props.setProperty("channel_delay_duration", "0");
 		satelliteConfig = new Configuration(props);
 		satelliteConfig.setProperty("u_frame_version", String.valueOf(commSettings.getuFrameVersion()));
 		satelliteConfig.setProperty("spdu_version", String.valueOf(commSettings.getSpduVersion()));

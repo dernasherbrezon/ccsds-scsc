@@ -297,6 +297,29 @@ source_destination_id=0
 test_source=false
 ```
 
+### Timers
+
+CCSDS 235.1 state machines make active use of various timers. These timers trigger different events. For example, `hail_wait_duration` is used when the caller does not receive a PLCW from the responder within the allotted time. Incorrect timer configuration can prevent some procedures from completing.
+
+The equations below do not account for code latency or operating system scheduler delays.
+
+#### Session Initiation (HAIL)
+
+For HAIL to succeed, the following condition must be satisfied:
+
+```
+tail_idle_duration + hail_wait_duration > 2 * channel_latency + carrier_only_duration + acquisition_idle_duration
+```
+
+The left-hand side represents the time the caller waits for a PLCW before making another attempt. The right-hand side represents the time required for the responder to receive the communication parameters and switch the transceiver to the next channel. The parameter `channel_latency` is the latency between caller and responder.
+
+#### Communication Parameter Change
+
+A communication parameter change requires a round-trip of the message plus an additional `tail_idle_duration` at the responder.
+
+```
+comm_change_waiting_period > 2 * channel_latency + tail_idle_duration + carrier_only_duration + acquisition_idle_duration
+```
 
 
 

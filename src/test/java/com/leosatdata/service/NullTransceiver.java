@@ -74,7 +74,7 @@ public class NullTransceiver implements Transceiver {
 		if (txFrameFilter != null && !txFrameFilter.accept(this, otherSide, data)) {
 			return;
 		}
-		otherSide.executor.schedule(new DelayedRxTask(otherSide.getRxCallback(), data, otherSide.rxFrameFilter), txMillisToWait + config.getLong("channel.delayMillis", 0), TimeUnit.MILLISECONDS);
+		otherSide.executor.schedule(new DelayedRxTask(otherSide.getRxCallback(), data, otherSide.rxFrameFilter), txMillisToWait + config.getDuration("channel_delay_duration"), TimeUnit.MILLISECONDS);
 	}
 
 	@Override
