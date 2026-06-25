@@ -36,7 +36,6 @@ import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.PersistentActivity;
@@ -817,7 +816,6 @@ public class NodeTest {
 		Type4LinkEstablishment rx = new Type4LinkEstablishment();
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setDemandQuery(Type4NegotiationType.DEMAND);
-		rx.setDirection(LinkDirection.RETURN);
 		rx.setFreqChannel(1);
 		rx.setLinkSnr(0);
 		rx.setCarrierModulation(Type4CarrierModulation.GMSK);
@@ -831,7 +829,6 @@ public class NodeTest {
 		Type4LinkEstablishment tx = new Type4LinkEstablishment();
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setDemandQuery(Type4NegotiationType.DEMAND);
-		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFreqChannel(1);
 		tx.setLinkSnr(0);
 		tx.setCarrierModulation(Type4CarrierModulation.GMSK);

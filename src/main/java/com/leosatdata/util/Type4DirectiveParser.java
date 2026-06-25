@@ -38,7 +38,7 @@ public class Type4DirectiveParser {
 			switch (type) {
 			case LINK_ESTABLISHMENT_CONTROL:
 				Type4LinkEstablishment linkEstablishment = new Type4LinkEstablishment();
-				linkEstablishment.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
+				LinkDirection direction = LinkDirection.valueOfCode(bis.readUnsignedInt(1));
 				linkEstablishment.setDemandQuery(Type4NegotiationType.valueOfCode(bis.readUnsignedInt(1)));
 				linkEstablishment.setQueryResponse(QueryResponse.valueOfCode(bis.readUnsignedInt(1)));
 				linkEstablishment.setRnmd(bis.readBoolean());
@@ -53,7 +53,7 @@ public class Type4DirectiveParser {
 				linkEstablishment.setLinkSnr(bis.readUnsignedInt(8));
 				// IEEE 754 standard for half-precision floating point numbers
 				linkEstablishment.setSymbolRate(Float.float16ToFloat((short) bis.readUnsignedInt(16)));
-				if (linkEstablishment.getDirection().equals(LinkDirection.RETURN)) {
+				if (direction.equals(LinkDirection.RETURN)) {
 					result.setRxLink(linkEstablishment);
 				} else {
 					result.setTxLink(linkEstablishment);
@@ -86,10 +86,10 @@ public class Type4DirectiveParser {
 
 	public void encode(Type4Directive message, BitOutputStream bos) throws IOException {
 		if (message.getRxLink() != null) {
-			encodeLink(message.getRxLink(), bos);
+			encodeLink(LinkDirection.RETURN, message.getRxLink(), bos);
 		}
 		if (message.getTxLink() != null) {
-			encodeLink(message.getTxLink(), bos);
+			encodeLink(LinkDirection.FORWARD, message.getTxLink(), bos);
 		}
 		if (message.getReportRequest() != null) {
 			ReportRequest params = message.getReportRequest();
@@ -111,9 +111,9 @@ public class Type4DirectiveParser {
 		}
 	}
 
-	private static void encodeLink(Type4LinkEstablishment params, BitOutputStream bos) throws IOException {
+	private static void encodeLink(LinkDirection direction, Type4LinkEstablishment params, BitOutputStream bos) throws IOException {
 		bos.writeUnsignedInt(3, LINK_ESTABLISHMENT_CONTROL);
-		bos.writeUnsignedInt(1, params.getDirection().getCode());
+		bos.writeUnsignedInt(1, direction.getCode());
 		bos.writeUnsignedInt(1, params.getDemandQuery().getCode());
 		bos.writeUnsignedInt(1, params.getQueryResponse().getCode());
 		bos.writeBoolean(params.isRnmd());

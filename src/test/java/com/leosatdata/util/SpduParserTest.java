@@ -17,7 +17,6 @@ import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.PlExtensions;
@@ -182,7 +181,6 @@ public class SpduParserTest {
 		Type4LinkEstablishment rx = new Type4LinkEstablishment();
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setDemandQuery(Type4NegotiationType.DEMAND);
-		rx.setDirection(LinkDirection.RETURN);
 		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setFreqChannel(3);
 		rx.setLinkSnr(5);
@@ -197,7 +195,6 @@ public class SpduParserTest {
 		Type4LinkEstablishment tx = new Type4LinkEstablishment();
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setDemandQuery(Type4NegotiationType.DEMAND);
-		tx.setDirection(LinkDirection.FORWARD);
 		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setFreqChannel(5);
 		tx.setLinkSnr(1);

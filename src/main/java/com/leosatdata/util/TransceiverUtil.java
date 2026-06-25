@@ -250,19 +250,18 @@ public class TransceiverUtil {
 
 	private Type4Directive createHailType4() {
 		Type4Directive result = new Type4Directive();
-		result.setRxLink(createType4TxRx(LinkDirection.RETURN));
-		result.setTxLink(createType4TxRx(LinkDirection.FORWARD));
+		result.setRxLink(createType4TxRx());
+		result.setTxLink(createType4TxRx());
 		return result;
 	}
 
-	private Type4LinkEstablishment createType4TxRx(LinkDirection direction) {
+	private Type4LinkEstablishment createType4TxRx() {
 		Type4LinkEstablishment result = new Type4LinkEstablishment();
 		if (symbolRate != -1) {
 			result.setSymbolRate(symbolRate);
 		} else {
 			result.setSymbolRate(2000);
 		}
-		result.setDirection(direction);
 		result.setDemandQuery(Type4NegotiationType.DEMAND); // not specified in the spec
 		result.setPolarization(Polarization.LHCP);
 		result.setRnmd(false);
@@ -282,6 +281,7 @@ public class TransceiverUtil {
 
 	private void applyType4RxParameters(Type4Directive directive, boolean invert) {
 		Type4LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
+		LinkDirection direction = invert ? LinkDirection.FORWARD : LinkDirection.RETURN;
 		transceiver.setRxSymbolRate(params.getSymbolRate());
 		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setRxLineCoding(LineCoding.MANCHESTER);
@@ -292,7 +292,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setRxModulationIndex(params.getModulationIndex());
-		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
+		transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + direction.getShortCode(), 0));
 		transceiver.setRxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setRxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setRxPolarization(params.getPolarization());
@@ -302,6 +302,7 @@ public class TransceiverUtil {
 
 	private void applyType4TxParameters(Type4Directive directive, boolean invert) {
 		Type4LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
+		LinkDirection direction = invert ? LinkDirection.RETURN : LinkDirection.FORWARD;
 		transceiver.setTxSymbolRate(params.getSymbolRate());
 		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
 			transceiver.setTxLineCoding(LineCoding.MANCHESTER);
@@ -312,7 +313,7 @@ public class TransceiverUtil {
 		}
 		transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		transceiver.setTxModulationIndex(params.getModulationIndex());
-		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + params.getDirection().getShortCode(), 0));
+		transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + direction.getShortCode(), 0));
 		transceiver.setTxCoding(convertType4Coding(params.getCoding()));
 		transceiver.setTxCoherency(Coherency.UNKNOWN); // not clear from the spec
 		transceiver.setTxPolarization(params.getPolarization());

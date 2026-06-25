@@ -2,7 +2,6 @@ package com.leosatdata.model;
 
 public class Type4LinkEstablishment {
 
-	private LinkDirection direction;
 	private Type4NegotiationType demandQuery;
 	private QueryResponse queryResponse;
 	private boolean rnmd; // Remote Node has No More Data to Send
@@ -24,7 +23,6 @@ public class Type4LinkEstablishment {
 		if (other == null) {
 			return;
 		}
-		this.direction = other.direction;
 		this.demandQuery = other.demandQuery;
 		this.queryResponse = other.queryResponse;
 		this.rnmd = other.rnmd;
@@ -37,14 +35,6 @@ public class Type4LinkEstablishment {
 		this.coding = other.coding;
 		this.linkSnr = other.linkSnr;
 		this.symbolRate = other.symbolRate;
-	}
-
-	public LinkDirection getDirection() {
-		return direction;
-	}
-
-	public void setDirection(LinkDirection direction) {
-		this.direction = direction;
 	}
 
 	public Type4NegotiationType getDemandQuery() {
@@ -145,7 +135,7 @@ public class Type4LinkEstablishment {
 
 	@Override
 	public String toString() {
-		return "[direction=" + direction + ", demandQuery=" + demandQuery + ", queryResponse=" + queryResponse + ", rnmd=" + rnmd + ", transmitToken=" + transmitToken + ", duplex=" + duplex + ", freqChannel=" + freqChannel + ", polarization=" + polarization + ", modulationIndex=" + modulationIndex
+		return "[demandQuery=" + demandQuery + ", queryResponse=" + queryResponse + ", rnmd=" + rnmd + ", transmitToken=" + transmitToken + ", duplex=" + duplex + ", freqChannel=" + freqChannel + ", polarization=" + polarization + ", modulationIndex=" + modulationIndex
 				+ ", carrierModulation=" + carrierModulation + ", coding=" + coding + ", linkSnr=" + linkSnr + ", symbolRate=" + symbolRate + "]";
 	}
 
