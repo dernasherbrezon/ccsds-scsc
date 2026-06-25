@@ -25,6 +25,8 @@ public class TransferFrameParser {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
 	private final static int PORTID_LENGTH_BITS = 3;
+	private final static int PPACKET_LENGTH_BITS = 6;
+	private final static int PPACKET_MAX_VALUE = (1 << PPACKET_LENGTH_BITS) - 1;
 	public final static int SPACECRAFT_LENGTH_BITS = 10;
 
 	private final int maxDataLength;
@@ -75,7 +77,7 @@ public class TransferFrameParser {
 		result.setFrameSequenceNumber(bis.readUnsignedInt(8));
 		if (result.getDfcId().equals(DfcId.SEGMENTED)) {
 			result.setSegmentFlags(SegmentFlags.valueOfCode(bis.readUnsignedInt(2)));
-			result.setPseudoPacketId(bis.readUnsignedInt(6));
+			result.setPseudoPacketId(bis.readUnsignedInt(PPACKET_LENGTH_BITS));
 		}
 		int readSoFar = start - bis.available();
 		// assume frame header is not truncated
@@ -105,7 +107,7 @@ public class TransferFrameParser {
 		bos.writeUnsignedInt(8, frame.getFrameSequenceNumber());
 		if (frame.getDfcId().equals(DfcId.SEGMENTED)) {
 			bos.writeUnsignedInt(2, frame.getSegmentFlags().getCode());
-			bos.writeUnsignedInt(6, frame.getPseudoPacketId());
+			bos.writeUnsignedInt(PPACKET_LENGTH_BITS, frame.getPseudoPacketId());
 		}
 		bos.writeFully(frame.getDataField());
 	}
@@ -133,6 +135,9 @@ public class TransferFrameParser {
 
 	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
 		Util.validateInt(PORTID_LENGTH_BITS, "portId", portId);
+		if (pseudoPacketId > PPACKET_MAX_VALUE) {
+			pseudoPacketId = 0;
+		}
 		if (packet.length < maxDataLength) {
 			TransferFrame frame = new TransferFrame();
 			frame.setQualityOfService(qos);
