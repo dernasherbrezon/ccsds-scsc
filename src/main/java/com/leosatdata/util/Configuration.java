@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.PersistentActivity;
+import com.leosatdata.model.PersistentActivityType;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
@@ -165,7 +166,7 @@ public class Configuration {
 		activity.setSuccess(success);
 		activity.setLifetime(getInteger(prefix + "_lifetime", 0));
 		activity.setWaitingPeriod(getInteger(prefix + "_wait_duration", 0));
-		activity.setNotification(getInteger(prefix + "_notification", 0));
+		activity.setNotification(PersistentActivityType.valueOf(getProperty(prefix + "_notification")));
 		activity.setResponse(getInteger(prefix + "_response", 0));
 		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}

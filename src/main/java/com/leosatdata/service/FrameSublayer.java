@@ -17,7 +17,6 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
-import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.Spdu;
@@ -297,7 +296,7 @@ class FrameSublayer {
 						if (synchTimerTask != null) {
 							synchTimerTask.cancel();
 						}
-						callback.handle(createNotification("resync", true));
+						callback.handle(config.createNotification("resync", true));
 					}
 				} else {
 					Object seqMesage = null;
@@ -353,7 +352,7 @@ class FrameSublayer {
 			int maxAttempts = config.getInteger("resync_lifetime", 0);
 			if (maxAttempts != 0 && currentResyncAttempt >= maxAttempts) {
 				currentResyncAttempt = 0;
-				callback.handle(createNotification("resync", false));
+				callback.handle(config.createNotification("resync", false));
 			} else {
 				resynch();
 			}
@@ -672,16 +671,6 @@ class FrameSublayer {
 		} else {
 			throw new IllegalArgumentException("invalid comm parameters directive: " + directive + " for spdu version: " + spduVersion);
 		}
-	}
-
-	private ControllerEvent createNotification(String prefix, boolean success) {
-		PersistentActivity activity = new PersistentActivity();
-		activity.setSuccess(success);
-		activity.setLifetime(config.getInteger(prefix + "_lifetime", 0));
-		activity.setWaitingPeriod(config.getInteger(prefix + "_wait_duration", 0));
-		activity.setNotification(config.getInteger(prefix + "_notification", 0));
-		activity.setResponse(config.getInteger(prefix + "_response", 0));
-		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 	}
 
 	private Object findSentFrameByVs(int seq) {

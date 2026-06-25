@@ -2,7 +2,7 @@ package com.leosatdata.model;
 
 public class PersistentActivity {
 
-	private int notification;
+	private PersistentActivityType notification;
 	private int waitingPeriod;
 	private int lifetime;
 	private int response;
@@ -24,11 +24,11 @@ public class PersistentActivity {
 		this.success = success;
 	}
 
-	public int getNotification() {
+	public PersistentActivityType getNotification() {
 		return notification;
 	}
 
-	public void setNotification(int notification) {
+	public void setNotification(PersistentActivityType notification) {
 		this.notification = notification;
 	}
 
@@ -52,6 +52,5 @@ public class PersistentActivity {
 	public String toString() {
 		return "PersistentActivity [notification=" + notification + ", waitingPeriod=" + waitingPeriod + ", lifetime=" + lifetime + ", response=" + response + ", success=" + success + "]";
 	}
-	
-	
+
 }

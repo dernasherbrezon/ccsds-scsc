@@ -39,6 +39,7 @@ import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.PersistentActivity;
+import com.leosatdata.model.PersistentActivityType;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Polarization;
@@ -114,8 +115,8 @@ public class NodeTest {
 		satellite.waitForSession();
 		ground.startSession();
 
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
 
 		waitPersistenceActivityCompletion();
 
@@ -171,7 +172,7 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
 	}
 
 	@Test
@@ -190,7 +191,7 @@ public class NodeTest {
 
 		ground.setCommParameters(result);
 
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.COMM_CHANGE), true);
 		waitPersistenceActivityCompletion();
 		assertTestExpPacket();
 	}
@@ -208,8 +209,8 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(type1Comm);
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
 
 		waitPersistenceActivityCompletion();
 
@@ -225,7 +226,7 @@ public class NodeTest {
 		ground2Transceiver.setTxFrameFilter(null); // ignore rx/tx mismatch
 		ground2Transceiver.setSkipCallbacks(true);
 		ground2.startSession();
-		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
+		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
 		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.INVALID_FRAME_SOURCE));
 	}
 
@@ -242,7 +243,7 @@ public class NodeTest {
 		ground2Transceiver.setTxFrameFilter(null); // ignore rx/tx mismatch
 		ground2Transceiver.setSkipCallbacks(true);
 		ground2.startSession();
-		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
+		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
 		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.INVALID_FRAME_SOURCE));
 	}
 
@@ -257,7 +258,7 @@ public class NodeTest {
 		satellite.waitForSession();
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), false);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
 	}
 
 	@Test
@@ -686,8 +687,8 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType5CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
 
 		waitPersistenceActivityCompletion();
 	}
@@ -698,8 +699,8 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType4CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
 
 		waitPersistenceActivityCompletion();
 	}
@@ -714,8 +715,8 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType1CommParameters(dataRate));
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
 
 		waitPersistenceActivityCompletion();
 	}
