@@ -6,14 +6,19 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.leosatdata.model.DataRate;
+import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.SpduHeader;
 import com.leosatdata.model.StatusReport;
 import com.leosatdata.model.TimeDistribution;
+import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
+import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Type5LinkEstablishment;
 
 public class SpduParser {
 
@@ -29,7 +34,7 @@ public class SpduParser {
 	public final static int TYPE5_DIRECTIVE = 0b100;
 
 	private final int maximumFrameSequenceLength;
-	
+
 	private final Type4DirectiveParser type4Parser;
 	private final Type5DirectiveParser type5Parser;
 
@@ -110,6 +115,60 @@ public class SpduParser {
 			return null;
 		}
 
+	}
+
+	public void validateCommParameters(Type1Directive obj) {
+		if (obj.getTxParams() == null || obj.getRxParams() == null) {
+			throw new IllegalArgumentException("rx or tx parameters are missing");
+		}
+		validate(obj.getTxParams());
+		validate(obj.getRxParams());
+	}
+
+	private static void validate(TxRxParameters params) {
+		if (params.getDataRate() == null || params.getDataRate().equals(DataRate.UNKNOWN)) {
+			throw new IllegalArgumentException("data rate is missing");
+		}
+		if (params.getFrequency() == null || params.getFrequency().equals(Frequency.UNKNOWN)) {
+			throw new IllegalArgumentException("frequency is missing");
+		}
+	}
+
+	public void validateCommParameters(Type4Directive obj) {
+		if (obj.getTxLink() == null || obj.getRxLink() == null) {
+			throw new IllegalArgumentException("rx or tx parameters are missing");
+		}
+		validate(obj.getTxLink());
+		validate(obj.getRxLink());
+	}
+
+	private static void validate(Type4LinkEstablishment params) {
+		if (params.getFreqChannel() < 0 || params.getFreqChannel() > 31) {
+			throw new IllegalArgumentException("invalid frequency channel: " + params.getFreqChannel());
+		}
+		if (params.getSymbolRate() < 0) {
+			throw new IllegalArgumentException("invalid symbol rate: " + params.getSymbolRate());
+		}
+	}
+
+	public void validateCommParameters(Type5Directive obj) {
+		if (obj.getTxLink() == null || obj.getRxLink() == null) {
+			throw new IllegalArgumentException("rx or tx parameters are missing");
+		}
+		validate(obj.getTxLink());
+		validate(obj.getRxLink());
+	}
+
+	private static void validate(Type5LinkEstablishment params) {
+		if (params.getAosFrameLength() < 0 || params.getAosFrameLength() > ((1 << 16) - 1)) {
+			throw new IllegalArgumentException("invalid aos frame length: " + params.getAosFrameLength());
+		}
+		if (params.getSymbolRate() < 0) {
+			throw new IllegalArgumentException("invalid symbol rate: " + params.getSymbolRate());
+		}
+		if (params.getFrequency() < 0) {
+			throw new IllegalArgumentException("invalid frequency: " + params.getFrequency());
+		}
 	}
 
 }

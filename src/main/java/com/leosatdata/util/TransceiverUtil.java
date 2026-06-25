@@ -9,16 +9,11 @@ import com.leosatdata.model.Coding;
 import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataRate;
-import com.leosatdata.model.Direction;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.LinkDirection;
-import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.Type4NegotiationType;
-import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.RsCodeType;
@@ -32,7 +27,11 @@ import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.Type4Directive;
+import com.leosatdata.model.Type4LinkEstablishment;
+import com.leosatdata.model.Type4NegotiationType;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Type5LinkEstablishment;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.service.Transceiver;
 
 public class TransceiverUtil {
@@ -68,9 +67,9 @@ public class TransceiverUtil {
 	private Type1Directive createHailType1() {
 		Type1Directive result = new Type1Directive();
 		result.setTxParams(createType1TxRx());
-		result.setTxPlExtensions(createType1PlExtensions(Direction.TRANSMITTER));
+		result.setTxPlExtensions(createType1PlExtensions());
 		result.setRxParams(createType1TxRx());
-		result.setRxPlExtensions(createType1PlExtensions(Direction.RECEIVER));
+		result.setRxPlExtensions(createType1PlExtensions());
 		ControlParameters controlParameters = new ControlParameters();
 		controlParameters.setRnmd(false);
 		controlParameters.setTimeSampleField(0);
@@ -97,12 +96,11 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	private static PlExtensions createType1PlExtensions(Direction direction) {
+	private static PlExtensions createType1PlExtensions() {
 		PlExtensions result = new PlExtensions();
 		result.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		result.setLineCoding(LineCoding.MANCHESTER);
 		result.setDifferentialEncoding(false);
-		result.setDirection(direction);
 		result.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER); // default is unclear from the spec
 		result.setRsCode(RsCodeType.UNKNOWN);
 		result.setScrambler(ScramblerType.NONE);

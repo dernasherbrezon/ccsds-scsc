@@ -183,6 +183,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 		if (directive == null) {
 			throw new IllegalArgumentException("comm parameters cannot be null");
 		}
+		frameSublayer.validateCommParameters(directive);
 		sendEvent(new Event(EventType.LOCAL_COMM_CHANGE, directive));
 	}
 

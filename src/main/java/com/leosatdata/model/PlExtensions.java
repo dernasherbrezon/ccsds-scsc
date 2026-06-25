@@ -10,7 +10,6 @@ public class PlExtensions {
 	private Type1CarrierModulation carrierModulation;
 	private boolean useExtendedDataRate;
 	private boolean useExtendedFreqSet;
-	private Direction direction;
 
 	public RsCodeType getRsCode() {
 		return rsCode;
@@ -76,18 +75,10 @@ public class PlExtensions {
 		this.useExtendedFreqSet = useExtendedFreqSet;
 	}
 
-	public Direction getDirection() {
-		return direction;
-	}
-
-	public void setDirection(Direction direction) {
-		this.direction = direction;
-	}
-
 	@Override
 	public String toString() {
 		return "[rsCode=" + rsCode + ", differentialEncoding=" + differentialEncoding + ", scrambler=" + scrambler + ", carrierSuppression=" + carrierSuppression + ", dataModulation=" + lineCoding + ", carrierModulation=" + carrierModulation + ", useExtendedDataRate=" + useExtendedDataRate
-				+ ", useExtendedFreqSet=" + useExtendedFreqSet + ", direction=" + direction + "]";
+				+ ", useExtendedFreqSet=" + useExtendedFreqSet + "]";
 	}
 
 }

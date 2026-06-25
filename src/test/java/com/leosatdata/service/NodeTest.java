@@ -179,6 +179,7 @@ public class NodeTest {
 	public void testCommChange() throws Exception {
 		establishType1Session();
 
+		Type1Directive result = createType1CommParameters(DataRate.R8C);
 		// switch to the different tx channel. rx stays the same
 		TxRxParameters tx = new TxRxParameters();
 		tx.setCoding(Type1Coding.CONVOLUTIONAL);
@@ -186,7 +187,6 @@ public class NodeTest {
 		tx.setFrequency(Frequency.CH5);
 		tx.setMode(Mode.PROXIMITY1);
 		tx.setCoherency(Coherency.COHERENT_PSK);
-		Type1Directive result = new Type1Directive();
 		result.setTxParams(tx);
 
 		ground.setCommParameters(result);

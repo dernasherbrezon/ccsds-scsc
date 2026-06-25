@@ -662,6 +662,18 @@ class FrameSublayer {
 		}
 	}
 
+	void validateCommParameters(Object directive) {
+		if (spduVersion == Type1Directive.SPDU_VERSION && directive instanceof Type1Directive) {
+			spduParser.validateCommParameters((Type1Directive) directive);
+		} else if (spduVersion == Type4Directive.SPDU_VERSION && directive instanceof Type4Directive) {
+			spduParser.validateCommParameters((Type4Directive) directive);
+		} else if (spduVersion == Type5Directive.SPDU_VERSION && directive instanceof Type5Directive) {
+			spduParser.validateCommParameters((Type5Directive) directive);
+		} else {
+			throw new IllegalArgumentException("invalid comm parameters directive: " + directive + " for spdu version: " + spduVersion);
+		}
+	}
+
 	private ControllerEvent createNotification(String prefix, boolean success) {
 		PersistentActivity activity = new PersistentActivity();
 		activity.setSuccess(success);
@@ -680,4 +692,5 @@ class FrameSublayer {
 		}
 		return null;
 	}
+
 }

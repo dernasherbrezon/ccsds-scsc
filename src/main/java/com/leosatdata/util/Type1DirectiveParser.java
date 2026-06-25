@@ -75,7 +75,7 @@ public class Type1DirectiveParser {
 				break;
 			case SET_PL_EXTENSIONS:
 				PlExtensions plExtensions = new PlExtensions();
-				plExtensions.setDirection(Direction.valueOfCode(dirStream.readUnsignedInt(1)));
+				Direction direction = Direction.valueOfCode(dirStream.readUnsignedInt(1));
 				plExtensions.setUseExtendedFreqSet(dirStream.readBoolean());
 				plExtensions.setUseExtendedDataRate(dirStream.readBoolean());
 				plExtensions.setCarrierModulation(Type1CarrierModulation.valueOfCode(dirStream.readUnsignedInt(2)));
@@ -84,7 +84,7 @@ public class Type1DirectiveParser {
 				plExtensions.setScrambler(ScramblerType.valueOfCode(dirStream.readUnsignedInt(2)));
 				plExtensions.setDifferentialEncoding(dirStream.readBoolean());
 				plExtensions.setRsCode(RsCodeType.valueOfCode(dirStream.readUnsignedInt(1)));
-				if (plExtensions.getDirection().equals(Direction.RECEIVER)) {
+				if (direction.equals(Direction.RECEIVER)) {
 					result.setRxPlExtensions(plExtensions);
 				} else {
 					result.setTxPlExtensions(plExtensions);
@@ -131,12 +131,10 @@ public class Type1DirectiveParser {
 			bos.writeUnsignedInt(3, REPORT_REQUEST);
 		}
 		if (message.getRxPlExtensions() != null) {
-			message.getRxPlExtensions().setDirection(Direction.RECEIVER);
-			encodePlExtensions(message.getRxPlExtensions(), bos);
+			encodePlExtensions(Direction.RECEIVER, message.getRxPlExtensions(), bos);
 		}
 		if (message.getTxPlExtensions() != null) {
-			message.getTxPlExtensions().setDirection(Direction.TRANSMITTER);
-			encodePlExtensions(message.getTxPlExtensions(), bos);
+			encodePlExtensions(Direction.TRANSMITTER, message.getTxPlExtensions(), bos);
 		}
 		if (message.getSourceSpacecraftId() != null) {
 			bos.writeUnsignedInt(10, message.getSourceSpacecraftId());
@@ -164,8 +162,8 @@ public class Type1DirectiveParser {
 		bos.writeUnsignedInt(3, type);
 	}
 
-	private static void encodePlExtensions(PlExtensions params, BitOutputStream bos) throws IOException {
-		bos.writeUnsignedInt(1, params.getDirection().getCode());
+	private static void encodePlExtensions(Direction direction, PlExtensions params, BitOutputStream bos) throws IOException {
+		bos.writeUnsignedInt(1, direction.getCode());
 		bos.writeBoolean(params.isUseExtendedFreqSet());
 		bos.writeBoolean(params.isUseExtendedDataRate());
 		bos.writeUnsignedInt(2, params.getCarrierModulation().getCode());
