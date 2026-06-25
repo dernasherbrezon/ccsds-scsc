@@ -197,7 +197,7 @@ The HAIL procedure is asynchronous. Successful completion is indicated by a `PER
 public void handle(ControllerEvent event) {
 	if (event.getType().equals(ControllerEventType.PERSISTENT_ACTIVITY) && event.getObj() != null) {
 		PersistentActivity activity = (PersistentActivity) event.getObj();
-		if (activity.isSuccess()) {
+		if (activity.getNotification().equals(PersistentActivityType.HAIL) && activity.isSuccess()) {
 			// hail completed successfully
 		}
 	}
