@@ -2,7 +2,6 @@ package com.leosatdata.model;
 
 public class Type5LinkEstablishment {
 
-	private LinkDirection direction;
 	private Type5NegotiationType demandQuery;
 	private boolean rnmd; // Remote Node has No More Data to Send
 	private boolean transmitToken;
@@ -26,7 +25,6 @@ public class Type5LinkEstablishment {
 		if (other == null) {
 			return;
 		}
-		this.direction = other.direction;
 		this.demandQuery = other.demandQuery;
 		this.rnmd = other.rnmd;
 		this.transmitToken = other.transmitToken;
@@ -41,14 +39,6 @@ public class Type5LinkEstablishment {
 		this.aosFrameLength = other.aosFrameLength;
 		this.symbolRate = other.symbolRate;
 		this.frequency = other.frequency;
-	}
-
-	public LinkDirection getDirection() {
-		return direction;
-	}
-
-	public void setDirection(LinkDirection direction) {
-		this.direction = direction;
 	}
 
 	public Type5NegotiationType getDemandQuery() {

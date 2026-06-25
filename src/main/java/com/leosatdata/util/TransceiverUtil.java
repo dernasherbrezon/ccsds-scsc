@@ -228,7 +228,6 @@ public class TransceiverUtil {
 		} else {
 			result.setSymbolRate(2000);
 		}
-		result.setDirection(direction);
 		result.setTransceiverMode(TransceiverMode.USLP);
 		result.setDemandQuery(Type5NegotiationType.DEMAND); // not specified in the spec
 		result.setPolarization(Polarization.LHCP);

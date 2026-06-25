@@ -110,7 +110,6 @@ public class SpduParserTest {
 		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setLinkSnr(2);
 		rx.setCoherency(Coherency.COHERENT_PSK);
-		rx.setDirection(LinkDirection.RETURN);
 		rx.setFrequency(2240000000f);
 		rx.setSymbolRate(8400);
 		rx.setDemandQuery(Type5NegotiationType.DEMAND);
@@ -127,7 +126,6 @@ public class SpduParserTest {
 		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setLinkSnr(2);
 		tx.setCoherency(Coherency.COHERENT_PSK);
-		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFrequency(2250000000f);
 		tx.setSymbolRate(8400);
 		tx.setDemandQuery(Type5NegotiationType.DEMAND);

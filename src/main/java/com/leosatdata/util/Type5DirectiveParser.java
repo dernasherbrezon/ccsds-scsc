@@ -47,7 +47,7 @@ public class Type5DirectiveParser {
 			case LINK2_ESTABLISHMENT_CONTROL:
 				Type5LinkEstablishment link = new Type5LinkEstablishment();
 				bis.skipBits(1);
-				link.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
+				LinkDirection direction = LinkDirection.valueOfCode(bis.readUnsignedInt(1));
 				link.setDemandQuery(Type5NegotiationType.valueOfCode(bis.readUnsignedInt(3)));
 				link.setRnmd(bis.readBoolean());
 				link.setTransmitToken(bis.readBoolean());
@@ -65,7 +65,7 @@ public class Type5DirectiveParser {
 				// IEEE 754 standard for half-precision floating point numbers
 				link.setSymbolRate(Float.float16ToFloat((short) bis.readUnsignedInt(16)));
 				link.setFrequency(bis.readFloat());
-				if (link.getDirection().equals(LinkDirection.RETURN)) {
+				if (direction.equals(LinkDirection.RETURN)) {
 					result.setRxLink(link);
 				} else {
 					result.setTxLink(link);
@@ -114,10 +114,10 @@ public class Type5DirectiveParser {
 
 	public void encode(Type5Directive message, BitOutputStream bos) throws IOException {
 		if (message.getRxLink() != null) {
-			encodeLink(message.getRxLink(), bos);
+			encodeLink(LinkDirection.RETURN, message.getRxLink(), bos);
 		}
 		if (message.getTxLink() != null) {
-			encodeLink(message.getTxLink(), bos);
+			encodeLink(LinkDirection.FORWARD, message.getTxLink(), bos);
 		}
 		if (message.getReportRequest() != null) {
 			ReportRequest params = message.getReportRequest();
@@ -154,10 +154,10 @@ public class Type5DirectiveParser {
 
 	}
 
-	private static void encodeLink(Type5LinkEstablishment params, BitOutputStream bos) throws IOException {
+	private static void encodeLink(LinkDirection direction, Type5LinkEstablishment params, BitOutputStream bos) throws IOException {
 		bos.writeUnsignedInt(3, LINK2_ESTABLISHMENT_CONTROL);
 		bos.writeUnsignedInt(1, 0); // unused
-		bos.writeUnsignedInt(1, params.getDirection().getCode());
+		bos.writeUnsignedInt(1, direction.getCode());
 		bos.writeUnsignedInt(3, params.getDemandQuery().getCode());
 		bos.writeBoolean(params.isRnmd());
 		bos.writeBoolean(params.isTransmitToken());

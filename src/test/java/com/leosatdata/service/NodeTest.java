@@ -782,7 +782,6 @@ public class NodeTest {
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setCoherency(Coherency.COHERENT_PSK);
 		rx.setDemandQuery(Type5NegotiationType.DEMAND);
-		rx.setDirection(LinkDirection.RETURN);
 		rx.setFrequency(2_100_000_000f);
 		rx.setLinkSnr(0);
 		rx.setCarrierModulation(Type4CarrierModulation.GMSK);
@@ -798,7 +797,6 @@ public class NodeTest {
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setCoherency(Coherency.COHERENT_PSK);
 		tx.setDemandQuery(Type5NegotiationType.DEMAND);
-		tx.setDirection(LinkDirection.FORWARD);
 		tx.setFrequency(2_200_000_000f);
 		tx.setLinkSnr(0);
 		tx.setCarrierModulation(Type4CarrierModulation.GMSK);
