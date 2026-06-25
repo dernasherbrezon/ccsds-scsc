@@ -1,6 +1,7 @@
 package com.leosatdata.util;
 
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -8,6 +9,7 @@ import java.util.Properties;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 
 import com.leosatdata.model.CarrierSuppression;
 import com.leosatdata.model.Coherency;
@@ -99,6 +101,325 @@ public class SpduParserTest {
 
 	@Test
 	public void testType5() throws Exception {
+		Type5Directive type5 = createValidType5();
+		parser.validateCommParameters(type5);
+		assertDirectives(type5);
+	}
+
+	@Test
+	public void testType4() throws Exception {
+		Type4Directive type4 = createValidType4();
+		parser.validateCommParameters(type4);
+		assertDirectives(type4);
+	}
+
+	@Test
+	public void testType3() throws Exception {
+		SpduHeader header = new SpduHeader();
+		header.setFormat(SpduParser.VARIABLE_SPDU);
+		header.setType(SpduParser.TYPE3_DIRECTIVE);
+
+		StatusReport type3 = new StatusReport();
+		type3.setHeader(header);
+		byte[] report = new byte[16];
+		report[0] = 0;
+		report[1] = 1;
+		report[2] = 2;
+		type3.setReport(report);
+
+		assertDirectives(type3);
+	}
+
+	@Test
+	public void testType2() throws Exception {
+		SpduHeader header = new SpduHeader();
+		header.setFormat(SpduParser.VARIABLE_SPDU);
+		header.setType(SpduParser.TYPE2_DIRECTIVE);
+
+		TimeDistribution type2 = new TimeDistribution();
+		type2.setHeader(header);
+		type2.setType(TimeDistributionType.NULL);
+		type2.setTransceiverClock(System.currentTimeMillis() / 1000);
+		type2.setSendSideDelay(12);
+		type2.setOneWayLightTime(15);
+
+		assertDirectives(type2);
+	}
+
+	@Test
+	public void testType1() throws Exception {
+		Type1Directive type1 = createValidType1();
+		parser.validateCommParameters(type1);
+		assertDirectives(type1);
+
+		// type1 can't contain all possible directives due to the length size limitation
+		Type1Directive type1Small = new Type1Directive();
+		type1Small.setHeader(type1.getHeader());
+		type1Small.setSourceSpacecraftId(45);
+		type1Small.setControlParams(type1.getControlParams());
+		type1Small.setReportReq(type1.getReportReq());
+		type1Small.setVr(type1.getVr());
+
+		assertDirectives(type1Small);
+
+	}
+
+	@Test
+	public void testValidateCommParameters() throws Exception {
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type1Directive type1 = createValidType1();
+				type1.setRxParams(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type1Directive type1 = createValidType1();
+				type1.setTxParams(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type1Directive type1 = createValidType1();
+				type1.getRxParams().setFrequency(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type1Directive type1 = createValidType1();
+				type1.getRxParams().setFrequency(Frequency.UNKNOWN);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type1Directive type1 = createValidType1();
+				type1.getRxParams().setDataRate(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type1Directive type1 = createValidType1();
+				type1.getRxParams().setDataRate(DataRate.UNKNOWN);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type1Directive type1 = createValidType1();
+				type1.getTxParams().setFrequency(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type1Directive type1 = createValidType1();
+				type1.getTxParams().setDataRate(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type4Directive type1 = createValidType4();
+				type1.setRxLink(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type4Directive type1 = createValidType4();
+				type1.getRxLink().setFreqChannel(-1);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type4Directive type1 = createValidType4();
+				type1.getRxLink().setFreqChannel(32);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type4Directive type1 = createValidType4();
+				type1.getRxLink().setSymbolRate(-1);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type4Directive type1 = createValidType4();
+				type1.setTxLink(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type4Directive type1 = createValidType4();
+				type1.getTxLink().setFreqChannel(-1);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type4Directive type1 = createValidType4();
+				type1.getTxLink().setFreqChannel(32);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type4Directive type1 = createValidType4();
+				type1.getTxLink().setSymbolRate(-1);
+				parser.validateCommParameters(type1);
+			}
+		});
+
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type5Directive type1 = createValidType5();
+				type1.setTxLink(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type5Directive type1 = createValidType5();
+				type1.getTxLink().setAosFrameLength(-1);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type5Directive type1 = createValidType5();
+				type1.getTxLink().setAosFrameLength(65536);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type5Directive type1 = createValidType5();
+				type1.getTxLink().setFrequency(-1);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type5Directive type1 = createValidType5();
+				type1.getTxLink().setSymbolRate(-1);
+				parser.validateCommParameters(type1);
+			}
+		});
+		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
+			@Override
+			public void run() throws Throwable {
+				Type5Directive type1 = createValidType5();
+				type1.setRxLink(null);
+				parser.validateCommParameters(type1);
+			}
+		});
+	}
+
+	@Before
+	public void start() throws Exception {
+		Properties props = new Properties();
+		props.putAll(TestUtil.load("src/main/resources/mib.properties"));
+		props.putAll(TestUtil.load("src/main/resources/transceiver.properties"));
+		props.putAll(TestUtil.load("src/main/resources/custom.properties"));
+		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
+		config = new Configuration(props);
+		parser = new SpduParser(config);
+	}
+
+	private static Type1Directive createValidType1() {
+		SpduHeader header = new SpduHeader();
+		header.setFormat(SpduParser.VARIABLE_SPDU);
+		header.setType(SpduParser.TYPE1_DIRECTIVE);
+
+		ControlParameters controlParameters = new ControlParameters();
+		controlParameters.setDuplex(Duplex.FULL_DUPLEX);
+		controlParameters.setRnmd(true);
+		controlParameters.setTimeSampleField(12);
+		controlParameters.setTransmitToken(true);
+
+		ReportRequest reportReq = new ReportRequest();
+		reportReq.setPcid0PlcwRequest(true);
+		reportReq.setPcid1PlcwRequest(false);
+		reportReq.setStatusReportRequest(1);
+		reportReq.setTimeTagRequest(2);
+
+		TxRxParameters rxParams = new TxRxParameters();
+		rxParams.setCoding(Type1Coding.CONCANTENATED);
+		rxParams.setDataRate(DataRate.R128NC);
+		rxParams.setFrequency(Frequency.CH3);
+		rxParams.setMode(Mode.PROXIMITY1);
+		rxParams.setCoherency(Coherency.COHERENT_PSK);
+
+		PlExtensions rxPlExt = new PlExtensions();
+		rxPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
+		rxPlExt.setLineCoding(LineCoding.MANCHESTER);
+		rxPlExt.setDifferentialEncoding(true);
+		rxPlExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
+		rxPlExt.setRsCode(RsCodeType.RS255_239);
+		rxPlExt.setScrambler(ScramblerType.CCITT);
+		rxPlExt.setUseExtendedDataRate(false);
+		rxPlExt.setUseExtendedFreqSet(false);
+
+		TxRxParameters txParams = new TxRxParameters();
+		txParams.setCoding(Type1Coding.CONCANTENATED);
+		txParams.setDataRate(DataRate.R128NC);
+		txParams.setFrequency(Frequency.CH6);
+		txParams.setMode(Mode.PROXIMITY1);
+		txParams.setCoherency(Coherency.COHERENT_PSK);
+
+		PlExtensions txPlExt = new PlExtensions();
+		txPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
+		txPlExt.setLineCoding(LineCoding.NRZ_L);
+		txPlExt.setDifferentialEncoding(true);
+		txPlExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
+		txPlExt.setRsCode(RsCodeType.RS255_239);
+		txPlExt.setScrambler(ScramblerType.CCITT);
+		txPlExt.setUseExtendedDataRate(false);
+		txPlExt.setUseExtendedFreqSet(false);
+
+		Vr vr = new Vr();
+		vr.setFrameSequenceNumber(123);
+
+		Type1Directive type1 = new Type1Directive();
+		type1.setHeader(header);
+		type1.setRxParams(rxParams);
+		type1.setRxPlExtensions(rxPlExt);
+		type1.setTxParams(txParams);
+		type1.setTxPlExtensions(txPlExt);
+		return type1;
+	}
+
+	private static Type5Directive createValidType5() {
 		SpduHeader header = new SpduHeader();
 		header.setFormat(SpduParser.VARIABLE_SPDU);
 		header.setType(SpduParser.TYPE5_DIRECTIVE);
@@ -162,12 +483,10 @@ public class SpduParserTest {
 		type5.setPnRanging(pnRaging);
 		type5.setReportRequest(reportReq);
 		type5.setSourceSpacecraftId(14);
-
-		assertDirectives(type5);
+		return type5;
 	}
 
-	@Test
-	public void testType4() throws Exception {
+	private static Type4Directive createValidType4() {
 		SpduHeader header = new SpduHeader();
 		header.setFormat(SpduParser.VARIABLE_SPDU);
 		header.setType(SpduParser.TYPE4_DIRECTIVE);
@@ -216,127 +535,7 @@ public class SpduParserTest {
 		type4.setTxLink(tx);
 		type4.setSourceSpacecraftId(5);
 		type4.setVr(vr);
-
-		assertDirectives(type4);
-	}
-
-	@Test
-	public void testType3() throws Exception {
-		SpduHeader header = new SpduHeader();
-		header.setFormat(SpduParser.VARIABLE_SPDU);
-		header.setType(SpduParser.TYPE3_DIRECTIVE);
-
-		StatusReport type3 = new StatusReport();
-		type3.setHeader(header);
-		byte[] report = new byte[16];
-		report[0] = 0;
-		report[1] = 1;
-		report[2] = 2;
-		type3.setReport(report);
-
-		assertDirectives(type3);
-	}
-
-	@Test
-	public void testType2() throws Exception {
-		SpduHeader header = new SpduHeader();
-		header.setFormat(SpduParser.VARIABLE_SPDU);
-		header.setType(SpduParser.TYPE2_DIRECTIVE);
-
-		TimeDistribution type2 = new TimeDistribution();
-		type2.setHeader(header);
-		type2.setType(TimeDistributionType.NULL);
-		type2.setTransceiverClock(System.currentTimeMillis() / 1000);
-		type2.setSendSideDelay(12);
-		type2.setOneWayLightTime(15);
-
-		assertDirectives(type2);
-	}
-
-	@Test
-	public void testType1() throws Exception {
-		SpduHeader header = new SpduHeader();
-		header.setFormat(SpduParser.VARIABLE_SPDU);
-		header.setType(SpduParser.TYPE1_DIRECTIVE);
-
-		ControlParameters controlParameters = new ControlParameters();
-		controlParameters.setDuplex(Duplex.FULL_DUPLEX);
-		controlParameters.setRnmd(true);
-		controlParameters.setTimeSampleField(12);
-		controlParameters.setTransmitToken(true);
-
-		ReportRequest reportReq = new ReportRequest();
-		reportReq.setPcid0PlcwRequest(true);
-		reportReq.setPcid1PlcwRequest(false);
-		reportReq.setStatusReportRequest(1);
-		reportReq.setTimeTagRequest(2);
-
-		TxRxParameters rxParams = new TxRxParameters();
-		rxParams.setCoding(Type1Coding.CONCANTENATED);
-		rxParams.setDataRate(DataRate.R128NC);
-		rxParams.setFrequency(Frequency.CH3);
-		rxParams.setMode(Mode.PROXIMITY1);
-		rxParams.setCoherency(Coherency.COHERENT_PSK);
-
-		PlExtensions rxPlExt = new PlExtensions();
-		rxPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
-		rxPlExt.setLineCoding(LineCoding.MANCHESTER);
-		rxPlExt.setDifferentialEncoding(true);
-		rxPlExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
-		rxPlExt.setRsCode(RsCodeType.RS255_239);
-		rxPlExt.setScrambler(ScramblerType.CCITT);
-		rxPlExt.setUseExtendedDataRate(false);
-		rxPlExt.setUseExtendedFreqSet(false);
-
-		TxRxParameters txParams = new TxRxParameters();
-		txParams.setCoding(Type1Coding.CONCANTENATED);
-		txParams.setDataRate(DataRate.R128NC);
-		txParams.setFrequency(Frequency.CH6);
-		txParams.setMode(Mode.PROXIMITY1);
-		txParams.setCoherency(Coherency.COHERENT_PSK);
-
-		PlExtensions txPlExt = new PlExtensions();
-		txPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
-		txPlExt.setLineCoding(LineCoding.NRZ_L);
-		txPlExt.setDifferentialEncoding(true);
-		txPlExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
-		txPlExt.setRsCode(RsCodeType.RS255_239);
-		txPlExt.setScrambler(ScramblerType.CCITT);
-		txPlExt.setUseExtendedDataRate(false);
-		txPlExt.setUseExtendedFreqSet(false);
-
-		Vr vr = new Vr();
-		vr.setFrameSequenceNumber(123);
-
-		Type1Directive type1 = new Type1Directive();
-		type1.setHeader(header);
-		type1.setRxParams(rxParams);
-		type1.setRxPlExtensions(rxPlExt);
-		type1.setTxParams(txParams);
-		type1.setTxPlExtensions(txPlExt);
-
-		assertDirectives(type1);
-
-		// type1 can't contain all possible directives to the length size limitation
-		type1 = new Type1Directive();
-		type1.setHeader(header);
-		type1.setSourceSpacecraftId(45);
-		type1.setControlParams(controlParameters);
-		type1.setReportReq(reportReq);
-		type1.setVr(vr);
-
-		assertDirectives(type1);
-	}
-
-	@Before
-	public void start() throws Exception {
-		Properties props = new Properties();
-		props.putAll(TestUtil.load("src/main/resources/mib.properties"));
-		props.putAll(TestUtil.load("src/main/resources/transceiver.properties"));
-		props.putAll(TestUtil.load("src/main/resources/custom.properties"));
-		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
-		config = new Configuration(props);
-		parser = new SpduParser(config);
+		return type4;
 	}
 
 	private void assertDirectives(Spdu expected) throws IOException {
