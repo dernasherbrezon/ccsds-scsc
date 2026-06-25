@@ -75,6 +75,11 @@ public class State {
 		carrierAcquired = false;
 		y = 0;
 		x = 0;
+		seqQueue.clear();
+		expQueue.clear();
+		macQueue.clear();
+		sentQueue.clear();
+		queue.clear();
 	}
 
 	public int getVr() {

@@ -96,6 +96,15 @@ public class NodeTest {
 	}
 
 	@Test
+	public void testReset() throws Exception {
+		establishType1Session();
+
+		ground.reset();
+		assertNotNull(groundCallback.waitForEvent(ControllerEventType.END_OF_SESSION));
+
+	}
+
+	@Test
 	public void testStartStopStartSession() throws Exception {
 		establishType1Session();
 

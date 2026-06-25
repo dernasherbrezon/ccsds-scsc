@@ -72,6 +72,20 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	@SuppressWarnings("incomplete-switch")
 	private void handle(Event e) {
 		switch (e.getType()) {
+		case E28_INACTIVE:
+			// reset remote spacecraft id if it was discovered
+			if (config.getInteger("remote_spacecraft_id", -1) == -1 && remoteScid != -1) {
+				remoteScid = -1;
+			}
+			timer.cancelWait();
+			timer.cancelCarrierLoss();
+			state.reset();
+			transceiver.setTxState(TransceiverTxState.OFF);
+			transceiver.setRxState(TransceiverRxState.OFF);
+			// don't send number of received packets. not clear why and hard to sync rx
+			// thread data
+			callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));
+			return;
 		case DUPLEX:
 			state.setDuplex((Duplex) e.getArg());
 			if (state.getCommParameters() != null) {

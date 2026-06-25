@@ -453,12 +453,7 @@ public class HalfDuplexMac {
 
 	private void putIntoInactive() {
 		LOG.info("session stopped");
-		state.reset();
-		transceiver.setTxState(TransceiverTxState.OFF);
-		transceiver.setRxState(TransceiverRxState.OFF);
-		// don't send number of received packets. not clear why and hard to sync rx
-		// thread data
-		callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));
+		sendEvent(new Event(EventType.E28_INACTIVE));
 	}
 
 	private void checkIfTerminationNeededAndSend() {
