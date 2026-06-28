@@ -25,7 +25,11 @@ public class Configuration {
 	}
 
 	public String getProperty(String name) {
-		return config.getProperty(name);
+		String result = config.getProperty(name);
+		if (result == null || result.equals("")) {
+			return null;
+		}
+		return result;
 	}
 
 	public void setProperty(String name, String value) {

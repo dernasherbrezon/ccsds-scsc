@@ -42,6 +42,9 @@ public class TransceiverUtil {
 	private final int spduVersion;
 	private final int symbolRate;
 	private final int channel;
+	private final Type1CarrierModulation type1HailCarrierModulation;
+	private final Type4CarrierModulation type4HailCarrierModulation;
+	private final Type4CarrierModulation type5HailCarrierModulation;
 
 	public TransceiverUtil(Configuration config, Transceiver transceiver) {
 		this.config = config;
@@ -49,6 +52,24 @@ public class TransceiverUtil {
 		this.spduVersion = config.getInteger("spdu_version", 1);
 		this.symbolRate = config.getInteger("hailing_symbol_rate", -1);
 		this.channel = config.getInteger("hailing_channel", -1);
+		String type1HailCarrierModulationStr = config.getProperty("hailing_carrier_modulation_type1");
+		if (type1HailCarrierModulationStr == null) {
+			type1HailCarrierModulation = Type1CarrierModulation.PCM_PSK_PM;
+		} else {
+			type1HailCarrierModulation = Type1CarrierModulation.valueOf(type1HailCarrierModulationStr);
+		}
+		String type4HailCarrierModulationStr = config.getProperty("hailing_carrier_modulation_type4");
+		if (type4HailCarrierModulationStr == null) {
+			type4HailCarrierModulation = Type4CarrierModulation.PCM_PM_BI_PHASE;
+		} else {
+			type4HailCarrierModulation = Type4CarrierModulation.valueOf(type4HailCarrierModulationStr);
+		}
+		String type5HailCarrierModulationStr = config.getProperty("hailing_carrier_modulation_type5");
+		if (type5HailCarrierModulationStr == null) {
+			type5HailCarrierModulation = Type4CarrierModulation.PCM_PM_BI_PHASE;
+		} else {
+			type5HailCarrierModulation = Type4CarrierModulation.valueOf(type5HailCarrierModulationStr);
+		}
 	}
 
 	public Spdu createHailTxRx() {
@@ -96,9 +117,9 @@ public class TransceiverUtil {
 		return result;
 	}
 
-	private static PlExtensions createType1PlExtensions() {
+	private PlExtensions createType1PlExtensions() {
 		PlExtensions result = new PlExtensions();
-		result.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
+		result.setCarrierModulation(type1HailCarrierModulation);
 		result.setLineCoding(LineCoding.MANCHESTER);
 		result.setDifferentialEncoding(false);
 		result.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER); // default is unclear from the spec
@@ -242,7 +263,7 @@ public class TransceiverUtil {
 
 		// use the same channel for type 4 and type 5 directives
 		result.setFrequency(config.getLong("frequency.4.ch" + hailingChannel + direction.getShortCode(), 0));
-		result.setCarrierModulation(Type4CarrierModulation.PCM_PM_BI_PHASE);
+		result.setCarrierModulation(type5HailCarrierModulation);
 		result.setCoding(Type4Coding.LDPC2048_1024);
 		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
 		return result;
@@ -273,7 +294,7 @@ public class TransceiverUtil {
 		}
 
 		result.setFreqChannel(hailingChannel);
-		result.setCarrierModulation(Type4CarrierModulation.PCM_PM_BI_PHASE);
+		result.setCarrierModulation(type4HailCarrierModulation);
 		result.setCoding(Type4Coding.LDPC2048_1024);
 		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
 		return result;
