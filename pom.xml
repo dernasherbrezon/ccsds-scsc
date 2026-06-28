@@ -103,6 +103,38 @@
 							</arguments>
 						</configuration>
 					</execution>
+					<execution>
+						<id>sx127x-client</id>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<classpathScope>test</classpathScope>
+							<mainClass>com.leosatdata.sx127x.Sx127xNode</mainClass>
+							<arguments>
+								<argument>
+									${project.basedir}/src/test/resources/ground.properties</argument>
+								<argument>
+									${project.basedir}/src/test/resources/sx127x-client.properties</argument>
+							</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>sx127x-server</id>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<classpathScope>test</classpathScope>
+							<mainClass>com.leosatdata.sx127x.Sx127xNode</mainClass>
+							<arguments>
+								<argument>
+									${project.basedir}/src/test/resources/satellite.properties</argument>
+								<argument>
+									${project.basedir}/src/test/resources/sx127x-server.properties</argument>
+							</arguments>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>

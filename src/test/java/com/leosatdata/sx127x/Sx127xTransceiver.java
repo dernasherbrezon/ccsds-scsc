@@ -151,7 +151,9 @@ public class Sx127xTransceiver implements Transceiver {
 
 	@Override
 	public void setRxDifferentialEncoding(boolean differentialEncoding) {
-		// ignore. either is not supported
+		if (differentialEncoding) {
+			throw new IllegalArgumentException("differential encoding is not supported");
+		}
 	}
 
 	@Override
@@ -213,7 +215,9 @@ public class Sx127xTransceiver implements Transceiver {
 
 	@Override
 	public void setTxDifferentialEncoding(boolean differentialEncoding) {
-		// ignore. either is not supported
+		if (differentialEncoding) {
+			throw new IllegalArgumentException("differential encoding is not supported");
+		}
 	}
 
 	@Override

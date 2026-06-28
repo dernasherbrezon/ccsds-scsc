@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="i27Rnk3NuYnexC9-FZN_">
+    <mxGraphModel dx="778" dy="510" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="VqNrFNWcXzoM0glK85VD-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="80" width="190" x="260" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="220" width="160" x="60" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-3" edge="1" parent="1" source="VqNrFNWcXzoM0glK85VD-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" target="VqNrFNWcXzoM0glK85VD-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-4" connectable="0" parent="VqNrFNWcXzoM0glK85VD-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="UART" vertex="1">
+          <mxGeometry relative="1" x="-0.225" y="3" as="geometry">
+            <mxPoint x="9" y="3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="sx127x-client" vertex="1">
+          <mxGeometry height="40" width="120" x="80" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="at_app" vertex="1">
+          <mxGeometry height="40" width="70" x="280" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Host" vertex="1">
+          <mxGeometry height="30" width="60" x="60" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="sx127x" vertex="1">
+          <mxGeometry height="40" width="80" x="350" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="esp32" vertex="1">
+          <mxGeometry height="30" width="60" x="260" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-11" parent="1" style="verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.radio.aerial_-_antenna_1;" value="" vertex="1">
+          <mxGeometry height="80" width="30" x="450" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-12" edge="1" parent="1" source="VqNrFNWcXzoM0glK85VD-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=none;endFill=0;" target="VqNrFNWcXzoM0glK85VD-11">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="180" />
+              <mxPoint x="460" y="180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="80" width="190" x="260" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="at_app" vertex="1">
+          <mxGeometry height="40" width="70" x="280" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="sx127x" vertex="1">
+          <mxGeometry height="40" width="80" x="350" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="esp32" vertex="1">
+          <mxGeometry height="30" width="60" x="260" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-19" edge="1" parent="1" source="VqNrFNWcXzoM0glK85VD-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" target="VqNrFNWcXzoM0glK85VD-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-20" connectable="0" parent="VqNrFNWcXzoM0glK85VD-19" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="UART" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="-6" as="geometry">
+            <mxPoint x="4" y="-6" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="sx127x-client" vertex="1">
+          <mxGeometry height="40" width="120" x="80" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-21" parent="1" style="verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.radio.aerial_-_antenna_1;" value="" vertex="1">
+          <mxGeometry height="70" width="30" x="450" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="VqNrFNWcXzoM0glK85VD-22" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=none;endFill=0;" target="VqNrFNWcXzoM0glK85VD-21">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="320" />
+              <mxPoint x="460" y="320" />
+            </Array>
+            <mxPoint x="430" y="320" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
