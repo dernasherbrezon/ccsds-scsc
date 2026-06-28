@@ -67,9 +67,8 @@ public class SimplexMac {
 			}
 			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
 			transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
-			transceiver.setRxState(TransceiverRxState.RECEIVING);
-			// explicit tx off
 			transceiver.setTxState(TransceiverTxState.OFF);
+			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			state.setState(MacState.S72_SIMPLEX_RECEIVE);
 			timer.startPeriodicPlcw();
 			break;

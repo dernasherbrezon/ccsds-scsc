@@ -174,6 +174,7 @@ public class HalfDuplexMac {
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
 			transceiverUtil.applyRxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			transceiver.setTxState(TransceiverTxState.OFF);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			break;
 		case E31_CONNECTING_T:
@@ -198,6 +199,7 @@ public class HalfDuplexMac {
 			// clarity/safety
 			SpduUtil.setTransmit(hailCommParameters, true);
 			transceiverUtil.applyTxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			transceiver.setRxState(TransceiverRxState.OFF);
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 			state.setPersistence(true);
 			state.setState(MacState.S11_START_HAIL);
@@ -220,6 +222,7 @@ public class HalfDuplexMac {
 			break;
 		case E35_TAIL_IDLE_TIMEOUT:
 			state.setState(MacState.S36_WAITING_FOR_HAIL_RESPONSE);
+			transceiver.setTxState(TransceiverTxState.OFF);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			timer.scheduleWait(EventType.E36_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			break;
@@ -264,6 +267,7 @@ public class HalfDuplexMac {
 				state.setCommParameters(spdu);
 
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				transceiver.setRxState(TransceiverRxState.OFF);
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 				state.setState(MacState.S51_RADIATE_CARRIER);
 				timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
@@ -506,6 +510,7 @@ public class HalfDuplexMac {
 
 	private void switchToRx() {
 		state.setState(MacState.S62_WAIT_FOR_CARRIER);
+		transceiver.setTxState(TransceiverTxState.OFF);
 		transceiver.setRxState(TransceiverRxState.RECEIVING);
 		timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
 	}
