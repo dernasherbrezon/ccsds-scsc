@@ -1,0 +1,6 @@
+package com.leosatdata.sx127x;
+
+public enum sx127x_rx_trigger_t {
+
+	SX127X_RX_TRIGGER_PREAMBLE, SX127X_RX_TRIGGER_NONE, SX127X_RX_TRIGGER_RSSI, SX127X_RX_TRIGGER_RSSI_PREAMBLE;
+}
