@@ -17,6 +17,11 @@ public class MockNodeCallback implements NodeCallback {
 
 	@Override
 	public void handle(ControllerEvent event) {
+		// half duplex event
+		// ignore, since it is not an exception
+		if (event.getType().equals(ControllerEventType.NO_DATA_RECEIVED)) {
+			return;
+		}
 		synchronized (lock) {
 			if (this.event != null) {
 				LOG.info("replacing: {} with {}", this.event, event);
