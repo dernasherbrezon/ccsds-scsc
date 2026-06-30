@@ -39,6 +39,7 @@ public class Sx127xTransceiver implements Transceiver {
 	private TransceiverRxState rx = TransceiverRxState.OFF;
 
 	private Future<?> rxTask;
+	private RxThreadState state;
 
 	public Sx127xTransceiver(Sx127x impl, Configuration config) {
 		this.impl = impl;
@@ -293,13 +294,19 @@ public class Sx127xTransceiver implements Transceiver {
 	}
 
 	private void startRx() {
+		state = RxThreadState.RUNNING;
 		rxTask = executor.scheduleAtFixedRate(new Runnable() {
 
 			@Override
 			public void run() {
-				List<sx127x_frame_t> frames = impl.pull();
-				for (sx127x_frame_t cur : frames) {
-					rxCallback.onRx(Util.hexToBytes(cur.getMessage()));
+				synchronized (state) {
+					if (state.equals(RxThreadState.SHUTDOWN)) {
+						return;
+					}
+					List<sx127x_frame_t> frames = impl.pull();
+					for (sx127x_frame_t cur : frames) {
+						rxCallback.onRx(Util.hexToBytes(cur.getMessage()));
+					}
 				}
 			}
 		}, 1000, 1000, TimeUnit.MILLISECONDS);
@@ -310,6 +317,9 @@ public class Sx127xTransceiver implements Transceiver {
 			return;
 		}
 		rxTask.cancel(true);
+		synchronized (state) {
+			state = RxThreadState.SHUTDOWN;
+		}
 		rxTask = null;
 	}
 
