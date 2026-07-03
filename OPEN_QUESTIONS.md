@@ -23,6 +23,12 @@ Here is the list of questions and suggestions to the specification with no parti
 
 7. How to recover from physical layer failures? Or internal failures? Should it be notification to OBC?
 
+8. Not clear the use case of "REPORT SOURCE SPACECRAFT ID" directive. According to section E2.5 this directive can be used to query spacecraft id from remote (i.e source).
+
+ * However section 5.1.3.2 b) 2) (Test_Source) is telling that spacecraft id (SCID) from the first transfer frame can be used.
+ * Not clear at what stage of communication transceiver should send that directive. The "query" keyword assume this directive should be sent once session established (data services). In that case the very first transfer frame containing HAIL parameters will by-pass validation, which contradicts to the requirement that validation should discard invalid transfer frames.
+ * What if "spacecraft id" defined in that directive is different to scid of the incoming transfer frame (assuming source_destination_id=source at the caller)? This opens up too much room for interpretation making different implementations less compatible 
+
 ### MIB properties
 
 1. Not clear how and what to send to OBC in <type>_notification and <type>_response properties. 
