@@ -61,6 +61,7 @@ public class Sx127xTransceiver implements Transceiver {
 		impl.sx127x_fsk_ook_set_syncword(config.getProperty("cs.sublayer.asm"));
 		// This is not crc32 as stated by the CCSDS 211.2
 		impl.sx127x_fsk_ook_set_crc(sx127x_crc_type_t.SX127X_CRC_CCITT);
+		// extra parameters can be configured in the property file
 		impl.sx127x_tx_set_pa_config(new PaConfig(sx127x_pa_pin_t.SX127X_PA_PIN_BOOST, 4));
 
 		int uFrameVersion = config.getInteger("u_frame_version", 0);
