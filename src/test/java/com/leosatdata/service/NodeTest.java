@@ -583,6 +583,7 @@ public class NodeTest {
 		props.putAll(load("src/test/resources/ground.properties"));
 		props.putAll(load("src/test/resources/channel.properties"));
 		groundConfig = new Configuration(props);
+		groundConfig.setProperty("source_destination_id", String.valueOf(SourceDestination.SOURCE.getCode()));
 		if (duplex.equals(Duplex.HALF_DUPLEX)) {
 			groundTransceiver = new HalfDuplexTransceiver(groundConfig);
 		} else {
@@ -600,6 +601,7 @@ public class NodeTest {
 		props.putAll(load("src/test/resources/ground2.properties"));
 		props.putAll(load("src/test/resources/channel.properties"));
 		ground2Config = new Configuration(props);
+		ground2Config.setProperty("source_destination_id", String.valueOf(SourceDestination.SOURCE.getCode()));
 		if (duplex.equals(Duplex.HALF_DUPLEX)) {
 			ground2Transceiver = new HalfDuplexTransceiver(ground2Config);
 		} else {
@@ -617,6 +619,7 @@ public class NodeTest {
 		props.putAll(load("src/test/resources/satellite.properties"));
 		props.putAll(load("src/test/resources/channel.properties"));
 		satelliteConfig = new Configuration(props);
+		satelliteConfig.setProperty("source_destination_id", String.valueOf(SourceDestination.SOURCE.getCode()));
 		if (duplex.equals(Duplex.HALF_DUPLEX)) {
 			satelliteTransceiver = new HalfDuplexTransceiver(satelliteConfig);
 		} else {
@@ -747,8 +750,8 @@ public class NodeTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<?> parameters() {
 		return Arrays.asList(new Object[][] { 
-			{ Duplex.HALF_DUPLEX }, 
-//			{ Duplex.FULL_DUPLEX } 
+//			{ Duplex.HALF_DUPLEX }, 
+			{ Duplex.FULL_DUPLEX } 
 		});
 	}
 	// @formatter:on
