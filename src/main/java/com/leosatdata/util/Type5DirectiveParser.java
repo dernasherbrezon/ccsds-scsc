@@ -2,15 +2,11 @@ package com.leosatdata.util;
 
 import java.io.IOException;
 
-import com.leosatdata.model.Type4Coding;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Duplex;
-import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.LinkDirection;
-import com.leosatdata.model.Type4CarrierModulation;
-import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.PnRaging;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.RangingCode;
@@ -18,9 +14,12 @@ import com.leosatdata.model.RangingModulationIndex;
 import com.leosatdata.model.RangingReportRequest;
 import com.leosatdata.model.RangingType;
 import com.leosatdata.model.ReportRequest;
-import com.leosatdata.model.SpduHeader;
 import com.leosatdata.model.TransceiverMode;
+import com.leosatdata.model.Type4CarrierModulation;
+import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Type5LinkEstablishment;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.Vr;
 
 public class Type5DirectiveParser {
@@ -38,9 +37,8 @@ public class Type5DirectiveParser {
 		this.maximumFrameSequenceLengthBits = config.getInteger("maximum_frame_sequence_length", 1) * 8;
 	}
 
-	public Type5Directive decode(SpduHeader header, BitInputStream bis) throws IOException {
+	public Type5Directive decode(BitInputStream bis) throws IOException {
 		Type5Directive result = new Type5Directive();
-		result.setHeader(header);
 		while (bis.available() > 0) {
 			int type = bis.readUnsignedInt(3);
 			switch (type) {

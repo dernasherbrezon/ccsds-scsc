@@ -2,23 +2,22 @@ package com.leosatdata.util;
 
 import java.io.IOException;
 
-import com.leosatdata.model.Type1CarrierModulation;
+import com.leosatdata.model.CarrierSuppression;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.ControlParameters;
-import com.leosatdata.model.Type1Coding;
-import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Direction;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.Frequency;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Mode;
-import com.leosatdata.model.CarrierSuppression;
-import com.leosatdata.model.Coherency;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.ReportRequest;
 import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
-import com.leosatdata.model.SpduHeader;
 import com.leosatdata.model.TxRxParameters;
+import com.leosatdata.model.Type1CarrierModulation;
+import com.leosatdata.model.Type1Coding;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Vr;
 
@@ -33,9 +32,8 @@ public class Type1DirectiveParser {
 	private final static int SET_PL_EXTENSIONS = 0b110;
 	private final static int REPORT_SOURCE_SCID = 0b111;
 
-	public static Type1Directive decode(SpduHeader header, int length, BitInputStream bis) throws IOException {
+	public static Type1Directive decode(int length, BitInputStream bis) throws IOException {
 		Type1Directive result = new Type1Directive();
-		result.setHeader(header);
 		byte[] directive = new byte[2];
 		for (int i = 0; i < length; i += 2) {
 			directive[0] = bis.readByte();

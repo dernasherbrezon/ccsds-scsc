@@ -17,7 +17,7 @@ public class SpduUtil {
 
 	private final static Logger LOG = LoggerFactory.getLogger(SpduUtil.class);
 
-	public static boolean isValidDirective(int spduVersion, Spdu obj) {
+	public static boolean isCommDirective(int spduVersion, Spdu obj) {
 		if (obj == null) {
 			return false;
 		}

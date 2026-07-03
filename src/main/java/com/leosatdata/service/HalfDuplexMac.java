@@ -183,7 +183,7 @@ public class HalfDuplexMac {
 				callback.handle(config.createNotification("hail", false));
 				return;
 			}
-			if (!SpduUtil.isValidDirective(spduVersion, state.getCommParameters())) {
+			if (!SpduUtil.isCommDirective(spduVersion, state.getCommParameters())) {
 				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
 				callback.handle(config.createNotification("hail", false));
 				return;
@@ -259,7 +259,7 @@ public class HalfDuplexMac {
 				state.setState(MacState.S60_DATA_SERVICES_RECEIVE);
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL)) {
-				if (!SpduUtil.isValidDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
+				if (!SpduUtil.isCommDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
 					break;
 				}
 				callback.handle(config.createNotification("hail", true));

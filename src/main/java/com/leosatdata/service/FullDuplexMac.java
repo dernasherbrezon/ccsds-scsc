@@ -67,7 +67,7 @@ public class FullDuplexMac {
 				callback.handle(config.createNotification("hail", false));
 				return;
 			}
-			if (!SpduUtil.isValidDirective(spduVersion, state.getCommParameters())) {
+			if (!SpduUtil.isCommDirective(spduVersion, state.getCommParameters())) {
 				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
 				callback.handle(config.createNotification("hail", false));
 				return;
@@ -126,7 +126,7 @@ public class FullDuplexMac {
 				LOG.info("session established");
 			}
 			if (state.getState().equals(MacState.S2_WAITING_FOR_HAIL)) {
-				if (!SpduUtil.isValidDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
+				if (!SpduUtil.isCommDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
 					break;
 				}
 				state.setCommParameters(spdu);

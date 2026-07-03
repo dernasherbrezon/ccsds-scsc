@@ -2,18 +2,17 @@ package com.leosatdata.util;
 
 import java.io.IOException;
 
-import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.LinkDirection;
-import com.leosatdata.model.Type4LinkEstablishment;
-import com.leosatdata.model.Type4CarrierModulation;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.Type4NegotiationType;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.QueryResponse;
 import com.leosatdata.model.ReportRequest;
-import com.leosatdata.model.SpduHeader;
+import com.leosatdata.model.Type4CarrierModulation;
+import com.leosatdata.model.Type4Coding;
 import com.leosatdata.model.Type4Directive;
+import com.leosatdata.model.Type4LinkEstablishment;
+import com.leosatdata.model.Type4NegotiationType;
 import com.leosatdata.model.Vr;
 
 public class Type4DirectiveParser {
@@ -30,9 +29,8 @@ public class Type4DirectiveParser {
 		this.maximumFrameSequenceLengthBits = config.getInteger("maximum_frame_sequence_length", 1) * 8;
 	}
 
-	public Type4Directive decode(SpduHeader header, BitInputStream bis) throws IOException {
+	public Type4Directive decode(BitInputStream bis) throws IOException {
 		Type4Directive result = new Type4Directive();
-		result.setHeader(header);
 		while (bis.available() > 0) {
 			int type = bis.readUnsignedInt(3);
 			switch (type) {

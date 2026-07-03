@@ -45,7 +45,7 @@ public class SimplexMac {
 				LOG.error("comm parameters not configured");
 				return;
 			}
-			if (!SpduUtil.isValidDirective(spduVersion, state.getCommParameters())) {
+			if (!SpduUtil.isCommDirective(spduVersion, state.getCommParameters())) {
 				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
 				return;
 			}
@@ -61,7 +61,7 @@ public class SimplexMac {
 				LOG.error("comm parameters not configured");
 				return;
 			}
-			if (!SpduUtil.isValidDirective(spduVersion, state.getCommParameters())) {
+			if (!SpduUtil.isCommDirective(spduVersion, state.getCommParameters())) {
 				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
 				return;
 			}

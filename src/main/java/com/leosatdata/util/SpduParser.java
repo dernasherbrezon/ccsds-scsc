@@ -121,21 +121,29 @@ public class SpduParser {
 		// VARIABLE_SPDU
 		header.setType(bis.readUnsignedInt(3));
 		int lengthBytes = bis.readUnsignedInt(4);
+		Spdu result;
 		switch (header.getType()) {
 		case TYPE1_DIRECTIVE:
-			return Type1DirectiveParser.decode(header, lengthBytes, bis);
+			result = Type1DirectiveParser.decode(lengthBytes, bis);
+			break;
 		case TYPE2_DIRECTIVE:
-			return TimeDistributionParser.decode(header, bis);
+			result = TimeDistributionParser.decode(bis);
+			break;
 		case TYPE3_DIRECTIVE:
-			return StatusReportParser.decode(header, bis);
+			result = StatusReportParser.decode(bis);
+			break;
 		case TYPE4_DIRECTIVE:
-			return type4Parser.decode(header, bis);
+			result = type4Parser.decode(bis);
+			break;
 		case TYPE5_DIRECTIVE:
-			return type5Parser.decode(header, bis);
+			result = type5Parser.decode(bis);
+			break;
 		default:
 			LOG.error("unknown directive type: {}", header.getType());
 			return null;
 		}
+		result.setHeader(header);
+		return result;
 
 	}
 
