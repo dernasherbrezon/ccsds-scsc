@@ -33,28 +33,35 @@ public class SpduParser {
 	public final static int TYPE4_DIRECTIVE = 0b011;
 	public final static int TYPE5_DIRECTIVE = 0b100;
 
-	private final int maximumFrameSequenceLength;
+	private final int plcwType;
 
 	private final Type4DirectiveParser type4Parser;
 	private final Type5DirectiveParser type5Parser;
 
 	public SpduParser(Configuration config) {
-		this.maximumFrameSequenceLength = config.getInteger("maximum_frame_sequence_length", 1);
+		this.plcwType = config.getInteger("maximum_frame_sequence_length", 1) == 1 ? Plcw.SHORT_PLCW : Plcw.LONG_PLCW;
 		this.type4Parser = new Type4DirectiveParser(config);
 		this.type5Parser = new Type5DirectiveParser(config);
 	}
 
 	public void encode(Spdu message, BitOutputStream bos) throws IOException {
 		if (message instanceof Plcw) {
+			Plcw plcw = (Plcw) message;
 			bos.writeUnsignedInt(1, FIXED_SPDU);
-			int type;
-			if (maximumFrameSequenceLength == 1) {
-				type = Plcw.SHORT_PLCW;
+			bos.writeUnsignedInt(1, plcwType);
+			if (plcwType == Plcw.SHORT_PLCW) {
+				bos.writeBoolean(plcw.isRetransmit());
+				bos.writeUnsignedInt(1, plcw.getPcid());
+				bos.writeUnsignedInt(1, 0); // unused
+				bos.writeUnsignedInt(3, plcw.getExpeditedFrameCounter());
+				bos.writeUnsignedInt(8, plcw.getReportValue());
 			} else {
-				type = Plcw.LONG_PLCW;
+				bos.writeUnsignedInt(9, 0); // unused
+				bos.writeBoolean(plcw.isRetransmit());
+				bos.writeUnsignedInt(1, plcw.getPcid());
+				bos.writeUnsignedInt(3, plcw.getExpeditedFrameCounter());
+				bos.writeUnsignedInt(16, plcw.getReportValue());
 			}
-			bos.writeUnsignedInt(1, type);
-			PlcwParser.encode((Plcw) message, type, bos);
 			return;
 		}
 
@@ -93,7 +100,22 @@ public class SpduParser {
 		header.setFormat(bis.readUnsignedInt(1));
 		if (header.getFormat() == FIXED_SPDU) {
 			header.setType(bis.readUnsignedInt(1));
-			return PlcwParser.decode(header, bis);
+			Plcw plcw = new Plcw();
+			plcw.setHeader(header);
+			if (header.getType() == Plcw.SHORT_PLCW) {
+				plcw.setRetransmit(bis.readBoolean());
+				plcw.setPcid(bis.readUnsignedInt(1));
+				bis.skipBits(1);
+				plcw.setExpeditedFrameCounter(bis.readUnsignedInt(3));
+				plcw.setReportValue(bis.readUnsignedInt(8));
+			} else {
+				bis.skipBits(9);
+				plcw.setRetransmit(bis.readBoolean());
+				plcw.setPcid(bis.readUnsignedInt(1));
+				plcw.setExpeditedFrameCounter(bis.readUnsignedInt(3));
+				plcw.setReportValue(bis.readUnsignedInt(16));
+			}
+			return plcw;
 		}
 
 		// VARIABLE_SPDU
