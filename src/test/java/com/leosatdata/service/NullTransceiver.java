@@ -13,13 +13,11 @@ import com.leosatdata.model.Polarization;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
-import com.leosatdata.util.Util;
 
 public class NullTransceiver implements Transceiver {
 
 	private final Configuration config;
 	private final long channelDelay;
-	private final int asmLength;
 
 	private TransceiverCallback callback;
 	private NullTransceiver otherSide;
@@ -43,7 +41,6 @@ public class NullTransceiver implements Transceiver {
 	public NullTransceiver(Configuration config) {
 		this.config = config;
 		this.txFrameFilter = new DefaultFrameFilter();
-		this.asmLength = Util.hexToBytes(config.getProperty("cs.sublayer.asm")).length;
 		this.channelDelay = config.getDuration("channel_delay_duration");
 	}
 

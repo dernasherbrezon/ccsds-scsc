@@ -29,6 +29,13 @@ Here is the list of questions and suggestions to the specification with no parti
  * Not clear at what stage of communication transceiver should send that directive. The "query" keyword assume this directive should be sent once session established (data services). In that case the very first transfer frame containing HAIL parameters will by-pass validation, which contradicts to the requirement that validation should discard invalid transfer frames.
  * What if "spacecraft id" defined in that directive is different to scid of the incoming transfer frame (assuming source_destination_id=source at the caller)? This opens up too much room for interpretation making different implementations less compatible 
 
+9. Unclear description of: PN Ranging, Time distribution and Time Tagging service.
+
+  * All comm directives (Type1, Type4 and Type5) support time tagging service, but it is not mentioned anywhere in the specification. At least a reference to proximity-1 is required
+  * Not clear when and how to use "PN Ranging" directive. Why extra directive is needed? "The PN RANGING directive is the mechanism by which the PN ranging for a Proximity-1 node is initiated and configured". What is Proximity-1 node in this context? Is it possible to agree on the ranging parameters using Application layer? Should it be in a separate phase in the communication?
+  * "TIME DISTRIBUTION" directive briefly mentioned under "E2.6 PN RANGING DIRECTIVE" section. Should it be described under own section?
+  * Unclear purpose of "NULL" value of TIME DISTRIBUTION Type. 
+
 ### MIB properties
 
 1. Not clear how and what to send to OBC in <type>_notification and <type>_response properties. 

@@ -321,6 +321,32 @@ A communication parameter change requires a round-trip of the message plus an ad
 comm_change_waiting_period > 2 * channel_latency + tail_idle_duration + carrier_only_duration + acquisition_idle_duration
 ```
 
+### Time services
 
+#### Time tagging
 
+The time tagging service collects timestamps for selected frames on the transmitter and receiver sides. This information can subsequently be used to correlate time between the two ends. The specification does not define the exchange mechanism for this information.
 
+The session must be established before time tagging is started.
+
+Time tagging is started as follows:
+
+```java
+ground.startTimeTagging(3);
+```
+
+This instructs the local node to tag 3 TX messages and 3 RX messages. It also notifies the remote side to tag 3 RX and 3 TX messages. The nodes are expected to exchange this information and perform correlation.
+
+Once the required messages have been collected, the `NodeCallback` receives a `TIMING_SERVICES_INSTANCE` notification.
+
+```java
+@Override
+public void handle(ControllerEvent event) {
+	if (event.getType().equals(ControllerEventType.TIMING_SERVICES_INSTANCE) && event.getObj() != null) {
+		List<TimeTag> tags = (List<TimeTag>) event.getObj();
+		// save or process
+	}
+}
+```
+
+The `TimeTag` class contains the UNIX timestamp (in milliseconds), frame sequence number, Quality of Service (Expedited or Sequence Controlled), and type (RX or TX).
