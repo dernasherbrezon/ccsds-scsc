@@ -5,7 +5,7 @@ public class ControlParameters {
 	private boolean transmitToken;
 	private boolean rnmd; // remote node has no more data to send
 	private Duplex duplex;
-	private int timeSampleField; // TODO Parse according to reference 6 section 5
+	private int timeSampleField; // number of frames to sample
 
 	public ControlParameters() {
 		// do nothing

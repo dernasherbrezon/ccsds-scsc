@@ -318,4 +318,14 @@ public class TcpTransceiver implements Transceiver {
 	public void setTxDifferentialEncoding(boolean differentialEncoding) {
 		// do nothing
 	}
+
+	@Override
+	public void enableAsmRxCallback(boolean enable) {
+		// not supported
+	}
+
+	@Override
+	public void enableAsmTxCallback(boolean enable) {
+		// not supported
+	}
 }

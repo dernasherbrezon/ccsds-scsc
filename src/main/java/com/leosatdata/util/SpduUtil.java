@@ -5,12 +5,12 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.Duplex;
-import com.leosatdata.model.Type5LinkEstablishment;
-import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
+import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.Vr;
 
 public class SpduUtil {
@@ -366,5 +366,30 @@ public class SpduUtil {
 			return false;
 		}
 		return false;
+	}
+
+	public static int getTimeSample(Spdu params) {
+		if (params instanceof Type1Directive) {
+			Type1Directive type1 = (Type1Directive) params;
+			if (type1.getControlParams() != null) {
+				return type1.getControlParams().getTimeSampleField();
+			}
+			return 0;
+		}
+		if (params instanceof Type4Directive) {
+			Type4Directive type4 = (Type4Directive) params;
+			if (type4.getReportRequest() != null) {
+				return type4.getReportRequest().getTimeTagRequest();
+			}
+			return 0;
+		}
+		if (params instanceof Type5Directive) {
+			Type5Directive type5 = (Type5Directive) params;
+			if (type5.getReportRequest() != null) {
+				return type5.getReportRequest().getTimeTagRequest();
+			}
+			return 0;
+		}
+		return 0;
 	}
 }

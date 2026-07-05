@@ -3,7 +3,7 @@ package com.leosatdata.service;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MockRxCallback implements TransceiverCallback {
+public class MockTransceiverCallback implements TransceiverCallback {
 
 	private List<byte[]> frames = new ArrayList<>();
 
@@ -18,31 +18,36 @@ public class MockRxCallback implements TransceiverCallback {
 
 	@Override
 	public void onTx() {
-		// TODO Auto-generated method stub
-		
+		// do nothing
 	}
 
 	@Override
 	public void onCarrierAcquired() {
-		// TODO Auto-generated method stub
-		
+		// do nothing
 	}
 
 	@Override
 	public void onCarrierLost() {
-		// TODO Auto-generated method stub
-		
+		// do nothing
 	}
 
 	@Override
 	public void onSymbolLock() {
-		// TODO Auto-generated method stub
-		
+		// do nothing
 	}
 
 	@Override
 	public void onSymbolUnlock() {
-		// TODO Auto-generated method stub
-		
+		// do nothing
+	}
+
+	@Override
+	public void onAsmRx() {
+		// do nothing
+	}
+
+	@Override
+	public void onAsmTx() {
+		// do nothing
 	}
 }

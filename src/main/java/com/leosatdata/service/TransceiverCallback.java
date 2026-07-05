@@ -13,5 +13,9 @@ public interface TransceiverCallback {
 	void onSymbolLock();
 	
 	void onSymbolUnlock();
+	
+	void onAsmRx();
+	
+	void onAsmTx();
 
 }

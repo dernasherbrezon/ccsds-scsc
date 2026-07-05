@@ -75,7 +75,10 @@ public enum EventType {
 	CARRIER_ACQUIRED,
 	CARRIER_LOST,
 	SYMBOL_LOCK,
-	SYMBOL_UNLOCK
+	SYMBOL_UNLOCK,
+	TIME_TAGGING,
+	ASM_RX,
+	ASM_TX
 	// @formatter:on
 
 }

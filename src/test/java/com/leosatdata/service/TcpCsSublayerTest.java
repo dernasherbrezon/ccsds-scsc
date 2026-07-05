@@ -16,7 +16,7 @@ public class TcpCsSublayerTest {
 
 	private static final String ASM = "FAF320";
 
-	private MockRxCallback rx;
+	private MockTransceiverCallback rx;
 	private TcpCsSublayer cs;
 
 	@Test
@@ -85,7 +85,7 @@ public class TcpCsSublayerTest {
 		props.put("cs.sublayer.asm.prepend", "true");
 		props.put("cs.sublayer.crc.append", "true");
 		Configuration config = new Configuration(props);
-		rx = new MockRxCallback();
+		rx = new MockTransceiverCallback();
 		cs = new TcpCsSublayer(config, rx);
 	}
 

@@ -293,4 +293,14 @@ public class Sx127xTransceiver implements Transceiver {
 		return rx;
 	}
 
+	@Override
+	public void enableAsmRxCallback(boolean enable) {
+		// not supported
+	}
+
+	@Override
+	public void enableAsmTxCallback(boolean enable) {
+		// not supported
+	}
+
 }

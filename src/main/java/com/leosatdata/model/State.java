@@ -1,8 +1,10 @@
 package com.leosatdata.model;
 
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.util.Configuration;
 
 public class State {
@@ -45,6 +47,13 @@ public class State {
 	private int x;
 	// comm change step, used in half-duplex
 	private int y;
+	
+	//time-tagging variables
+	private int rxFramesToTimeTag;
+	private int txFramesToTimeTag;
+	private int currentSequenceNumber;
+	private QualityOfService currentQos;
+	private List<TimeTag> tags;
 
 	public State(Configuration config) {
 		int capacity = config.getInteger("transmission_window", 10);
@@ -80,6 +89,11 @@ public class State {
 		macQueue.clear();
 		sentQueue.clear();
 		queue.clear();
+		rxFramesToTimeTag = 0;
+		txFramesToTimeTag = 0;
+		currentSequenceNumber = 0;
+		currentQos = null;
+		tags = null;
 	}
 
 	public int getVr() {
@@ -268,5 +282,45 @@ public class State {
 
 	public boolean isCarrierAcquired() {
 		return carrierAcquired;
+	}
+	
+	public void setRxFramesToTimeTag(int rxFramesToTimeTag) {
+		this.rxFramesToTimeTag = rxFramesToTimeTag;
+	}
+	
+	public int getRxFramesToTimeTag() {
+		return rxFramesToTimeTag;
+	}
+	
+	public void setTxFramesToTimeTag(int txFramesToTimeTag) {
+		this.txFramesToTimeTag = txFramesToTimeTag;
+	}
+	
+	public int getTxFramesToTimeTag() {
+		return txFramesToTimeTag;
+	}
+	
+	public void setCurrentQos(QualityOfService currentQos) {
+		this.currentQos = currentQos;
+	}
+	
+	public QualityOfService getCurrentQos() {
+		return currentQos;
+	}
+	
+	public void setCurrentSequenceNumber(int currentSequenceNumber) {
+		this.currentSequenceNumber = currentSequenceNumber;
+	}
+	
+	public int getCurrentSequenceNumber() {
+		return currentSequenceNumber;
+	}
+	
+	public List<TimeTag> getTags() {
+		return tags;
+	}
+	
+	public void setTags(List<TimeTag> tags) {
+		this.tags = tags;
 	}
 }

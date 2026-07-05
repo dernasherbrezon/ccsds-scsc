@@ -13,10 +13,14 @@ import com.leosatdata.model.Polarization;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
+import com.leosatdata.util.Util;
 
 public class NullTransceiver implements Transceiver {
 
 	private final Configuration config;
+	private final long channelDelay;
+	private final int asmLength;
+
 	private TransceiverCallback callback;
 	private NullTransceiver otherSide;
 	private ScheduledExecutorService executor;
@@ -33,9 +37,14 @@ public class NullTransceiver implements Transceiver {
 
 	private Long txDelay;
 
+	private volatile boolean asmRxCallback;
+	private volatile boolean asmTxCallback;
+
 	public NullTransceiver(Configuration config) {
 		this.config = config;
 		this.txFrameFilter = new DefaultFrameFilter();
+		this.asmLength = Util.hexToBytes(config.getProperty("cs.sublayer.asm")).length;
+		this.channelDelay = config.getDuration("channel_delay_duration");
 	}
 
 	public void setOtherSide(NullTransceiver otherSide) {
@@ -64,14 +73,14 @@ public class NullTransceiver implements Transceiver {
 		}
 		// tx should be called by interrupt, i.e. async
 		if (txMillisToWait == 0) {
-			executor.execute(new DelayedTxTask(callback));
+			executor.execute(new DelayedTxTask(this));
 		} else {
-			executor.schedule(new DelayedTxTask(callback), txMillisToWait, TimeUnit.MILLISECONDS);
+			executor.schedule(new DelayedTxTask(this), txMillisToWait, TimeUnit.MILLISECONDS);
 		}
 		if (txFrameFilter != null && !txFrameFilter.accept(this, otherSide, data)) {
 			return;
 		}
-		otherSide.executor.schedule(new DelayedRxTask(otherSide.getCallback(), data, otherSide.rxFrameFilter), txMillisToWait + config.getDuration("channel_delay_duration"), TimeUnit.MILLISECONDS);
+		otherSide.executor.schedule(new DelayedRxTask(otherSide, data, otherSide.rxFrameFilter), channelDelay + txMillisToWait, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -324,5 +333,23 @@ public class NullTransceiver implements Transceiver {
 	@Override
 	public void setTxDifferentialEncoding(boolean differentialEncoding) {
 		// do nothing
+	}
+
+	@Override
+	public void enableAsmRxCallback(boolean enable) {
+		this.asmRxCallback = enable;
+	}
+
+	@Override
+	public void enableAsmTxCallback(boolean enable) {
+		this.asmTxCallback = enable;
+	}
+
+	public boolean isAsmRxCallback() {
+		return asmRxCallback;
+	}
+
+	public boolean isAsmTxCallback() {
+		return asmTxCallback;
 	}
 }

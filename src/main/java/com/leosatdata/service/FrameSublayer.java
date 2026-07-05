@@ -13,12 +13,14 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.ccsds2110b6.model.PduTypeId;
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
+import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.QueueType;
+import com.leosatdata.model.ReportRequest;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
 import com.leosatdata.model.Type1Directive;
@@ -183,9 +185,10 @@ class FrameSublayer {
 		debug(false, frame);
 
 		state.setTxReady(false);
+		state.setCurrentSequenceNumber(TransferFrameUtil.getSequenceNumber(frame));
+		state.setCurrentQos(qos);
 
 		transceiver.send(csSublayer.encode(payload));
-
 	}
 
 	// FOP-P State Table: SE1
@@ -511,6 +514,41 @@ class FrameSublayer {
 			return framev4Parser.createPFrame(payload);
 		}
 		LOG.error("unknown p frame version: {}", pFrameVersion);
+		return null;
+	}
+
+	Spdu createTimeTagDirective(int numberOfFramesToTag) {
+		if (spduVersion == Type1Directive.SPDU_VERSION) {
+			ControlParameters params = new ControlParameters();
+			params.setDuplex(state.getDuplex());
+			params.setRnmd(false);
+			params.setTimeSampleField(numberOfFramesToTag);
+			params.setTransmitToken(false);
+			Type1Directive result = new Type1Directive();
+			result.setControlParams(params);
+			return result;
+		}
+		if (spduVersion == Type4Directive.SPDU_VERSION) {
+			ReportRequest params = new ReportRequest();
+			params.setPcid0PlcwRequest(localPcid == 0);
+			params.setPcid1PlcwRequest(localPcid == 1);
+			params.setStatusReportRequest(0);
+			params.setTimeTagRequest(numberOfFramesToTag);
+			Type4Directive result = new Type4Directive();
+			result.setReportRequest(params);
+			return result;
+		}
+		if (spduVersion == Type5Directive.SPDU_VERSION) {
+			ReportRequest params = new ReportRequest();
+			params.setPcid0PlcwRequest(localPcid == 0);
+			params.setPcid1PlcwRequest(localPcid == 1);
+			params.setStatusReportRequest(0);
+			params.setTimeTagRequest(numberOfFramesToTag);
+			Type5Directive result = new Type5Directive();
+			result.setReportRequest(params);
+			return result;
+		}
+		LOG.error("unknown spdu version for time tag directive: {}", spduVersion);
 		return null;
 	}
 

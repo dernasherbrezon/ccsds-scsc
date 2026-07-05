@@ -2,15 +2,18 @@ package com.leosatdata.service;
 
 class DelayedTxTask implements Runnable {
 
-	private final TransceiverCallback callback;
+	private final NullTransceiver transceiver;
 
-	public DelayedTxTask(TransceiverCallback callback) {
-		this.callback = callback;
+	public DelayedTxTask(NullTransceiver transceiver) {
+		this.transceiver = transceiver;
 	}
 
 	@Override
 	public void run() {
-		callback.onTx();
+		if( transceiver.isAsmTxCallback() ) {
+			transceiver.getCallback().onAsmTx();
+		}
+		transceiver.getCallback().onTx();
 	}
 
 }

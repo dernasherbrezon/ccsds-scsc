@@ -48,5 +48,12 @@ public interface Transceiver {
 	TransceiverTxState getTxState();
 	void setRxState(TransceiverRxState state);
 	TransceiverRxState getRxState();
-
+	
+	// Enable/Disable Rx/Tx ASM callbacks
+	// These callbacks used mostly for time tagging purposes and shouldn't be used
+	// all the time for performance reasons
+	// Separate for ingress and egress messages, because message rate
+	// for tx and rx can be different
+	void enableAsmRxCallback(boolean enable);
+	void enableAsmTxCallback(boolean enable);
 }

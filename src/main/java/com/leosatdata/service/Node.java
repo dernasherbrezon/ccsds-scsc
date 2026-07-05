@@ -1,5 +1,6 @@
 package com.leosatdata.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -15,10 +16,14 @@ import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacState;
 import com.leosatdata.model.QueueType;
+import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
+import com.leosatdata.model.TimeTag;
+import com.leosatdata.model.TimeTagType;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransferFrameUtil;
+import com.leosatdata.util.Util;
 
 public class Node implements Runnable, TransceiverCallback {
 
@@ -44,6 +49,9 @@ public class Node implements Runnable, TransceiverCallback {
 	// there are 2 vr variables. One is thread-local onRx, the other one is in State
 	// this is done to synchronize the state across 2 threads
 	private int vrFromCallback = 0;
+	// this variable is visible on transceiver rx thread only
+	// and shared between onAsmRx and onRx callbacks
+	private long rxAsmTime = 0;
 
 	public Node(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
 		this.config = config;
@@ -101,6 +109,54 @@ public class Node implements Runnable, TransceiverCallback {
 		case REQUEST_PLCW:
 			state.setNeedPlcw(true);
 			break;
+		case TIME_TAGGING:
+			if (!isDataServices()) {
+				// TODO notify controller about error
+				return;
+			}
+			int numberOfFramesToTag = (int) e.getArg();
+			startTimeTaggingInternal(numberOfFramesToTag);
+			state.getMacQueue().add(frameSublayer.createTimeTagDirective(numberOfFramesToTag));
+			break;
+		case SPDU:
+			Spdu spdu = (Spdu) e.getArg();
+			numberOfFramesToTag = SpduUtil.getTimeSample(spdu);
+			if (numberOfFramesToTag != 0) {
+				// safety
+				if (!isDataServices()) {
+					LOG.error("non data service state. can't start time tagging");
+					break;
+				}
+				startTimeTaggingInternal(numberOfFramesToTag);
+			}
+			break;
+		case ASM_RX:
+			// receive whole TimeTag instance here
+			// this is done to minimize time tagging affect on performance
+			// + share variable between TX and RX threads
+			state.setRxFramesToTimeTag(state.getRxFramesToTimeTag() - 1);
+			if (state.getRxFramesToTimeTag() < 0) {
+				transceiver.enableAsmRxCallback(false);
+			} else {
+				state.getTags().add((TimeTag) e.getArg());
+			}
+			if (state.getRxFramesToTimeTag() < 0 && state.getTxFramesToTimeTag() < 0) {
+				callback.handle(new ControllerEvent(ControllerEventType.TIMING_SERVICES_INSTANCE, state.getTags()));
+				state.setTags(null);
+			}
+			return;
+		case ASM_TX:
+			state.setTxFramesToTimeTag(state.getTxFramesToTimeTag() - 1);
+			if (state.getTxFramesToTimeTag() < 0) {
+				transceiver.enableAsmTxCallback(false);
+			} else {
+				state.getTags().add(new TimeTag((long) e.getArg(), state.getCurrentSequenceNumber(), state.getCurrentQos(), TimeTagType.TX));
+			}
+			if (state.getRxFramesToTimeTag() < 0 && state.getTxFramesToTimeTag() < 0) {
+				callback.handle(new ControllerEvent(ControllerEventType.TIMING_SERVICES_INSTANCE, state.getTags()));
+				state.setTags(null);
+			}
+			return;
 // the below TODO can be replaced by hashmap
 		case CONNECTING_L:
 			if (state.getDuplex().equals(Duplex.FULL_DUPLEX)) {
@@ -212,6 +268,12 @@ public class Node implements Runnable, TransceiverCallback {
 		sendEvent(new Event(EventType.DUPLEX, duplex));
 	}
 
+	public void startTimeTagging(int numberOfSamples) {
+		// both type1 and type4/5 have the same length for time sample field
+		Util.validateInt(6, "time_sample", numberOfSamples);
+		sendEvent(new Event(EventType.TIME_TAGGING, numberOfSamples));
+	}
+
 	@SuppressWarnings("unchecked")
 	public void send(byte[] packet, QualityOfService qos, int portId) {
 		List<Object> frames = frameSublayer.createUFrame(packet, qos, portId);
@@ -280,6 +342,13 @@ public class Node implements Runnable, TransceiverCallback {
 
 		// TODO discard idle packets?
 
+		// once time tagging is off and asm sampling is off, then rx asm time will be 0
+		// and skipped
+		if (rxAsmTime != 0) {
+			sendEvent(new Event(EventType.ASM_RX, new TimeTag(rxAsmTime, TransferFrameUtil.getSequenceNumber(frame), TransferFrameUtil.getQualityOfService(frame), TimeTagType.RX)));
+			rxAsmTime = 0;
+		}
+
 		if (type.equals(PduTypeId.SPDU)) {
 			sendEvent(new Event(EventType.SPDU, frameSublayer.decodeSpdu(payload)));
 		} else {
@@ -333,6 +402,16 @@ public class Node implements Runnable, TransceiverCallback {
 		sendEvent(new Event(EventType.SYMBOL_UNLOCK));
 	}
 
+	@Override
+	public void onAsmRx() {
+		rxAsmTime = System.currentTimeMillis();
+	}
+
+	@Override
+	public void onAsmTx() {
+		sendEvent(new Event(EventType.ASM_TX, System.currentTimeMillis()));
+	}
+
 	public void start() {
 		frameSublayer.start();
 		timer.start();
@@ -359,6 +438,15 @@ public class Node implements Runnable, TransceiverCallback {
 		}
 	}
 
+	private void startTimeTaggingInternal(int numberOfFramesToTag) {
+		// time-tag equal number of rx and tx frames
+		state.setRxFramesToTimeTag(numberOfFramesToTag);
+		state.setTxFramesToTimeTag(numberOfFramesToTag);
+		state.setTags(new ArrayList<>());
+		transceiver.enableAsmRxCallback(true);
+		transceiver.enableAsmTxCallback(true);
+	}
+
 	// used on tests only
 	State getState() {
 		return state;
@@ -366,6 +454,22 @@ public class Node implements Runnable, TransceiverCallback {
 
 	void setVrFromCallback(int vrFromCallback) {
 		this.vrFromCallback = vrFromCallback;
+	}
+
+	private boolean isDataServices() {
+		// full duplex
+		if (state.getState().equals(MacState.S40_DATA_SERVICES)) {
+			return true;
+		}
+		// half duplex
+		if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S50_DATA_SERVICES_SEND) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
+			return true;
+		}
+		// simplex
+		if (state.getState().equals(MacState.S71_SIMPLEX_TRANSMIT) || state.getState().equals(MacState.S72_SIMPLEX_RECEIVE)) {
+			return true;
+		}
+		return false;
 	}
 
 }

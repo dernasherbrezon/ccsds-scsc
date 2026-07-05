@@ -3,6 +3,7 @@ package com.leosatdata.service;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -12,7 +13,10 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -47,6 +51,8 @@ import com.leosatdata.model.QueryResponse;
 import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.Spdu;
+import com.leosatdata.model.TimeTag;
+import com.leosatdata.model.TimeTagType;
 import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1CarrierModulation;
@@ -93,6 +99,56 @@ public class NodeTest {
 
 	public NodeTest(Duplex duplex) {
 		this.duplex = duplex;
+	}
+
+	@Test
+	public void testTimeTagging() throws Exception {
+		establishType1Session();
+		// make sure constant flow of data is going
+		Thread t = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				byte[] data = new byte[20];
+				while (!Thread.currentThread().isInterrupted()) {
+					ground.send(data, QualityOfService.EXPEDITED, 0);
+				}
+			}
+		}, "tx");
+		t.start();
+
+		int numberOfEvents = 3;
+		ground.startTimeTagging(numberOfEvents);
+		ControllerEvent groundTagged = groundCallback.waitForEvent(ControllerEventType.TIMING_SERVICES_INSTANCE);
+		ControllerEvent satelliteTagged = satelliteCallback.waitForEvent(ControllerEventType.TIMING_SERVICES_INSTANCE);
+		t.interrupt();
+		assertNotNull(groundTagged);
+		assertNotNull(satelliteTagged);
+
+		Map<String, TimeTag> groundIndex = indexTimeTag(groundTagged);
+		assertEquals(numberOfEvents * 2, groundIndex.size());
+		Map<String, TimeTag> satelliteIndex = indexTimeTag(satelliteTagged);
+		assertEquals(numberOfEvents * 2, satelliteIndex.size());
+		for (Entry<String, TimeTag> cur : groundIndex.entrySet()) {
+			TimeTag curTag = cur.getValue();
+			TimeTagType opposite;
+			if (curTag.getType().equals(TimeTagType.RX)) {
+				opposite = TimeTagType.TX;
+			} else {
+				opposite = TimeTagType.RX;
+			}
+			String key = curTag.getFrameSequenceNumber() + "." + curTag.getQos() + "." + opposite;
+			TimeTag otherSide = satelliteIndex.get(key);
+			if (otherSide == null) {
+				continue;
+			}
+			long latency;
+			if (curTag.getType().equals(TimeTagType.RX)) {
+				latency = curTag.getTime() - otherSide.getTime();
+			} else {
+				latency = otherSide.getTime() - curTag.getTime();
+			}
+			assertTrue(latency > 0);
+		}
 	}
 
 	@Test
@@ -937,5 +993,15 @@ public class NodeTest {
 		// some delta to make tests more stable
 		long delta = 2 * config.getLong("interval_clock", 0L);
 		return overallHailDuration + delta;
+	}
+
+	private static Map<String, TimeTag> indexTimeTag(ControllerEvent event) {
+		@SuppressWarnings("unchecked")
+		List<TimeTag> tags = (List<TimeTag>) event.getObj();
+		Map<String, TimeTag> result = new HashMap<>();
+		for (TimeTag cur : tags) {
+			result.put(cur.getFrameSequenceNumber() + "." + cur.getQos() + "." + cur.getType(), cur);
+		}
+		return result;
 	}
 }
