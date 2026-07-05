@@ -11,10 +11,10 @@ public class TcpDelayedTxTask implements Runnable {
 	private static final Logger LOG = LoggerFactory.getLogger(TcpDelayedTxTask.class);
 
 	private Socket socket;
-	private TxCallback callback;
+	private TransceiverCallback callback;
 	private byte[] data;
 
-	public TcpDelayedTxTask(Socket socket, TxCallback callback, byte[] data) {
+	public TcpDelayedTxTask(Socket socket, TransceiverCallback callback, byte[] data) {
 		this.socket = socket;
 		this.callback = callback;
 		this.data = data;

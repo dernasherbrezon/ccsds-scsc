@@ -13,13 +13,10 @@ import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.ScramblerType;
-import com.leosatdata.service.CarrierCallback;
-import com.leosatdata.service.RxCallback;
-import com.leosatdata.service.SymbolLockCallback;
 import com.leosatdata.service.Transceiver;
+import com.leosatdata.service.TransceiverCallback;
 import com.leosatdata.service.TransceiverRxState;
 import com.leosatdata.service.TransceiverTxState;
-import com.leosatdata.service.TxCallback;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
 import com.leosatdata.util.Util;
@@ -29,10 +26,7 @@ public class Sx127xTransceiver implements Transceiver {
 	private final Sx127x impl;
 	private final Configuration config;
 
-	private RxCallback rxCallback;
-	private TxCallback txCallback;
-	private CarrierCallback carrierCallback;
-	private SymbolLockCallback symbolLockCallback;
+	private TransceiverCallback callback;
 	private ScheduledExecutorService executor;
 
 	private TransceiverTxState tx = TransceiverTxState.OFF;
@@ -89,7 +83,7 @@ public class Sx127xTransceiver implements Transceiver {
 			public void run() {
 				impl.sx127x_fsk_ook_tx_set_for_transmission(Util.bytesToHex(data));
 				impl.tx(sx127x_modulation_t.SX127X_MODULATION_FSK);
-				txCallback.onTx();
+				callback.onTx();
 			}
 		});
 	}
@@ -223,43 +217,13 @@ public class Sx127xTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxCallback(RxCallback callback) {
-		this.rxCallback = callback;
+	public TransceiverCallback getCallback() {
+		return callback;
 	}
 
 	@Override
-	public RxCallback getRxCallback() {
-		return rxCallback;
-	}
-
-	@Override
-	public void setTxCallback(TxCallback callback) {
-		this.txCallback = callback;
-	}
-
-	@Override
-	public TxCallback getTxCallback() {
-		return txCallback;
-	}
-
-	@Override
-	public void setCarrierCallback(CarrierCallback callback) {
-		this.carrierCallback = callback;
-	}
-
-	@Override
-	public CarrierCallback getCarrierCallback() {
-		return carrierCallback;
-	}
-
-	@Override
-	public void setSymbolLockCallback(SymbolLockCallback callback) {
-		this.symbolLockCallback = callback;
-	}
-
-	@Override
-	public SymbolLockCallback getSymbolLockCallback() {
-		return symbolLockCallback;
+	public void setCallback(TransceiverCallback callback) {
+		this.callback = callback;
 	}
 
 	@Override
@@ -306,7 +270,7 @@ public class Sx127xTransceiver implements Transceiver {
 					}
 					List<sx127x_frame_t> frames = impl.pull();
 					for (sx127x_frame_t cur : frames) {
-						rxCallback.onRx(Util.hexToBytes(cur.getMessage()));
+						callback.onRx(Util.hexToBytes(cur.getMessage()));
 					}
 				}
 			}

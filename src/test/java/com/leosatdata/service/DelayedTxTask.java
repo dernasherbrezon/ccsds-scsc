@@ -2,9 +2,9 @@ package com.leosatdata.service;
 
 class DelayedTxTask implements Runnable {
 
-	private final TxCallback callback;
+	private final TransceiverCallback callback;
 
-	public DelayedTxTask(TxCallback callback) {
+	public DelayedTxTask(TransceiverCallback callback) {
 		this.callback = callback;
 	}
 

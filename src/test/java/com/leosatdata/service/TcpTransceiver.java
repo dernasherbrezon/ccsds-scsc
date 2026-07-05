@@ -36,10 +36,7 @@ public class TcpTransceiver implements Transceiver {
 	private Socket clientSocket;
 	private ScheduledExecutorService executor;
 	private Future<?> rxFuture;
-	private RxCallback rxCallback;
-	private SymbolLockCallback symbolCallback;
-	private CarrierCallback carrierCallback;
-	private TxCallback txCallback;
+	private TransceiverCallback callback;
 
 	private float txSymbolRate;
 	private Long txDelay;
@@ -81,9 +78,9 @@ public class TcpTransceiver implements Transceiver {
 		}
 		// tx should be called by interrupt, i.e. async
 		if (txMillisToWait == 0) {
-			executor.execute(new TcpDelayedTxTask(clientSocket, getTxCallback(), data));
+			executor.execute(new TcpDelayedTxTask(clientSocket, callback, data));
 		} else {
-			executor.schedule(new TcpDelayedTxTask(clientSocket, getTxCallback(), data), txMillisToWait, TimeUnit.MILLISECONDS);
+			executor.schedule(new TcpDelayedTxTask(clientSocket, callback, data), txMillisToWait, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -118,13 +115,13 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxCallback(RxCallback callback) {
-		this.rxCallback = callback;
+	public void setCallback(TransceiverCallback callback) {
+		this.callback = callback;
 	}
 
 	@Override
-	public RxCallback getRxCallback() {
-		return rxCallback;
+	public TransceiverCallback getCallback() {
+		return callback;
 	}
 
 	@Override
@@ -155,36 +152,6 @@ public class TcpTransceiver implements Transceiver {
 	@Override
 	public void setTxCoherency(Coherency modulation) {
 		// do nothing
-	}
-
-	@Override
-	public void setTxCallback(TxCallback callback) {
-		this.txCallback = callback;
-	}
-
-	@Override
-	public TxCallback getTxCallback() {
-		return txCallback;
-	}
-
-	@Override
-	public void setCarrierCallback(CarrierCallback callback) {
-		this.carrierCallback = callback;
-	}
-
-	@Override
-	public CarrierCallback getCarrierCallback() {
-		return carrierCallback;
-	}
-
-	@Override
-	public void setSymbolLockCallback(SymbolLockCallback callback) {
-		this.symbolCallback = callback;
-	}
-
-	@Override
-	public SymbolLockCallback getSymbolLockCallback() {
-		return symbolCallback;
 	}
 
 	@Override
@@ -259,7 +226,7 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	private void read(InputStream is) {
-		TcpCsSublayer csSublayer = new TcpCsSublayer(config, rxCallback);
+		TcpCsSublayer csSublayer = new TcpCsSublayer(config, callback);
 		while (!Thread.currentThread().isInterrupted()) {
 			int actuallyRead;
 			try {
@@ -283,20 +250,20 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	private void handleConnect() {
-		if (carrierCallback != null) {
-			carrierCallback.onCarrierAcquired();
+		if (callback != null) {
+			callback.onCarrierAcquired();
 		}
-		if (symbolCallback != null) {
-			symbolCallback.onSymbolLock();
+		if (callback != null) {
+			callback.onSymbolLock();
 		}
 	}
 
 	private void handleDisconnect() {
-		if (symbolCallback != null) {
-			symbolCallback.onSymbolUnlock();
+		if (callback != null) {
+			callback.onSymbolUnlock();
 		}
-		if (carrierCallback != null) {
-			carrierCallback.onCarrierLost();
+		if (callback != null) {
+			callback.onCarrierLost();
 		}
 	}
 

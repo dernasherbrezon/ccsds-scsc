@@ -20,7 +20,7 @@ import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransferFrameUtil;
 
-public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallback, CarrierCallback {
+public class Node implements Runnable, TransceiverCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Node.class);
 	private final static Logger STATE_LOG = LoggerFactory.getLogger("state");
@@ -48,10 +48,7 @@ public class Node implements Runnable, RxCallback, TxCallback, SymbolLockCallbac
 	public Node(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
 		this.config = config;
 		this.transceiver = transceiver;
-		this.transceiver.setRxCallback(this);
-		this.transceiver.setTxCallback(this);
-		this.transceiver.setCarrierCallback(this);
-		this.transceiver.setSymbolLockCallback(this);
+		this.transceiver.setCallback(this);
 		this.callback = callback;
 		this.rxCallback = rxCallback;
 		this.localScid = config.getInteger("local_spacecraft_id", 0);

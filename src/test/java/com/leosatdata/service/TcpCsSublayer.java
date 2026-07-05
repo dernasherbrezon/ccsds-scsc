@@ -11,11 +11,11 @@ public class TcpCsSublayer {
 
 	private final byte[] asm;
 	private final byte[] buffer;
-	private final RxCallback callback;
+	private final TransceiverCallback callback;
 
 	private int currentOffset = 0;
 
-	public TcpCsSublayer(Configuration config, RxCallback callback) {
+	public TcpCsSublayer(Configuration config, TransceiverCallback callback) {
 		this.callback = callback;
 		this.asm = Util.hexToBytes(config.getProperty("cs.sublayer.asm"));
 		this.buffer = new byte[config.getInteger("maximum_frame_length", 1024)];

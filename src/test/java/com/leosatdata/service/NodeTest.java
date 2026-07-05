@@ -181,7 +181,7 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
+		assertEvent(groundCallback.waitForEvent(getOverallHailDuration(ground2Config), ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
 	}
 
 	@Test
@@ -235,7 +235,7 @@ public class NodeTest {
 		ground2Transceiver.setTxFrameFilter(null); // ignore rx/tx mismatch
 		ground2Transceiver.setSkipCallbacks(true);
 		ground2.startSession();
-		assertEvent(ground2Callback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
+		assertEvent(ground2Callback.waitForEvent(getOverallHailDuration(ground2Config), ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
 		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.INVALID_FRAME_SOURCE));
 	}
 
@@ -929,5 +929,13 @@ public class NodeTest {
 			PersistentActivity event = (PersistentActivity) hail.getObj();
 			assertEquals(expectedStatus, event.isSuccess());
 		}
+	}
+
+	private static long getOverallHailDuration(Configuration config) {
+		long hailAttemptDuration = config.getDuration("carrier_only_duration") + config.getDuration("acquisition_idle_duration") + config.getDuration("tail_idle_duration") + config.getDuration("hail_wait_duration");
+		long overallHailDuration = hailAttemptDuration * config.getInteger("hail_lifetime", 0);
+		// some delta to make tests more stable
+		long delta = 2 * config.getLong("interval_clock", 0L);
+		return overallHailDuration + delta;
 	}
 }

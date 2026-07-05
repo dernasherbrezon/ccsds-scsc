@@ -3,10 +3,10 @@ package com.leosatdata.service;
 class DelayedRxTask implements Runnable {
 
 	private final byte[] data;
-	private final RxCallback callback;
+	private final TransceiverCallback callback;
 	private final FrameFilter filter;
 
-	public DelayedRxTask(RxCallback callback, byte[] data, FrameFilter filter) {
+	public DelayedRxTask(TransceiverCallback callback, byte[] data, FrameFilter filter) {
 		this.data = data;
 		this.callback = callback;
 		this.filter = filter;

@@ -39,15 +39,9 @@ public interface Transceiver {
 	void setTxScrambler(ScramblerType scrambler);
 	void setTxDifferentialEncoding(boolean differentialEncoding);
 
-	// callbacks
-	void setRxCallback(RxCallback callback);
-	RxCallback getRxCallback();
-	void setTxCallback(TxCallback callback);
-	TxCallback getTxCallback();
-	void setCarrierCallback(CarrierCallback callback);
-	CarrierCallback getCarrierCallback();
-	void setSymbolLockCallback(SymbolLockCallback callback);
-	SymbolLockCallback getSymbolLockCallback();
+	// callback
+	void setCallback(TransceiverCallback callback);
+	TransceiverCallback getCallback();
 
 	// change tx/rx state
 	void setTxState(TransceiverTxState state);

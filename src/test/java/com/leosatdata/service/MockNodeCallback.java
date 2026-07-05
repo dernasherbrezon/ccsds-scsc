@@ -57,9 +57,6 @@ public class MockNodeCallback implements NodeCallback {
 					if (match(result, type, persistentType)) {
 						return result;
 					}
-//					if (result != null && result.getType().equals(type)) {
-//						return result;
-//					}
 					remaining -= actualWait;
 					if (remaining > 0) {
 						continue;
