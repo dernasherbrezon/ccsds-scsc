@@ -126,7 +126,7 @@ public class BitInputStream implements Closeable {
 		long ch8 = dis.read();
 		if ((ch1 | ch2 | ch3 | ch4 | ch5 | ch6 | ch7 | ch8) < 0)
 			throw new EOFException();
-		return ((ch1 << 56) | (ch2 << 48) | (ch3 << 32) | (ch4 << 24) | (ch5 << 24) | (ch6 << 16) | (ch7 << 8) | ch8) & 0xFFFFFFFFL;
+		return ((ch1 << 56) | (ch2 << 48) | (ch3 << 40) | (ch4 << 32) | (ch5 << 24) | (ch6 << 16) | (ch7 << 8) | ch8);
 	}
 
 	@Override

@@ -18,6 +18,8 @@ import com.leosatdata.model.MacState;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
+import com.leosatdata.model.TimeDistribution;
+import com.leosatdata.model.TimeDistributionType;
 import com.leosatdata.model.TimeTag;
 import com.leosatdata.model.TimeTagType;
 import com.leosatdata.util.Configuration;
@@ -109,6 +111,13 @@ public class Node implements Runnable, TransceiverCallback {
 		case REQUEST_PLCW:
 			state.setNeedPlcw(true);
 			break;
+		case TIME_DISTRIBUTION:
+			if (!isDataServices()) {
+				// TODO notify controller about error
+				return;
+			}
+			state.getMacQueue().add((Spdu) e.getArg());
+			break;
 		case TIME_TAGGING:
 			if (!isDataServices()) {
 				// TODO notify controller about error
@@ -120,6 +129,11 @@ public class Node implements Runnable, TransceiverCallback {
 			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
+			if (spdu instanceof TimeDistribution) {
+				TimeDistribution directive = (TimeDistribution) spdu;
+				callback.onTime(directive.getTransceiverClock(), directive.getSendSideDelay(), directive.getOneWayLightTime());
+				return;
+			}
 			numberOfFramesToTag = SpduUtil.getTimeSample(spdu);
 			if (numberOfFramesToTag != 0) {
 				// safety
@@ -272,6 +286,18 @@ public class Node implements Runnable, TransceiverCallback {
 		// both type1 and type4/5 have the same length for time sample field
 		Util.validateInt(6, "time_sample", numberOfSamples);
 		sendEvent(new Event(EventType.TIME_TAGGING, numberOfSamples));
+	}
+
+	public void setTime(long transceiverClock, int sendSideDelay, int oneWayLightTime) {
+		// transceiverClock is the full 8byte long
+		Util.validateInt(3 * 8, "sendSideDelay", sendSideDelay);
+		Util.validateInt(3 * 8, "oneWayLightTime", oneWayLightTime);
+		TimeDistribution directive = new TimeDistribution();
+		directive.setType(TimeDistributionType.TIME_TRANSFER);
+		directive.setOneWayLightTime(oneWayLightTime);
+		directive.setSendSideDelay(sendSideDelay);
+		directive.setTransceiverClock(transceiverClock);
+		sendEvent(new Event(EventType.TIME_DISTRIBUTION, directive));
 	}
 
 	@SuppressWarnings("unchecked")

@@ -13,7 +13,12 @@ public class MockNodeCallback implements NodeCallback {
 	private final static Logger LOG = LoggerFactory.getLogger(MockNodeCallback.class);
 
 	private final Object lock = new Object();
+	private final Object timeLock = new Object();
 	private ControllerEvent event;
+
+	private long unixTimestampMillis;
+	private int sendSideDelay;
+	private int oneWayLightTime;
 
 	@Override
 	public void handle(ControllerEvent event) {
@@ -28,6 +33,26 @@ public class MockNodeCallback implements NodeCallback {
 			}
 			this.event = event;
 			lock.notifyAll();
+		}
+	}
+
+	@Override
+	public void onTime(long unixTimestampMillis, int sendSideDelay, int oneWayLightTime) {
+		synchronized (timeLock) {
+			this.unixTimestampMillis = unixTimestampMillis;
+			this.sendSideDelay = sendSideDelay;
+			this.oneWayLightTime = oneWayLightTime;
+			timeLock.notifyAll();
+		}
+	}
+
+	public void waitForTime() {
+		synchronized (timeLock) {
+			try {
+				timeLock.wait(10000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 		}
 	}
 
@@ -93,4 +118,15 @@ public class MockNodeCallback implements NodeCallback {
 		return activity.getNotification().equals(persistentType);
 	}
 
+	public long getUnixTimestampMillis() {
+		return unixTimestampMillis;
+	}
+
+	public int getSendSideDelay() {
+		return sendSideDelay;
+	}
+
+	public int getOneWayLightTime() {
+		return oneWayLightTime;
+	}
 }

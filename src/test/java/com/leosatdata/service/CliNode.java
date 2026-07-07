@@ -54,6 +54,11 @@ public class CliNode {
 			public void handle(ControllerEvent event) {
 				LOG.info("received event: {}", event);
 			}
+			
+			@Override
+			public void onTime(long unixTimestampMillis, int sendSideDelay, int oneWayLightTime) {
+				LOG.info("setting up time: {} send delay: {} one-way light time: {}", unixTimestampMillis, sendSideDelay, oneWayLightTime);
+			}
 		};
 		groundDataCallback = new UserDataCallback() {
 

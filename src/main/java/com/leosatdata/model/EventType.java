@@ -76,7 +76,9 @@ public enum EventType {
 	CARRIER_LOST,
 	SYMBOL_LOCK,
 	SYMBOL_UNLOCK,
+	// time-related events
 	TIME_TAGGING,
+	TIME_DISTRIBUTION,
 	ASM_RX,
 	ASM_TX
 	// @formatter:on

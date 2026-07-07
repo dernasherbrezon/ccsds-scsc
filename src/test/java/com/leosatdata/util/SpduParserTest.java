@@ -139,7 +139,7 @@ public class SpduParserTest {
 		TimeDistribution type2 = new TimeDistribution();
 		type2.setHeader(header);
 		type2.setType(TimeDistributionType.NULL);
-		type2.setTransceiverClock(System.currentTimeMillis() / 1000);
+		type2.setTransceiverClock(System.currentTimeMillis());
 		type2.setSendSideDelay(12);
 		type2.setOneWayLightTime(15);
 

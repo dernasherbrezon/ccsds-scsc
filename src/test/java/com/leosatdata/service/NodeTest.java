@@ -102,6 +102,21 @@ public class NodeTest {
 	}
 
 	@Test
+	public void testSetTime() throws Exception {
+		establishType1Session();
+
+		long unixTime = System.currentTimeMillis();
+		int senderSideDelay = 15;
+		int onewayLightTime = 300;
+		ground.setTime(unixTime, senderSideDelay, onewayLightTime);
+		
+		satelliteCallback.waitForTime();
+		assertEquals(unixTime, satelliteCallback.getUnixTimestampMillis());
+		assertEquals(senderSideDelay, satelliteCallback.getSendSideDelay());
+		assertEquals(onewayLightTime, satelliteCallback.getOneWayLightTime());
+	}
+
+	@Test
 	public void testTimeTagging() throws Exception {
 		establishType1Session();
 		// make sure constant flow of data is going
