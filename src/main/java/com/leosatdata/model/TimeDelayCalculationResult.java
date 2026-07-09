@@ -2,36 +2,36 @@ package com.leosatdata.model;
 
 public class TimeDelayCalculationResult {
 
-	private long initialClock;
-	private long txAsmClock;
-	private long rxAsmClock;
+	private long initialTimeMillis;
+	private long txAsmTimeMillis;
+	private long rxAsmTimeMillis;
 
-	public long getInitialClock() {
-		return initialClock;
+	public long getInitialTimeMillis() {
+		return initialTimeMillis;
 	}
 
-	public void setInitialClock(long initialClock) {
-		this.initialClock = initialClock;
+	public void setInitialTimeMillis(long initialTimeMillis) {
+		this.initialTimeMillis = initialTimeMillis;
 	}
 
-	public long getTxAsmClock() {
-		return txAsmClock;
+	public long getTxAsmTimeMillis() {
+		return txAsmTimeMillis;
 	}
 
-	public void setTxAsmClock(long txAsmClock) {
-		this.txAsmClock = txAsmClock;
+	public void setTxAsmTimeMillis(long txAsmTimeMillis) {
+		this.txAsmTimeMillis = txAsmTimeMillis;
 	}
 
-	public long getRxAsmClock() {
-		return rxAsmClock;
+	public long getRxAsmTimeMillis() {
+		return rxAsmTimeMillis;
 	}
 
-	public void setRxAsmClock(long rxAsmClock) {
-		this.rxAsmClock = rxAsmClock;
+	public void setRxAsmTimeMillis(long rxAsmTimeMillis) {
+		this.rxAsmTimeMillis = rxAsmTimeMillis;
 	}
 
 	public boolean isComplete() {
-		return txAsmClock != 0 && rxAsmClock != 0;
+		return txAsmTimeMillis != 0 && rxAsmTimeMillis != 0;
 	}
 
 }

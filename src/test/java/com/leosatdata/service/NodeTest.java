@@ -110,10 +110,10 @@ public class NodeTest {
 		ControllerEvent result = groundCallback.waitForEvent(ControllerEventType.TIME_DELAY_CALCULATION);
 		assertNotNull(result);
 		TimeDelayCalculationResult time = (TimeDelayCalculationResult) result.getObj();
-		assertEquals(unixTime, time.getInitialClock());
-		assertTrue(time.getTxAsmClock() > unixTime);
-		assertTrue(time.getRxAsmClock() > time.getTxAsmClock());
-		assertTrue(System.currentTimeMillis() > time.getRxAsmClock());
+		assertEquals(unixTime, time.getInitialTimeMillis());
+		assertTrue(time.getTxAsmTimeMillis() > unixTime);
+		assertTrue(time.getRxAsmTimeMillis() > time.getTxAsmTimeMillis());
+		assertTrue(System.currentTimeMillis() > time.getRxAsmTimeMillis());
 	}
 
 	@Test

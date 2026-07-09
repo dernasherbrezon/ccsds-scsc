@@ -138,7 +138,7 @@ public class Node implements Runnable, TransceiverCallback {
 				return;
 			}
 			timeDelayCalculation = new TimeDelayCalculationResult();
-			timeDelayCalculation.setInitialClock((long) e.getArg());
+			timeDelayCalculation.setInitialTimeMillis((long) e.getArg());
 
 			transceiver.enableAsmRxCallback(true);
 			transceiver.enableAsmTxCallback(true);
@@ -165,9 +165,9 @@ public class Node implements Runnable, TransceiverCallback {
 			break;
 		case ASM_RX:
 			// snap rx time only once
-			if (timeDelayCalculation != null && timeDelayCalculation.getRxAsmClock() == 0) {
+			if (timeDelayCalculation != null && timeDelayCalculation.getRxAsmTimeMillis() == 0) {
 				transceiver.enableAsmRxCallback(false);
-				timeDelayCalculation.setRxAsmClock(((TimeTag) e.getArg()).getTime());
+				timeDelayCalculation.setRxAsmTimeMillis(((TimeTag) e.getArg()).getTime());
 				if (timeDelayCalculation.isComplete()) {
 					callback.handle(new ControllerEvent(ControllerEventType.TIME_DELAY_CALCULATION, timeDelayCalculation));
 					timeDelayCalculation = null;
@@ -193,10 +193,10 @@ public class Node implements Runnable, TransceiverCallback {
 		case ASM_TX:
 			// time calibration
 			// snap tx time only once
-			if (timeDelayCalculation != null && timeDelayCalculation.getTxAsmClock() == 0) {
+			if (timeDelayCalculation != null && timeDelayCalculation.getTxAsmTimeMillis() == 0) {
 				// ignore late callbacks interested only in the very first
 				transceiver.enableAsmTxCallback(false);
-				timeDelayCalculation.setTxAsmClock((long) e.getArg());
+				timeDelayCalculation.setTxAsmTimeMillis((long) e.getArg());
 				if (timeDelayCalculation.isComplete()) {
 					callback.handle(new ControllerEvent(ControllerEventType.TIME_DELAY_CALCULATION, timeDelayCalculation));
 					timeDelayCalculation = null;
