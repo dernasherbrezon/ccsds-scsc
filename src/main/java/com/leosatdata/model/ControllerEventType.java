@@ -15,7 +15,7 @@ public enum ControllerEventType {
 	INVALID_FRAME_SOURCE,
 	
 	// custom
-	TIME_CALIBRATION	// results of tx/rx delays calculation. The result stored in com.leosatdata.model.TimeCalibrationResult
+	TIME_DELAY_CALCULATION	// results of tx/rx delays calculation. The result stored in com.leosatdata.model.TimeDelayCalculationResult
 	// @formatter:on
 	
 }

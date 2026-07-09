@@ -1,6 +1,6 @@
 package com.leosatdata.model;
 
-public class TimeCalibrationResult {
+public class TimeDelayCalculationResult {
 
 	private long initialClock;
 	private long txAsmClock;

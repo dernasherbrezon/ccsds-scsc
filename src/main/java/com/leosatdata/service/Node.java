@@ -18,7 +18,7 @@ import com.leosatdata.model.MacState;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
-import com.leosatdata.model.TimeCalibrationResult;
+import com.leosatdata.model.TimeDelayCalculationResult;
 import com.leosatdata.model.TimeDistribution;
 import com.leosatdata.model.TimeDistributionType;
 import com.leosatdata.model.TimeTag;
@@ -55,9 +55,7 @@ public class Node implements Runnable, TransceiverCallback {
 	// this variable is visible on transceiver rx thread only
 	// and shared between onAsmRx and onRx callbacks
 	private long rxAsmTime = 0;
-	private TimeCalibrationResult timeCalibration;
-	private boolean txTimeCalibrationInProgress;
-	private boolean rxTimeCalibrationInProgress;
+	private TimeDelayCalculationResult timeDelayCalculation;
 
 	public Node(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
 		this.config = config;
@@ -95,8 +93,7 @@ public class Node implements Runnable, TransceiverCallback {
 			transceiver.setRxState(TransceiverRxState.OFF);
 			transceiver.enableAsmRxCallback(false);
 			transceiver.enableAsmTxCallback(false);
-			txTimeCalibrationInProgress = false;
-			rxTimeCalibrationInProgress = false;
+			timeDelayCalculation = null;
 			// don't send number of received packets. not clear why and hard to sync rx
 			// thread data
 			callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));
@@ -135,18 +132,16 @@ public class Node implements Runnable, TransceiverCallback {
 			startTimeTaggingInternal(numberOfFramesToTag);
 			state.getMacQueue().add(frameSublayer.createTimeTagDirective(numberOfFramesToTag));
 			break;
-		case TIME_DELAY_CALIBRATION:
+		case TIME_DELAY_CALCULATION:
 			if (!isDataServices() || isTimeTaggingActive()) {
 				// TODO notify controller about error
 				return;
 			}
-			timeCalibration = new TimeCalibrationResult();
-			timeCalibration.setInitialClock((long) e.getArg());
+			timeDelayCalculation = new TimeDelayCalculationResult();
+			timeDelayCalculation.setInitialClock((long) e.getArg());
 
 			transceiver.enableAsmRxCallback(true);
 			transceiver.enableAsmTxCallback(true);
-			txTimeCalibrationInProgress = true;
-			rxTimeCalibrationInProgress = true;
 			// this will take priority over any other frame types
 			// extra out-of-order plcw won't cause any harm
 			state.getMacQueue().add(frameSublayer.createPlcw());
@@ -170,15 +165,12 @@ public class Node implements Runnable, TransceiverCallback {
 			break;
 		case ASM_RX:
 			// snap rx time only once
-			if (rxTimeCalibrationInProgress) {
-				rxTimeCalibrationInProgress = false;
-				if (timeCalibration.getRxAsmClock() == 0) {
-					transceiver.enableAsmRxCallback(false);
-					timeCalibration.setRxAsmClock(((TimeTag) e.getArg()).getTime());
-					if (timeCalibration.isComplete()) {
-						callback.handle(new ControllerEvent(ControllerEventType.TIME_CALIBRATION, timeCalibration));
-						timeCalibration = null;
-					}
+			if (timeDelayCalculation != null && timeDelayCalculation.getRxAsmClock() == 0) {
+				transceiver.enableAsmRxCallback(false);
+				timeDelayCalculation.setRxAsmClock(((TimeTag) e.getArg()).getTime());
+				if (timeDelayCalculation.isComplete()) {
+					callback.handle(new ControllerEvent(ControllerEventType.TIME_DELAY_CALCULATION, timeDelayCalculation));
+					timeDelayCalculation = null;
 				}
 				return;
 			}
@@ -201,16 +193,13 @@ public class Node implements Runnable, TransceiverCallback {
 		case ASM_TX:
 			// time calibration
 			// snap tx time only once
-			if (txTimeCalibrationInProgress) {
-				txTimeCalibrationInProgress = false;
+			if (timeDelayCalculation != null && timeDelayCalculation.getTxAsmClock() == 0) {
 				// ignore late callbacks interested only in the very first
-				if (timeCalibration.getTxAsmClock() == 0) {
-					transceiver.enableAsmTxCallback(false);
-					timeCalibration.setTxAsmClock((long) e.getArg());
-					if (timeCalibration.isComplete()) {
-						callback.handle(new ControllerEvent(ControllerEventType.TIME_CALIBRATION, timeCalibration));
-						timeCalibration = null;
-					}
+				transceiver.enableAsmTxCallback(false);
+				timeDelayCalculation.setTxAsmClock((long) e.getArg());
+				if (timeDelayCalculation.isComplete()) {
+					callback.handle(new ControllerEvent(ControllerEventType.TIME_DELAY_CALCULATION, timeDelayCalculation));
+					timeDelayCalculation = null;
 				}
 				return;
 			}
@@ -357,8 +346,8 @@ public class Node implements Runnable, TransceiverCallback {
 		sendEvent(new Event(EventType.TIME_DISTRIBUTION, directive));
 	}
 
-	public void calculateDelay(long transceiverClock) {
-		sendEvent(new Event(EventType.TIME_DELAY_CALIBRATION, transceiverClock));
+	public void calculateTimeDelay(long transceiverClock) {
+		sendEvent(new Event(EventType.TIME_DELAY_CALCULATION, transceiverClock));
 	}
 
 	@SuppressWarnings("unchecked")

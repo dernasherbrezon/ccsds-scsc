@@ -79,7 +79,7 @@ public enum EventType {
 	// time-related events
 	TIME_TAGGING,
 	TIME_DISTRIBUTION,
-	TIME_DELAY_CALIBRATION,
+	TIME_DELAY_CALCULATION,
 	ASM_RX,
 	ASM_TX
 	// @formatter:on
