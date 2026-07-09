@@ -12,7 +12,10 @@ public enum ControllerEventType {
 	CARRIER_LOSS,
 	NO_CARRIER_RECEIVED, // half-duplex
 	NO_DATA_RECEIVED, // half-duplex
-	INVALID_FRAME_SOURCE
+	INVALID_FRAME_SOURCE,
+	
+	// custom
+	TIME_CALIBRATION	// results of tx/rx delays calculation. The result stored in com.leosatdata.model.TimeCalibrationResult
 	// @formatter:on
 	
 }

@@ -51,6 +51,7 @@ import com.leosatdata.model.QueryResponse;
 import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.Spdu;
+import com.leosatdata.model.TimeCalibrationResult;
 import com.leosatdata.model.TimeTag;
 import com.leosatdata.model.TimeTagType;
 import com.leosatdata.model.TransceiverMode;
@@ -102,6 +103,20 @@ public class NodeTest {
 	}
 
 	@Test
+	public void testTimeCalibration() throws Exception {
+		establishType1Session();
+		long unixTime = System.currentTimeMillis();
+		ground.calculateDelay(unixTime);
+		ControllerEvent result = groundCallback.waitForEvent(ControllerEventType.TIME_CALIBRATION);
+		assertNotNull(result);
+		TimeCalibrationResult time = (TimeCalibrationResult) result.getObj();
+		assertEquals(unixTime, time.getInitialClock());
+		assertTrue(time.getTxAsmClock() > unixTime);
+		assertTrue(time.getRxAsmClock() > time.getTxAsmClock());
+		assertTrue(System.currentTimeMillis() > time.getRxAsmClock());
+	}
+
+	@Test
 	public void testSetTime() throws Exception {
 		establishType1Session();
 
@@ -109,7 +124,7 @@ public class NodeTest {
 		int senderSideDelay = 15;
 		int onewayLightTime = 300;
 		ground.setTime(unixTime, senderSideDelay, onewayLightTime);
-		
+
 		satelliteCallback.waitForTime();
 		assertEquals(unixTime, satelliteCallback.getUnixTimestampMillis());
 		assertEquals(senderSideDelay, satelliteCallback.getSendSideDelay());

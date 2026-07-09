@@ -18,6 +18,7 @@ import com.leosatdata.model.MacState;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
+import com.leosatdata.model.TimeCalibrationResult;
 import com.leosatdata.model.TimeDistribution;
 import com.leosatdata.model.TimeDistributionType;
 import com.leosatdata.model.TimeTag;
@@ -54,6 +55,9 @@ public class Node implements Runnable, TransceiverCallback {
 	// this variable is visible on transceiver rx thread only
 	// and shared between onAsmRx and onRx callbacks
 	private long rxAsmTime = 0;
+	private TimeCalibrationResult timeCalibration;
+	private boolean txTimeCalibrationInProgress;
+	private boolean rxTimeCalibrationInProgress;
 
 	public Node(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {
 		this.config = config;
@@ -89,6 +93,10 @@ public class Node implements Runnable, TransceiverCallback {
 			state.reset();
 			transceiver.setTxState(TransceiverTxState.OFF);
 			transceiver.setRxState(TransceiverRxState.OFF);
+			transceiver.enableAsmRxCallback(false);
+			transceiver.enableAsmTxCallback(false);
+			txTimeCalibrationInProgress = false;
+			rxTimeCalibrationInProgress = false;
 			// don't send number of received packets. not clear why and hard to sync rx
 			// thread data
 			callback.handle(new ControllerEvent(ControllerEventType.END_OF_SESSION));
@@ -119,13 +127,29 @@ public class Node implements Runnable, TransceiverCallback {
 			state.getMacQueue().add((Spdu) e.getArg());
 			break;
 		case TIME_TAGGING:
-			if (!isDataServices()) {
+			if (!isDataServices() || isTimeTaggingActive()) {
 				// TODO notify controller about error
 				return;
 			}
 			int numberOfFramesToTag = (int) e.getArg();
 			startTimeTaggingInternal(numberOfFramesToTag);
 			state.getMacQueue().add(frameSublayer.createTimeTagDirective(numberOfFramesToTag));
+			break;
+		case TIME_DELAY_CALIBRATION:
+			if (!isDataServices() || isTimeTaggingActive()) {
+				// TODO notify controller about error
+				return;
+			}
+			timeCalibration = new TimeCalibrationResult();
+			timeCalibration.setInitialClock((long) e.getArg());
+
+			transceiver.enableAsmRxCallback(true);
+			transceiver.enableAsmTxCallback(true);
+			txTimeCalibrationInProgress = true;
+			rxTimeCalibrationInProgress = true;
+			// this will take priority over any other frame types
+			// extra out-of-order plcw won't cause any harm
+			state.getMacQueue().add(frameSublayer.createPlcw());
 			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
@@ -145,30 +169,63 @@ public class Node implements Runnable, TransceiverCallback {
 			}
 			break;
 		case ASM_RX:
-			// receive whole TimeTag instance here
-			// this is done to minimize time tagging affect on performance
-			// + share variable between TX and RX threads
-			state.setRxFramesToTimeTag(state.getRxFramesToTimeTag() - 1);
-			if (state.getRxFramesToTimeTag() < 0) {
-				transceiver.enableAsmRxCallback(false);
-			} else {
-				state.getTags().add((TimeTag) e.getArg());
+			// snap rx time only once
+			if (rxTimeCalibrationInProgress) {
+				rxTimeCalibrationInProgress = false;
+				if (timeCalibration.getRxAsmClock() == 0) {
+					transceiver.enableAsmRxCallback(false);
+					timeCalibration.setRxAsmClock(((TimeTag) e.getArg()).getTime());
+					if (timeCalibration.isComplete()) {
+						callback.handle(new ControllerEvent(ControllerEventType.TIME_CALIBRATION, timeCalibration));
+						timeCalibration = null;
+					}
+				}
+				return;
 			}
-			if (state.getRxFramesToTimeTag() < 0 && state.getTxFramesToTimeTag() < 0) {
-				callback.handle(new ControllerEvent(ControllerEventType.TIMING_SERVICES_INSTANCE, state.getTags()));
-				state.setTags(null);
+			if (state.getTags() != null) {
+				// receive whole TimeTag instance here
+				// this is done to minimize time tagging affect on performance
+				// + share variable between TX and RX threads
+				state.setRxFramesToTimeTag(state.getRxFramesToTimeTag() - 1);
+				if (state.getRxFramesToTimeTag() < 0) {
+					transceiver.enableAsmRxCallback(false);
+				} else {
+					state.getTags().add((TimeTag) e.getArg());
+				}
+				if (state.getRxFramesToTimeTag() < 0 && state.getTxFramesToTimeTag() < 0) {
+					callback.handle(new ControllerEvent(ControllerEventType.TIMING_SERVICES_INSTANCE, state.getTags()));
+					state.setTags(null);
+				}
 			}
 			return;
 		case ASM_TX:
-			state.setTxFramesToTimeTag(state.getTxFramesToTimeTag() - 1);
-			if (state.getTxFramesToTimeTag() < 0) {
-				transceiver.enableAsmTxCallback(false);
-			} else {
-				state.getTags().add(new TimeTag((long) e.getArg(), state.getCurrentSequenceNumber(), state.getCurrentQos(), TimeTagType.TX));
+			// time calibration
+			// snap tx time only once
+			if (txTimeCalibrationInProgress) {
+				txTimeCalibrationInProgress = false;
+				// ignore late callbacks interested only in the very first
+				if (timeCalibration.getTxAsmClock() == 0) {
+					transceiver.enableAsmTxCallback(false);
+					timeCalibration.setTxAsmClock((long) e.getArg());
+					if (timeCalibration.isComplete()) {
+						callback.handle(new ControllerEvent(ControllerEventType.TIME_CALIBRATION, timeCalibration));
+						timeCalibration = null;
+					}
+				}
+				return;
 			}
-			if (state.getRxFramesToTimeTag() < 0 && state.getTxFramesToTimeTag() < 0) {
-				callback.handle(new ControllerEvent(ControllerEventType.TIMING_SERVICES_INSTANCE, state.getTags()));
-				state.setTags(null);
+			// time tagging
+			if (state.getTags() != null) {
+				state.setTxFramesToTimeTag(state.getTxFramesToTimeTag() - 1);
+				if (state.getTxFramesToTimeTag() < 0) {
+					transceiver.enableAsmTxCallback(false);
+				} else {
+					state.getTags().add(new TimeTag((long) e.getArg(), state.getCurrentSequenceNumber(), state.getCurrentQos(), TimeTagType.TX));
+				}
+				if (state.getRxFramesToTimeTag() < 0 && state.getTxFramesToTimeTag() < 0) {
+					callback.handle(new ControllerEvent(ControllerEventType.TIMING_SERVICES_INSTANCE, state.getTags()));
+					state.setTags(null);
+				}
 			}
 			return;
 // the below TODO can be replaced by hashmap
@@ -298,6 +355,10 @@ public class Node implements Runnable, TransceiverCallback {
 		directive.setSendSideDelay(sendSideDelay);
 		directive.setTransceiverClock(transceiverClock);
 		sendEvent(new Event(EventType.TIME_DISTRIBUTION, directive));
+	}
+
+	public void calculateDelay(long transceiverClock) {
+		sendEvent(new Event(EventType.TIME_DELAY_CALIBRATION, transceiverClock));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -471,6 +532,10 @@ public class Node implements Runnable, TransceiverCallback {
 		state.setTags(new ArrayList<>());
 		transceiver.enableAsmRxCallback(true);
 		transceiver.enableAsmTxCallback(true);
+	}
+
+	private boolean isTimeTaggingActive() {
+		return state.getRxFramesToTimeTag() != 0 || state.getTxFramesToTimeTag() != 0;
 	}
 
 	// used on tests only
