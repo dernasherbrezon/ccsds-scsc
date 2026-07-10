@@ -7,7 +7,7 @@ import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Duplex;
 import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.PnRaging;
+import com.leosatdata.model.PnRanging;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.RangingCode;
 import com.leosatdata.model.RangingModulationIndex;
@@ -88,7 +88,7 @@ public class Type5DirectiveParser {
 				result.setSourceSpacecraftId(bis.readUnsignedInt(16));
 				break;
 			case LINK2_PN_RANGING:
-				PnRaging pnRanging = new PnRaging();
+				PnRanging pnRanging = new PnRanging();
 				pnRanging.setRangingType(RangingType.valueOfCode(bis.readUnsignedInt(2)));
 				pnRanging.setRangingCode(RangingCode.valueOfCode(bis.readUnsignedInt(2)));
 				pnRanging.setChipRateK(bis.readUnsignedInt(3));
@@ -136,7 +136,7 @@ public class Type5DirectiveParser {
 			bos.writeUnsignedInt(16, message.getSourceSpacecraftId());
 		}
 		if (message.getPnRanging() != null) {
-			PnRaging params = message.getPnRanging();
+			PnRanging params = message.getPnRanging();
 			bos.writeUnsignedInt(3, LINK2_PN_RANGING);
 			bos.writeUnsignedInt(2, params.getRangingType().getCode());
 			bos.writeUnsignedInt(2, params.getRangingCode().getCode());

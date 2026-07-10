@@ -23,7 +23,7 @@ import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
-import com.leosatdata.model.PnRaging;
+import com.leosatdata.model.PnRanging;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.QueryResponse;
 import com.leosatdata.model.RangingCode;
@@ -456,15 +456,15 @@ public class SpduParserTest {
 		tx.setAosFrameLength(23);
 		tx.setTransceiverMode(TransceiverMode.USLP);
 
-		PnRaging pnRaging = new PnRaging();
-		pnRaging.setChipRateK(3);
-		pnRaging.setChipRateL(2);
-		pnRaging.setChipRateM(3);
-		pnRaging.setPnEpochTime(new DaySegmented());
-		pnRaging.setRangingCode(RangingCode.T2B);
-		pnRaging.setRangingType(RangingType.ONE_WAY);
-		pnRaging.setReportRequest(RangingReportRequest.OBSERVABLE);
-		pnRaging.setModulationIndex(RangingModulationIndex.D70);
+		PnRanging pnRanging = new PnRanging();
+		pnRanging.setChipRateK(3);
+		pnRanging.setChipRateL(2);
+		pnRanging.setChipRateM(3);
+		pnRanging.setPnEpochTime(new DaySegmented());
+		pnRanging.setRangingCode(RangingCode.T2B);
+		pnRanging.setRangingType(RangingType.ONE_WAY);
+		pnRanging.setReportRequest(RangingReportRequest.OBSERVABLE);
+		pnRanging.setModulationIndex(RangingModulationIndex.D70);
 
 		Vr vr = new Vr();
 		vr.setFrameSequenceNumber(123);
@@ -480,7 +480,7 @@ public class SpduParserTest {
 		type5.setVr(vr);
 		type5.setRxLink(rx);
 		type5.setTxLink(tx);
-		type5.setPnRanging(pnRaging);
+		type5.setPnRanging(pnRanging);
 		type5.setReportRequest(reportReq);
 		type5.setSourceSpacecraftId(14);
 		return type5;

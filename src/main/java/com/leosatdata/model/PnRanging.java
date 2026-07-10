@@ -1,6 +1,6 @@
 package com.leosatdata.model;
 
-public class PnRaging {
+public class PnRanging {
 
 	private RangingType rangingType;
 	private RangingCode rangingCode;

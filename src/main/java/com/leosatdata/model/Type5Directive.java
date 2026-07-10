@@ -10,7 +10,7 @@ public class Type5Directive implements Spdu {
 	private ReportRequest reportRequest;
 	private Vr vr;
 	private Integer sourceSpacecraftId;
-	private PnRaging pnRanging;
+	private PnRanging pnRanging;
 
 	public void merge(Type5Directive obj) {
 		if (obj.getRxLink() != null) {
@@ -61,11 +61,11 @@ public class Type5Directive implements Spdu {
 		this.sourceSpacecraftId = sourceSpacecraftId;
 	}
 
-	public PnRaging getPnRanging() {
+	public PnRanging getPnRanging() {
 		return pnRanging;
 	}
 
-	public void setPnRanging(PnRaging pnRanging) {
+	public void setPnRanging(PnRanging pnRanging) {
 		this.pnRanging = pnRanging;
 	}
 
