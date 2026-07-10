@@ -323,9 +323,17 @@ comm_change_waiting_period > 2 * channel_latency + tail_idle_duration + carrier_
 
 ### Time services
 
+Even if time services are not mentioned in the CCSDS 235.1 specification, data structures support them. This implementation is following time service definition from proximity-1 specification.
+
+The latency model can be found below:
+
+![latencyModel](https://github.com/dernasherbrezon/ccsds235.1/blob/main/docs/latencyModel.svg)
+
+This implementation fully support latency model. The steps below guide through the process of distribution time to another spacecraft.
+
 #### Time tagging
 
-The time tagging service collects timestamps for selected frames on the transmitter and receiver sides. This information can subsequently be used to correlate time between the two ends. The specification does not define the exchange mechanism for this information.
+The time tagging process aim to calculate one way light time (OWLT) between 2 spacecrafts. During that process each transfer frame is tagged at transmitting side and receiving side. OWLT is highly suspectible for radio interence, multipath propagation. Thus it is better to time tag sufficient number of frames before correlation.
 
 The session must be established before time tagging is started.
 
@@ -350,3 +358,51 @@ public void handle(ControllerEvent event) {
 ```
 
 The `TimeTag` class contains the UNIX timestamp (in milliseconds), frame sequence number, Quality of Service (Expedited or Sequence Controlled), and type (RX or TX).
+
+The naive correlation can take all local TX tags, find corresponding RX tags for the same frame sequence and find average time difference.
+
+#### Time delay calculation 
+
+Transfer frames can wait some time in the queue and cannot be used to calculate internal send and receive delays. This implementation is sending PLCW to calculate internal TX delay. It will ensure it will take the same code path as in Time Distribution directive when setting up time remotely.
+
+Time delay calculation can be executed several times to get statistically good enough measurements.
+
+> Note: transceiver might be busy sending previous transfer frame, so the outgoing PLCW might take extra time. Even if it has bigger priority. Same for time distribution directive.
+
+To start calculation:
+
+```java
+long initialTime = System.currentTimeMillis();
+ground.calculateTimeDelay(initialTime);
+```
+
+Once calculation complete, the `NodeCallback` receives a `TIME_DELAY_CALCULATION` notification.
+
+```java
+@Override
+public void handle(ControllerEvent event) {
+	if (event.getType().equals(ControllerEventType.TIME_DELAY_CALCULATION) && event.getObj() != null) {
+		TimeDelayCalculationResult result = (TimeDelayCalculationResult) event.getObj();
+		// save or process
+	}
+}
+```
+
+#### Time distribution directive
+
+Once OWLT and internal delays calculated, it is possible to distribute time to the remote spacecraft.
+
+> Note: the receiver should perform time delay calculation BEFORE receiving "Time distribution" directive. It is assumed such commands executed using higher level protocols.
+
+```java
+long initialTime = System.currentTimeMillis();
+int senderSideDelay = 15;
+int onewayLightTime = 300;
+ground.distributeTime(initialTime, senderSideDelay, onewayLightTime);
+```
+
+If the remote side initiated time distribution, then the receiver should receive corresponding notification:
+
+
+```java
+```

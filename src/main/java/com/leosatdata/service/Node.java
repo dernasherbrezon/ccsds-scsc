@@ -334,7 +334,7 @@ public class Node implements Runnable, TransceiverCallback {
 		sendEvent(new Event(EventType.TIME_TAGGING, numberOfSamples));
 	}
 
-	public void setTime(long transceiverClock, int sendSideDelay, int oneWayLightTime) {
+	public void distributeTime(long transceiverClock, int sendSideDelay, int oneWayLightTime) {
 		// transceiverClock is the full 8byte long
 		Util.validateInt(3 * 8, "sendSideDelay", sendSideDelay);
 		Util.validateInt(3 * 8, "oneWayLightTime", oneWayLightTime);
@@ -346,8 +346,8 @@ public class Node implements Runnable, TransceiverCallback {
 		sendEvent(new Event(EventType.TIME_DISTRIBUTION, directive));
 	}
 
-	public void calculateTimeDelay(long transceiverClock) {
-		sendEvent(new Event(EventType.TIME_DELAY_CALCULATION, transceiverClock));
+	public void calculateTimeDelay(long initialTimeMillis) {
+		sendEvent(new Event(EventType.TIME_DELAY_CALCULATION, initialTimeMillis));
 	}
 
 	@SuppressWarnings("unchecked")

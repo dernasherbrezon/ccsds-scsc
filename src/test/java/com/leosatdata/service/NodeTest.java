@@ -117,13 +117,13 @@ public class NodeTest {
 	}
 
 	@Test
-	public void testSetTime() throws Exception {
+	public void testDistributeTime() throws Exception {
 		establishType1Session();
 
 		long unixTime = System.currentTimeMillis();
 		int senderSideDelay = 15;
 		int onewayLightTime = 300;
-		ground.setTime(unixTime, senderSideDelay, onewayLightTime);
+		ground.distributeTime(unixTime, senderSideDelay, onewayLightTime);
 
 		satelliteCallback.waitForTime();
 		assertEquals(unixTime, satelliteCallback.getUnixTimestampMillis());
