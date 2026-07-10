@@ -71,11 +71,6 @@ public class Sx127xNode {
 			public void handle(ControllerEvent event) {
 				LOG.info("received event: {}", event);
 			}
-			
-			@Override
-			public void onTime(long unixTimestampMillis, int sendSideDelay, int oneWayLightTime) {
-				LOG.info("setting up time: {} send delay: {} one-way light time: {}", unixTimestampMillis, sendSideDelay, oneWayLightTime);
-			}
 
 		};
 		groundDataCallback = new UserDataCallback() {
@@ -150,7 +145,7 @@ public class Sx127xNode {
 		// Default: treat as message to send
 		ground.send(input.getBytes(StandardCharsets.UTF_8), QualityOfService.EXPEDITED, 0);
 	}
-	
+
 	private static Type1Directive createType1CommParameters(DataRate dataRate) {
 		TxRxParameters tx = new TxRxParameters();
 		tx.setCoding(Type1Coding.NONE);

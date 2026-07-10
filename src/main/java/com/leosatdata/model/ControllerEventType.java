@@ -15,7 +15,8 @@ public enum ControllerEventType {
 	INVALID_FRAME_SOURCE,
 	
 	// custom
-	TIME_DELAY_CALCULATION	// results of tx/rx delays calculation. The result stored in com.leosatdata.model.TimeDelayCalculationResult
+	TIME_DISTRIBUTION,		// TimeDistribution directive received from remote side. The result is com.leosatdata.model.TimeDistribution
+	TIME_DELAY_CALCULATION	// results of tx/rx delays calculation. The result is com.leosatdata.model.TimeDelayCalculationResult
 	// @formatter:on
 	
 }

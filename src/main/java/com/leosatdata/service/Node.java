@@ -149,8 +149,7 @@ public class Node implements Runnable, TransceiverCallback {
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
 			if (spdu instanceof TimeDistribution) {
-				TimeDistribution directive = (TimeDistribution) spdu;
-				callback.onTime(directive.getTransceiverClock(), directive.getSendSideDelay(), directive.getOneWayLightTime());
+				callback.handle(new ControllerEvent(ControllerEventType.TIME_DISTRIBUTION, spdu));
 				return;
 			}
 			numberOfFramesToTag = SpduUtil.getTimeSample(spdu);
@@ -334,15 +333,11 @@ public class Node implements Runnable, TransceiverCallback {
 		sendEvent(new Event(EventType.TIME_TAGGING, numberOfSamples));
 	}
 
-	public void distributeTime(long transceiverClock, int sendSideDelay, int oneWayLightTime) {
+	public void distributeTime(TimeDistribution directive) {
 		// transceiverClock is the full 8byte long
-		Util.validateInt(3 * 8, "sendSideDelay", sendSideDelay);
-		Util.validateInt(3 * 8, "oneWayLightTime", oneWayLightTime);
-		TimeDistribution directive = new TimeDistribution();
+		Util.validateInt(3 * 8, "sendSideDelay", directive.getSendSideDelay());
+		Util.validateInt(3 * 8, "oneWayLightTime", directive.getOneWayLightTime());
 		directive.setType(TimeDistributionType.TIME_TRANSFER);
-		directive.setOneWayLightTime(oneWayLightTime);
-		directive.setSendSideDelay(sendSideDelay);
-		directive.setTransceiverClock(transceiverClock);
 		sendEvent(new Event(EventType.TIME_DISTRIBUTION, directive));
 	}
 

@@ -54,11 +54,7 @@ public class CliNode {
 			public void handle(ControllerEvent event) {
 				LOG.info("received event: {}", event);
 			}
-			
-			@Override
-			public void onTime(long unixTimestampMillis, int sendSideDelay, int oneWayLightTime) {
-				LOG.info("setting up time: {} send delay: {} one-way light time: {}", unixTimestampMillis, sendSideDelay, oneWayLightTime);
-			}
+
 		};
 		groundDataCallback = new UserDataCallback() {
 
@@ -66,6 +62,7 @@ public class CliNode {
 			public void onPacketData(byte[] packet, int portId) {
 				System.out.println("Received: \"" + new String(packet) + "\" (" + Util.bytesToHex(packet) + ")");
 			}
+
 			@Override
 			public void onPacketStream(byte[] data, int portId, int gapFramesCount, int firstHeaderPointer) {
 				System.out.println("Received: \"" + new String(data) + "\" (" + Util.bytesToHex(data) + ")");
@@ -105,7 +102,7 @@ public class CliNode {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		ground.stop();
 		groundTransceiver.stop();
 	}

@@ -52,6 +52,7 @@ import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.TimeDelayCalculationResult;
+import com.leosatdata.model.TimeDistribution;
 import com.leosatdata.model.TimeTag;
 import com.leosatdata.model.TimeTagType;
 import com.leosatdata.model.TransceiverMode;
@@ -120,15 +121,19 @@ public class NodeTest {
 	public void testDistributeTime() throws Exception {
 		establishType1Session();
 
-		long unixTime = System.currentTimeMillis();
-		int senderSideDelay = 15;
-		int onewayLightTime = 300;
-		ground.distributeTime(unixTime, senderSideDelay, onewayLightTime);
+		TimeDistribution directive = new TimeDistribution();
+		directive.setOneWayLightTime(300);
+		directive.setSendSideDelay(30);
+		directive.setTransceiverClock(System.currentTimeMillis());
 
-		satelliteCallback.waitForTime();
-		assertEquals(unixTime, satelliteCallback.getUnixTimestampMillis());
-		assertEquals(senderSideDelay, satelliteCallback.getSendSideDelay());
-		assertEquals(onewayLightTime, satelliteCallback.getOneWayLightTime());
+		ground.distributeTime(directive);
+
+		ControllerEvent event = satelliteCallback.waitForEvent(ControllerEventType.TIME_DISTRIBUTION);
+		assertNotNull(event);
+		TimeDistribution actual = (TimeDistribution) event.getObj();
+		assertEquals(directive.getTransceiverClock(), actual.getTransceiverClock());
+		assertEquals(directive.getSendSideDelay(), actual.getSendSideDelay());
+		assertEquals(directive.getOneWayLightTime(), actual.getOneWayLightTime());
 	}
 
 	@Test
