@@ -331,8 +331,6 @@ The supported latency model is shown below:
 
 This implementation fully supports the latency model. To enable time services, the `Transceiver` must support two additional interrupts:
 
-This implementation fully support latency model. `Transceiver` implementation should support 2 extra interrupts to make time services work:
-
  * Interrupt when the ASM (Attached Synchronization Marker) has been transmitted
  * Interrupt when the ASM has been received
 
