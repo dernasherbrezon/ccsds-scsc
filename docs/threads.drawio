@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Page-1" id="VRs9h8K3jEpO_qHomm5f">
-    <mxGraphModel dx="623" dy="1577" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="934" dy="1781" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -31,17 +31,8 @@
         <mxCell id="45NdX2_o7A_2YD4SPPOv-18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="NodeCallback" vertex="1">
           <mxGeometry height="60" width="120" x="640" y="-10" as="geometry" />
         </mxCell>
-        <mxCell id="45NdX2_o7A_2YD4SPPOv-19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div&gt;SymbolLockCallback&lt;/div&gt;" vertex="1">
+        <mxCell id="45NdX2_o7A_2YD4SPPOv-19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="TransceiverCallback" vertex="1">
           <mxGeometry height="50" width="140" x="200" y="310" as="geometry" />
-        </mxCell>
-        <mxCell id="45NdX2_o7A_2YD4SPPOv-20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div&gt;CarrierCallback&lt;/div&gt;" vertex="1">
-          <mxGeometry height="50" width="140" x="200" y="260" as="geometry" />
-        </mxCell>
-        <mxCell id="45NdX2_o7A_2YD4SPPOv-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div&gt;RxCallback&lt;/div&gt;" vertex="1">
-          <mxGeometry height="50" width="140" x="200" y="210" as="geometry" />
-        </mxCell>
-        <mxCell id="45NdX2_o7A_2YD4SPPOv-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;div&gt;TxCallback&lt;/div&gt;" vertex="1">
-          <mxGeometry height="50" width="140" x="200" y="160" as="geometry" />
         </mxCell>
         <mxCell id="45NdX2_o7A_2YD4SPPOv-23" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="RX and interrupts thread&lt;div&gt;(transceiver)&lt;/div&gt;" vertex="1">
           <mxGeometry height="30" width="220" x="120" y="80" as="geometry" />
