@@ -323,29 +323,43 @@ comm_change_waiting_period > 2 * channel_latency + tail_idle_duration + carrier_
 
 ### Time services
 
-Even if time services are not mentioned in the CCSDS 235.1 specification, data structures support them. This implementation is following time service definition from proximity-1 specification.
+Although time services are not defined in the CCSDS 235.1 specification, the data structures in this implementation support them. The time service behavior follows the definition provided in the Proximity-1 Space Link Protocol specification.
 
-The latency model can be found below:
+The supported latency model is shown below:
 
 ![latencyModel](https://github.com/dernasherbrezon/ccsds235.1/blob/main/docs/latencyModel.svg)
 
-This implementation fully support latency model. The steps below guide through the process of distribution time to another spacecraft.
+This implementation fully supports the latency model. To enable time services, the `Transceiver` must support two additional interrupts:
+
+This implementation fully support latency model. `Transceiver` implementation should support 2 extra interrupts to make time services work:
+
+ * Interrupt when the ASM (Attached Synchronization Marker) has been transmitted
+ * Interrupt when the ASM has been received
+
+These interrupts do not need to be triggered exactly at the moment of ASM transmission or reception. The key requirement is that they fire independently of the transfer frame size.
+
+> Note: These callbacks can introduce performance overhead and are not required for normal data transfer operations. They can be dynamically enabled or disabled if the following methods are implemented in your Transceiver:
+
+```java
+void enableAsmRxCallback(boolean enable);
+void enableAsmTxCallback(boolean enable);
+```
+
+The following sections describe the typical workflow for distributing time to a remote spacecraft.
 
 #### Time tagging
 
-The time tagging process aim to calculate one way light time (OWLT) between 2 spacecrafts. During that process each transfer frame is tagged at transmitting side and receiving side. OWLT is highly suspectible for radio interence, multipath propagation. Thus it is better to time tag sufficient number of frames before correlation.
+The time tagging process is used to measure the **One-Way Light Time (OWLT)** between two spacecraft. Each transfer frame is timestamped on both the transmitting and receiving sides. Because OWLT measurements are sensitive to radio interference, multipath propagation, and other channel effects, it is recommended to collect timestamps from a sufficient number of frames before performing correlation.
 
-The session must be established before time tagging is started.
+A session must be established before starting time tagging.
 
-Time tagging is started as follows:
+Starting time tagging:
 
 ```java
 ground.startTimeTagging(3);
 ```
 
-This instructs the local node to tag 3 TX messages and 3 RX messages. It also notifies the remote side to tag 3 RX and 3 TX messages. The nodes are expected to exchange this information and perform correlation.
-
-Once the required messages have been collected, the `NodeCallback` receives a `TIMING_SERVICES_INSTANCE` notification.
+This command instructs the local node to tag 3 transmitted and 3 received messages. It also notifies the remote node to do the same. Once enough RX and TX messages tagged, the local `NodeCallback` receives a `TIMING_SERVICES_INSTANCE` event.
 
 ```java
 @Override
@@ -357,26 +371,31 @@ public void handle(ControllerEvent event) {
 }
 ```
 
-The `TimeTag` class contains the UNIX timestamp (in milliseconds), frame sequence number, Quality of Service (Expedited or Sequence Controlled), and type (RX or TX).
+The TimeTag object contains:
 
-The naive correlation can take all local TX tags, find corresponding RX tags for the same frame sequence and find average time difference.
+ * UNIX timestamp (milliseconds)
+ * Frame sequence number
+ * Quality of Service (Expedited or Sequence Controlled)
+ * Direction (RX or TX)
+
+A basic correlation can be performed by matching local TX tags with corresponding remote RX tags (using the frame sequence number) and calculating the average time difference.
 
 #### Time delay calculation 
 
-Transfer frames can wait some time in the queue and cannot be used to calculate internal send and receive delays. This implementation is sending PLCW to calculate internal TX delay. It will ensure it will take the same code path as in Time Distribution directive when setting up time remotely.
+Transfer frames may experience variable queuing delays, making them unsuitable for precise internal delay measurement. This implementation uses a PLCW (Protocol Command Word) to measure internal transmit-side delay, ensuring the measurement follows the same code path as the Time Distribution directive.
 
-Time delay calculation can be executed several times to get statistically good enough measurements.
+It is recommended to repeat the measurement several times for better statistical accuracy.
 
-> Note: transceiver might be busy sending previous transfer frame, so the outgoing PLCW might take extra time. Even if it has bigger priority. Same for time distribution directive.
+> Note: The transceiver may be busy transmitting a previous frame, which can add extra delay to the outgoing PLCW even though it has higher priority. The same applies to the Time Distribution directive.
 
-To start calculation:
+Starting time delay calculation:
 
 ```java
 long initialTime = System.currentTimeMillis();
 ground.calculateTimeDelay(initialTime);
 ```
 
-Once calculation complete, the `NodeCallback` receives a `TIME_DELAY_CALCULATION` notification.
+When the calculation completes, the `NodeCallback` receives a `TIME_DELAY_CALCULATION` event:
 
 ```java
 @Override
@@ -390,19 +409,29 @@ public void handle(ControllerEvent event) {
 
 #### Time distribution directive
 
-Once OWLT and internal delays calculated, it is possible to distribute time to the remote spacecraft.
+Once the OWLT and internal delays are known, time can be distributed to the remote spacecraft.
 
-> Note: the receiver should perform time delay calculation BEFORE receiving "Time distribution" directive. It is assumed such commands executed using higher level protocols.
+> Important: The receiving side should complete its own time delay calculation before accepting a Time Distribution directive. It is assumed that such coordination is handled by higher-level protocols.
+
+Distributing time:
 
 ```java
-long initialTime = System.currentTimeMillis();
-int senderSideDelay = 15;
-int onewayLightTime = 300;
-ground.distributeTime(initialTime, senderSideDelay, onewayLightTime);
+TimeDistribution directive = new TimeDistribution();
+directive.setOneWayLightTime(300);
+directive.setSendSideDelay(30);
+directive.setTransceiverClock(System.currentTimeMillis());
+
+ground.distributeTime(directive);
 ```
 
-If the remote side initiated time distribution, then the receiver should receive corresponding notification:
-
+If the remote side initiates time distribution, the receiver will get a `TIME_DISTRIBUTION` notification:
 
 ```java
+@Override
+public void handle(ControllerEvent event) {
+	if (event.getType().equals(ControllerEventType.TIME_DISTRIBUTION) && event.getObj() != null) {
+		TimeDistribution result = (TimeDistribution) event.getObj();
+		// save or process
+	}
+}
 ```
