@@ -343,6 +343,8 @@ void enableAsmRxCallback(boolean enable);
 void enableAsmTxCallback(boolean enable);
 ```
 
+> Note: This implementation provides time with millisecond precision
+
 The following sections describe the typical workflow for distributing time to a remote spacecraft.
 
 #### Time tagging
@@ -433,3 +435,65 @@ public void handle(ControllerEvent event) {
 	}
 }
 ```
+
+### Error handling
+
+This implementation uses integer status codes to report the success or failure of operations. All status codes are defined in `com.leosatdata.model.ErrorCode`.
+
+ * `0` indicates **success**.
+ * Any non-zero value indicates **failure**.
+
+Integer status codes are used for performance reasons and because they map easily to C code on the OBC.
+
+#### Transceiver Status Codes
+
+Methods in the `Transceiver` interface also return status codes. These codes are offset by the constant `TRANSCEIVER_ERROR`. For example, if `setRxSymbolRate()` returns status code `44`, the value propagated to the OBC will be `48` (`TRANSCEIVER_ERROR + 44`).
+
+#### Error Reporting via Callbacks
+
+Because some operations execute on the TX thread, their results are delivered asynchronously through the `NodeCallback` interface.
+
+Example – Handling transceiver errors:
+
+```java
+@Override
+public void handle(ControllerEvent event) {
+	if (event.getType().equals(ControllerEventType.TRANSCEIVER_ERROR)) {
+		LOG.info("status code {} failure message {}", event.getStatusCode(), event.getFailureMessage());
+	}
+}
+```
+
+Example – Checking status for events that can succeed or fail:
+
+```java
+@Override
+public void handle(ControllerEvent event) {
+	if (event.getType().equals(ControllerEventType.TIME_DISTRIBUTION) && event.getStatusCode() != 0) {
+		LOG.info("unable to distribute time: {}", event.getFailureMessage());
+	}
+}
+```
+
+#### Error Categories
+
+Errors fall into two main categories:
+
+#### Recoverable errors
+
+These are typically related to communication session management (e.g., Session Initiation / HAIL, Communication Change, etc.).
+
+Recommended actions:
+
+ * Retry the operation
+ * Adjust internal timeouts and retry
+ * Fully reset the `Node` and/or `Transceiver` if retries fail
+
+#### Unrecoverable errors
+
+These include:
+
+ * Logical/programming errors (should be caught during testing)
+ * Hardware-related transceiver errors
+
+For unrecoverable errors, the `Node` will notify the OBC of any transceiver errors, but will still transition its internal state machines to a consistent state. It is strongly recommended that the user’s code fully reset the `Node` and/or `Transceiver` when an unrecoverable error occurs.
