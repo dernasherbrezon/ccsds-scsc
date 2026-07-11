@@ -1,7 +1,7 @@
 package com.leosatdata.util;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,7 +9,6 @@ import java.util.Properties;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
 
 import com.leosatdata.model.CarrierSuppression;
 import com.leosatdata.model.Coherency;
@@ -17,6 +16,7 @@ import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.DaySegmented;
 import com.leosatdata.model.Duplex;
+import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Mode;
@@ -166,183 +166,74 @@ public class SpduParserTest {
 
 	@Test
 	public void testValidateCommParameters() throws Exception {
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type1Directive type1 = createValidType1();
-				type1.setRxParams(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type1Directive type1 = createValidType1();
-				type1.setTxParams(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type1Directive type1 = createValidType1();
-				type1.getRxParams().setFrequency(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type1Directive type1 = createValidType1();
-				type1.getRxParams().setFrequency(Frequency.UNKNOWN);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type1Directive type1 = createValidType1();
-				type1.getRxParams().setDataRate(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type1Directive type1 = createValidType1();
-				type1.getRxParams().setDataRate(DataRate.UNKNOWN);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type1Directive type1 = createValidType1();
-				type1.getTxParams().setFrequency(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type1Directive type1 = createValidType1();
-				type1.getTxParams().setDataRate(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type4Directive type1 = createValidType4();
-				type1.setRxLink(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type4Directive type1 = createValidType4();
-				type1.getRxLink().setFreqChannel(-1);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type4Directive type1 = createValidType4();
-				type1.getRxLink().setFreqChannel(32);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type4Directive type1 = createValidType4();
-				type1.getRxLink().setSymbolRate(-1);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type4Directive type1 = createValidType4();
-				type1.setTxLink(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type4Directive type1 = createValidType4();
-				type1.getTxLink().setFreqChannel(-1);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type4Directive type1 = createValidType4();
-				type1.getTxLink().setFreqChannel(32);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type4Directive type1 = createValidType4();
-				type1.getTxLink().setSymbolRate(-1);
-				parser.validateCommParameters(type1);
-			}
-		});
+		Type1Directive type1 = createValidType1();
+		type1.setRxParams(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type1));
+		type1 = createValidType1();
+		type1.setTxParams(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type1));
+		type1 = createValidType1();
+		type1.getRxParams().setFrequency(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type1));
+		type1 = createValidType1();
+		type1.getRxParams().setFrequency(Frequency.UNKNOWN);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type1));
+		type1 = createValidType1();
+		type1.getRxParams().setDataRate(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type1));
+		type1 = createValidType1();
+		type1.getRxParams().setDataRate(DataRate.UNKNOWN);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type1));
+		type1 = createValidType1();
+		type1.getTxParams().setFrequency(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type1));
+		type1 = createValidType1();
+		type1.getTxParams().setDataRate(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type1));
 
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type5Directive type1 = createValidType5();
-				type1.setTxLink(null);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type5Directive type1 = createValidType5();
-				type1.getTxLink().setAosFrameLength(-1);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type5Directive type1 = createValidType5();
-				type1.getTxLink().setAosFrameLength(65536);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type5Directive type1 = createValidType5();
-				type1.getTxLink().setFrequency(-1);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type5Directive type1 = createValidType5();
-				type1.getTxLink().setSymbolRate(-1);
-				parser.validateCommParameters(type1);
-			}
-		});
-		assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-			@Override
-			public void run() throws Throwable {
-				Type5Directive type1 = createValidType5();
-				type1.setRxLink(null);
-				parser.validateCommParameters(type1);
-			}
-		});
+		Type4Directive type4 = createValidType4();
+		type4.setRxLink(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type4));
+		type4 = createValidType4();
+		type4.getRxLink().setFreqChannel(-1);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type4));
+		type4 = createValidType4();
+		type4.getRxLink().setFreqChannel(32);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type4));
+		type4 = createValidType4();
+		type4.getRxLink().setSymbolRate(-1);
+		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type4));
+		type4 = createValidType4();
+		type4.setTxLink(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type4));
+		type4 = createValidType4();
+		type4.getTxLink().setFreqChannel(-1);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type4));
+		type4 = createValidType4();
+		type4.getTxLink().setFreqChannel(32);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type4));
+		type4 = createValidType4();
+		type4.getTxLink().setSymbolRate(-1);
+		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type4));
+
+		Type5Directive type5 = createValidType5();
+		type5.setTxLink(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type5));
+		type5 = createValidType5();
+		type5.getTxLink().setAosFrameLength(-1);
+		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
+		type5 = createValidType5();
+		type5.getTxLink().setAosFrameLength(65536);
+		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
+		type5 = createValidType5();
+		type5.getTxLink().setFrequency(-1);
+		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
+		type5 = createValidType5();
+		type5.getTxLink().setSymbolRate(-1);
+		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
+		type5 = createValidType5();
+		type5.setRxLink(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type5));
 	}
 
 	@Before

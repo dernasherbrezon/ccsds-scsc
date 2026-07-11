@@ -1,7 +1,13 @@
 package com.leosatdata.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.leosatdata.model.ErrorCode;
+
 public class Util {
 
+	private static final Logger LOG = LoggerFactory.getLogger(Util.class);
 	private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
 	public static String bytesToHex(byte[] bytes) {
@@ -36,11 +42,13 @@ public class Util {
 		return data;
 	}
 
-	public static void validateInt(int numberOfBits, String fieldName, int value) {
+	public static int validateInt(int numberOfBits, String fieldName, int value) {
 		int maxValue = (1 << numberOfBits) - 1;
 		if (maxValue < value) {
-			throw new IllegalArgumentException("invalid " + fieldName + ": " + value + " maxValue: " + maxValue);
+			LOG.error("invalid " + fieldName + ": " + value + " maxValue: " + maxValue);
+			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
 	private Util() {

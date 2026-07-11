@@ -16,6 +16,7 @@ import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
+import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.Plcw;
@@ -355,7 +356,7 @@ class FrameSublayer {
 			int maxAttempts = config.getInteger("resync_lifetime", 0);
 			if (maxAttempts != 0 && currentResyncAttempt >= maxAttempts) {
 				currentResyncAttempt = 0;
-				callback.handle(config.createNotification("resync", "retry failed"));
+				callback.handle(config.createNotification("resync", ErrorCode.RETRY_FAILED.ordinal(), "retry failed"));
 			} else {
 				resynch();
 			}
@@ -497,7 +498,8 @@ class FrameSublayer {
 	public List createUFrame(byte[] payload, QualityOfService qos, int portId) {
 		if (uFrameVersion == 2) {
 			if (qos.equals(QualityOfService.SEQUENCE_CONTROLLED)) {
-				throw new IllegalArgumentException("SEQUENCE_CONTROLLED qos is not supported for AOS");
+				LOG.error("SEQUENCE_CONTROLLED qos is not supported for AOS");
+				return Collections.emptyList();
 			}
 			return framev2Parser.createUFrame(payload, portId);
 		}
@@ -704,15 +706,16 @@ class FrameSublayer {
 		}
 	}
 
-	void validateCommParameters(Object directive) {
+	int validateCommParameters(Object directive) {
 		if (spduVersion == Type1Directive.SPDU_VERSION && directive instanceof Type1Directive) {
-			spduParser.validateCommParameters((Type1Directive) directive);
+			return spduParser.validateCommParameters((Type1Directive) directive);
 		} else if (spduVersion == Type4Directive.SPDU_VERSION && directive instanceof Type4Directive) {
-			spduParser.validateCommParameters((Type4Directive) directive);
+			return spduParser.validateCommParameters((Type4Directive) directive);
 		} else if (spduVersion == Type5Directive.SPDU_VERSION && directive instanceof Type5Directive) {
-			spduParser.validateCommParameters((Type5Directive) directive);
+			return spduParser.validateCommParameters((Type5Directive) directive);
 		} else {
-			throw new IllegalArgumentException("invalid comm parameters directive: " + directive + " for spdu version: " + spduVersion);
+			LOG.error("invalid comm parameters directive: " + directive + " for spdu version: " + spduVersion);
+			return ErrorCode.INVALID_ARGUMENT.ordinal();
 		}
 	}
 

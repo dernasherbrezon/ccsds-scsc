@@ -165,7 +165,7 @@ public class Configuration {
 		return true;
 	}
 
-	public ControllerEvent createNotification(String prefix, String failureMessage) {
+	public ControllerEvent createNotification(String prefix, int statusCode, String failureMessage) {
 		PersistentActivity activity = new PersistentActivity();
 		activity.setLifetime(getInteger(prefix + "_lifetime", 0));
 		activity.setWaitingPeriod(getInteger(prefix + "_wait_duration", 0));
@@ -174,10 +174,10 @@ public class Configuration {
 		if (failureMessage == null) {
 			return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
 		}
-		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity, 1, failureMessage);
+		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity, statusCode, failureMessage);
 	}
 
 	public ControllerEvent createNotification(String prefix) {
-		return createNotification(prefix, null);
+		return createNotification(prefix, 0, null);
 	}
 }

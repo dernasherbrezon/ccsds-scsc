@@ -12,6 +12,7 @@ import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Duplex;
+import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacState;
@@ -305,40 +306,51 @@ public class Node implements Runnable, TransceiverCallback {
 		sendEvent(new Event(EventType.E28_INACTIVE));
 	}
 
-	public void setCommParameters(Object directive) {
+	public int setCommParameters(Object directive) {
 		if (directive == null) {
-			throw new IllegalArgumentException("comm parameters cannot be null");
+			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
-		frameSublayer.validateCommParameters(directive);
+		int code = frameSublayer.validateCommParameters(directive);
+		if (code != 0) {
+			return code;
+		}
 		sendEvent(new Event(EventType.LOCAL_COMM_CHANGE, directive));
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
-	public void clearQueue(QueueType type) {
+	public int clearQueue(QueueType type) {
 		if (type == null) {
-			throw new IllegalArgumentException("queue type cannot be null");
+			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
 		sendEvent(new Event(EventType.CLEAR_QUEUE, type));
+		return 0;
 	}
 
-	public void setDuplex(Duplex duplex) {
+	public int setDuplex(Duplex duplex) {
 		if (duplex == null) {
-			throw new IllegalArgumentException("duplex cannot be null");
+			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
 		sendEvent(new Event(EventType.DUPLEX, duplex));
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
-	public void startTimeTagging(int numberOfSamples) {
+	public int startTimeTagging(int numberOfSamples) {
 		// both type1 and type4/5 have the same length for time sample field
-		Util.validateInt(6, "time_sample", numberOfSamples);
+		int code = Util.validateInt(6, "time_sample", numberOfSamples);
+		if (code != 0) return code;
 		sendEvent(new Event(EventType.TIME_TAGGING, numberOfSamples));
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
-	public void distributeTime(TimeDistribution directive) {
+	public int distributeTime(TimeDistribution directive) {
 		// transceiverClock is the full 8byte long
-		Util.validateInt(3 * 8, "sendSideDelay", directive.getSendSideDelay());
-		Util.validateInt(3 * 8, "oneWayLightTime", directive.getOneWayLightTime());
+		int code = Util.validateInt(3 * 8, "sendSideDelay", directive.getSendSideDelay());
+		if (code != 0) return code;
+		code = Util.validateInt(3 * 8, "oneWayLightTime", directive.getOneWayLightTime());
+		if (code != 0) return code;
 		directive.setType(TimeDistributionType.TIME_TRANSFER);
 		sendEvent(new Event(EventType.TIME_DISTRIBUTION, directive));
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
 	public void calculateTimeDelay(long initialTimeMillis) {

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.DataRate;
+import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
@@ -147,58 +148,70 @@ public class SpduParser {
 
 	}
 
-	public void validateCommParameters(Type1Directive obj) {
+	public int validateCommParameters(Type1Directive obj) {
 		if (obj.getTxParams() == null || obj.getRxParams() == null) {
-			throw new IllegalArgumentException("rx or tx parameters are missing");
+			return ErrorCode.INVALID_ARGUMENT.ordinal();
 		}
-		validate(obj.getTxParams());
-		validate(obj.getRxParams());
+		int code = validate(obj.getTxParams());
+		if (code != 0) {
+			return code;
+		}
+		return validate(obj.getRxParams());
 	}
 
-	private static void validate(TxRxParameters params) {
+	private static int validate(TxRxParameters params) {
 		if (params.getDataRate() == null || params.getDataRate().equals(DataRate.UNKNOWN)) {
-			throw new IllegalArgumentException("data rate is missing");
+			return ErrorCode.INVALID_ARGUMENT.ordinal();
 		}
 		if (params.getFrequency() == null || params.getFrequency().equals(Frequency.UNKNOWN)) {
-			throw new IllegalArgumentException("frequency is missing");
+			return ErrorCode.INVALID_ARGUMENT.ordinal();
 		}
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
-	public void validateCommParameters(Type4Directive obj) {
+	public int validateCommParameters(Type4Directive obj) {
 		if (obj.getTxLink() == null || obj.getRxLink() == null) {
-			throw new IllegalArgumentException("rx or tx parameters are missing");
+			return ErrorCode.INVALID_ARGUMENT.ordinal();
 		}
-		validate(obj.getTxLink());
-		validate(obj.getRxLink());
+		int code = validate(obj.getTxLink());
+		if (code != 0) {
+			return code;
+		}
+		return validate(obj.getRxLink());
 	}
 
-	private static void validate(Type4LinkEstablishment params) {
+	private static int validate(Type4LinkEstablishment params) {
 		if (params.getFreqChannel() < 0 || params.getFreqChannel() > 31) {
-			throw new IllegalArgumentException("invalid frequency channel: " + params.getFreqChannel());
+			return 1;
 		}
 		if (params.getSymbolRate() < 0) {
-			throw new IllegalArgumentException("invalid symbol rate: " + params.getSymbolRate());
+			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
-	public void validateCommParameters(Type5Directive obj) {
+	public int validateCommParameters(Type5Directive obj) {
 		if (obj.getTxLink() == null || obj.getRxLink() == null) {
-			throw new IllegalArgumentException("rx or tx parameters are missing");
+			return ErrorCode.INVALID_ARGUMENT.ordinal();
 		}
-		validate(obj.getTxLink());
-		validate(obj.getRxLink());
+		int code = validate(obj.getTxLink());
+		if (code != 0) {
+			return code;
+		}
+		return validate(obj.getRxLink());
 	}
 
-	private static void validate(Type5LinkEstablishment params) {
+	private static int validate(Type5LinkEstablishment params) {
 		if (params.getAosFrameLength() < 0 || params.getAosFrameLength() > ((1 << 16) - 1)) {
-			throw new IllegalArgumentException("invalid aos frame length: " + params.getAosFrameLength());
+			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
 		if (params.getSymbolRate() < 0) {
-			throw new IllegalArgumentException("invalid symbol rate: " + params.getSymbolRate());
+			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
 		if (params.getFrequency() < 0) {
-			throw new IllegalArgumentException("invalid frequency: " + params.getFrequency());
+			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
 }

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
+import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
 import com.leosatdata.model.MacState;
@@ -182,11 +183,11 @@ public class HalfDuplexMac {
 			break;
 		case E31_CONNECTING_T:
 			if (state.getCommParameters() == null) {
-				callback.handle(config.createNotification("hail", "comm parameters not configured"));
+				callback.handle(config.createNotification("hail", ErrorCode.INVALID_ARGUMENT.ordinal(), "comm parameters not configured"));
 				return;
 			}
 			if (!SpduUtil.isCommDirective(spduVersion, state.getCommParameters())) {
-				callback.handle(config.createNotification("hail", "mismatch between provided comm parameters and spdu version"));
+				callback.handle(config.createNotification("hail", ErrorCode.INVALID_ARGUMENT.ordinal(), "mismatch between provided comm parameters and spdu version"));
 				return;
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
@@ -241,7 +242,7 @@ public class HalfDuplexMac {
 			int maxAttempts = config.getInteger("hail_lifetime", 0);
 			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
 				currentHailAttempt = 0;
-				callback.handle(config.createNotification("hail", "retry failed"));
+				callback.handle(config.createNotification("hail", ErrorCode.RETRY_FAILED.ordinal(), "retry failed"));
 			} else {
 				sendEvent(new Event(EventType.E31_CONNECTING_T));
 			}
@@ -544,7 +545,7 @@ public class HalfDuplexMac {
 		int maxAttempts = config.getInteger("comm_change_lifetime", 0);
 		if (maxAttempts != 0 && currentCommChangeAttempt >= maxAttempts) {
 			currentCommChangeAttempt = 0;
-			callback.handle(config.createNotification("comm_change", "retry failed"));
+			callback.handle(config.createNotification("comm_change", ErrorCode.RETRY_FAILED.ordinal(), "retry failed"));
 			// ignore further comm change attempts
 			state.setY(0);
 			return;
