@@ -134,7 +134,10 @@ public class TransferFrameParser {
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int portId) {
-		Util.validateInt(PORTID_LENGTH_BITS, "portId", portId);
+		int code = Util.validateInt(PORTID_LENGTH_BITS, "portId", portId);
+		if (code != 0) {
+			return Collections.emptyList();
+		}
 		if (pseudoPacketId > PPACKET_MAX_VALUE) {
 			pseudoPacketId = 0;
 		}

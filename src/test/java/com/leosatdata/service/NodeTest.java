@@ -597,7 +597,7 @@ public class NodeTest {
 		}
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testSeqIsNotSupportedForAos() throws Exception {
 		// aos
 		groundConfig.setProperty("u_frame_version", "2");
@@ -826,13 +826,13 @@ public class NodeTest {
 	public static List<CommSettings> getSupportedSettingsCombination() {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
-//		settings.add(new CommSettings(2, 3, 1, 1));
+		settings.add(new CommSettings(2, 3, 1, 1));
 		settings.add(new CommSettings(3, 3, 1, 1));
-//		settings.add(new CommSettings(4, 4, 1, 1));
-//		settings.add(new CommSettings(4, 4, 2, 1));
-//		settings.add(new CommSettings(4, 4, 3, 1));
-//		settings.add(new CommSettings(4, 4, 2, 2));
-//		settings.add(new CommSettings(4, 4, 3, 2));
+		settings.add(new CommSettings(4, 4, 1, 1));
+		settings.add(new CommSettings(4, 4, 2, 1));
+		settings.add(new CommSettings(4, 4, 3, 1));
+		settings.add(new CommSettings(4, 4, 2, 2));
+		settings.add(new CommSettings(4, 4, 3, 2));
 		return settings;
 	}
 
@@ -840,7 +840,7 @@ public class NodeTest {
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection<?> parameters() {
 		return Arrays.asList(new Object[][] { 
-//			{ Duplex.HALF_DUPLEX }, 
+			{ Duplex.HALF_DUPLEX }, 
 			{ Duplex.FULL_DUPLEX } 
 		});
 	}

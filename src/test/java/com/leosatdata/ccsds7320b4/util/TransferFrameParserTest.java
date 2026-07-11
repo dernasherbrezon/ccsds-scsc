@@ -131,9 +131,9 @@ public class TransferFrameParserTest {
 		assertFalse(TransferFrameParser.accept(new byte[] { 0x00 }));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testInvalidPort() throws Exception {
-		parser.createUFrame(new byte[10], 64);
+		assertTrue(parser.createUFrame(new byte[10], 64).isEmpty());
 	}
 
 	@Test
@@ -215,7 +215,7 @@ public class TransferFrameParserTest {
 		assertData(frame.getDataField(), 0, frame);
 		frame.setVcFrameCount(frame.getVcFrameCount() + 2);
 		assertData(frame.getDataField(), 1, frame);
-		
+
 		parser = new TransferFrameParser(config);
 		int maxFrameCount = (1 << TransferFrameParser.VCFRAME_COUNT_LENGTH_BITS) - 1;
 		frame.setVcFrameCount(maxFrameCount);
@@ -223,7 +223,7 @@ public class TransferFrameParserTest {
 		// wrap-around
 		frame.setVcFrameCount(0);
 		assertData(frame.getDataField(), 0, frame);
-		
+
 		parser = new TransferFrameParser(config);
 		frame.setVcFrameCount(maxFrameCount - 1);
 		assertData(frame.getDataField(), 0, frame);

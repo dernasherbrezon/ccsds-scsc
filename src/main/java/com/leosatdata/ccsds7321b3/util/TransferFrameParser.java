@@ -24,7 +24,7 @@ public class TransferFrameParser {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
 	public final static int SPACECRAFT_LENGTH_BITS = 16;
-	
+
 	private final int insertZoneLength;
 	private final boolean frameErrorControl;
 	private final int maxDataLength;
@@ -63,12 +63,12 @@ public class TransferFrameParser {
 		headerLength += frameErrorControl ? com.leosatdata.ccsds7321b3.model.TransferFrame.FEC_LENGTH : 0;
 
 		// spec:
-		// 
+		//
 		// The MSB of the VCID field (bit 21) of the Version-4 Transfer Frame Primary Header shall
 		// be used for the PCID in the Version-3 Frame header.
-		// 
+		//
 		// commentary:
-		// 
+		//
 		// v3 obviously is not v4. I guess some kind of wire compatibility is required
 		// pcid is not defined in the TransferFrame structure
 		int spduVersion = config.getInteger("spdu_version", 1);
@@ -264,7 +264,10 @@ public class TransferFrameParser {
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, QualityOfService qos, int vcid) {
-		Util.validateInt(vcidLengthBits, "vcid", vcid);
+		int code = Util.validateInt(vcidLengthBits, "vcid", vcid);
+		if (code != 0) {
+			return Collections.emptyList();
+		}
 		if (packet.length < maxDataLength) {
 			TransferFrame frame = new TransferFrame();
 			frame.setSourceOrDestination(sourceDestination);

@@ -1,6 +1,7 @@
 package com.leosatdata.ccsds7320b4.util;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -183,7 +184,10 @@ public class TransferFrameParser {
 	}
 
 	public List<TransferFrame> createUFrame(byte[] packet, int portId) {
-		Util.validateInt(VCID_LENGTH_BITS, "portId", portId);
+		int code = Util.validateInt(VCID_LENGTH_BITS, "portId", portId);
+		if( code != 0 ) {
+			return Collections.emptyList();
+		}
 		PacketService service = serviceByVcid.get(portId);
 		if (service == null) {
 			service = new PacketService(config);
