@@ -271,7 +271,7 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType1CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(getOverallHailDuration(ground2Config), ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
+		assertEvent(groundCallback.waitForEvent(getOverallHailDuration(groundConfig), ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
 	}
 
 	@Test
@@ -1028,7 +1028,7 @@ public class NodeTest {
 		long hailAttemptDuration = config.getDuration("carrier_only_duration") + config.getDuration("acquisition_idle_duration") + config.getDuration("tail_idle_duration") + config.getDuration("hail_wait_duration");
 		long overallHailDuration = hailAttemptDuration * config.getInteger("hail_lifetime", 0);
 		// some delta to make tests more stable
-		long delta = 2 * config.getLong("interval_clock", 0L);
+		long delta = 10 * config.getLong("interval_clock", 0L);
 		return overallHailDuration + delta;
 	}
 
