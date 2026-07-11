@@ -33,6 +33,7 @@ public class Sx127xTransceiver implements Transceiver {
 	private TransceiverRxState rx = TransceiverRxState.OFF;
 
 	private Future<?> rxTask;
+	private Object stateLock = new Object();
 	private RxThreadState state;
 
 	public Sx127xTransceiver(Sx127x impl, Configuration config) {
@@ -265,7 +266,7 @@ public class Sx127xTransceiver implements Transceiver {
 
 			@Override
 			public void run() {
-				synchronized (state) {
+				synchronized (stateLock) {
 					if (state.equals(RxThreadState.SHUTDOWN)) {
 						return;
 					}
@@ -283,7 +284,7 @@ public class Sx127xTransceiver implements Transceiver {
 			return;
 		}
 		rxTask.cancel(true);
-		synchronized (state) {
+		synchronized (stateLock) {
 			state = RxThreadState.SHUTDOWN;
 		}
 		rxTask = null;

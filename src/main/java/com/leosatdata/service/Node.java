@@ -55,7 +55,7 @@ public class Node implements Runnable, TransceiverCallback {
 	private int vrFromCallback = 0;
 	// this variable is visible on transceiver rx thread only
 	// and shared between onAsmRx and onRx callbacks
-	private long rxAsmTime = 0;
+	private volatile long rxAsmTime = 0;
 	private TimeDelayCalculationResult timeDelayCalculation;
 
 	public Node(Configuration config, Transceiver transceiver, NodeCallback callback, UserDataCallback rxCallback) {

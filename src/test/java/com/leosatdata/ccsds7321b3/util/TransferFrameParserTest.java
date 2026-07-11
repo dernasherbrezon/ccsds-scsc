@@ -1,5 +1,6 @@
 package com.leosatdata.ccsds7321b3.util;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -72,7 +73,7 @@ public class TransferFrameParserTest {
 		byte[] packet = TestUtil.createTestData(5);
 		List<TransferFrame> frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
 		assertEquals(1, frames.size());
-		assertEquals(packet, frames.get(0).getDataField());
+		assertArrayEquals(packet, frames.get(0).getDataField());
 		assertEquals(ConstructionRules.NO_SEGMENTATION, frames.get(0).getConstructionRule());
 
 		packet = TestUtil.createTestData(100);

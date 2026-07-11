@@ -72,7 +72,7 @@ public class TransferFrameParserTest {
 		byte[] packet = TestUtil.createTestData(5);
 		List<TransferFrame> frames = parser.createUFrame(packet, QualityOfService.EXPEDITED, 0);
 		assertEquals(1, frames.size());
-		assertEquals(packet, frames.get(0).getDataField());
+		assertArrayEquals(packet, frames.get(0).getDataField());
 		assertEquals(SegmentFlags.NO_SEGMENTATION, frames.get(0).getSegmentFlags());
 
 		parser.onFrame(callback, frames.get(0));

@@ -11,7 +11,6 @@ public class MockUserDataCallback implements UserDataCallback {
 	private List<byte[]> data = new ArrayList<>();
 	private ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	private final Object lock = new Object();
-	private boolean collectMulti = false;
 
 	@Override
 	public void onPacketData(byte[] payload, int portId) {
@@ -95,14 +94,6 @@ public class MockUserDataCallback implements UserDataCallback {
 			}
 			return result;
 		}
-	}
-
-	public void setCollectMulti(boolean collectMulti) {
-		this.collectMulti = collectMulti;
-	}
-
-	public boolean isCollectMulti() {
-		return collectMulti;
 	}
 
 }

@@ -470,8 +470,6 @@ public class NodeTest {
 		satellite.send(sequenced, QualityOfService.SEQUENCE_CONTROLLED, 0);
 		satellite.send(expedited, QualityOfService.EXPEDITED, 0);
 
-		groundDataCallback.setCollectMulti(true);
-
 		pausingFilter.resume();
 
 		int numberOfPackets = 3;
