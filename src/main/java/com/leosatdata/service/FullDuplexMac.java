@@ -63,13 +63,11 @@ public class FullDuplexMac {
 			break;
 		case E2_CONNECTING_T:
 			if (state.getCommParameters() == null) {
-				LOG.error("comm parameters not configured");
-				callback.handle(config.createNotification("hail", false));
+				callback.handle(config.createNotification("hail", "comm parameters not configured"));
 				return;
 			}
 			if (!SpduUtil.isCommDirective(spduVersion, state.getCommParameters())) {
-				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
-				callback.handle(config.createNotification("hail", false));
+				callback.handle(config.createNotification("hail", "mismatch between provided comm parameters and spdu version"));
 				return;
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
@@ -116,7 +114,7 @@ public class FullDuplexMac {
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
 				timer.cancelWait();
-				callback.handle(config.createNotification("hail", true));
+				callback.handle(config.createNotification("hail"));
 				currentHailAttempt = 0;
 				// switch over to the agreed link
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
@@ -135,7 +133,7 @@ public class FullDuplexMac {
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-				callback.handle(config.createNotification("hail", true));
+				callback.handle(config.createNotification("hail"));
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				state.setNeedPlcw(true);
 				LOG.info("session established");
@@ -167,7 +165,7 @@ public class FullDuplexMac {
 				int maxAttempts = config.getInteger("hail_lifetime", 0);
 				if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
 					currentHailAttempt = 0;
-					callback.handle(config.createNotification("hail", false));
+					callback.handle(config.createNotification("hail", "retry failed"));
 				} else {
 					sendEvent(new Event(EventType.E2_CONNECTING_T));
 				}
@@ -236,7 +234,7 @@ public class FullDuplexMac {
 			int maxAttempts = config.getInteger("comm_change_lifetime", 0);
 			if (maxAttempts != 0 && currentCommChangeAttempt >= maxAttempts) {
 				currentCommChangeAttempt = 0;
-				callback.handle(config.createNotification("comm_change", false));
+				callback.handle(config.createNotification("comm_change", "retry failed"));
 			} else {
 				sendEvent(new Event(EventType.E14_COMM_CHANGE));
 			}
@@ -279,7 +277,7 @@ public class FullDuplexMac {
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
-				callback.handle(config.createNotification("comm_change", true));
+				callback.handle(config.createNotification("comm_change"));
 			}
 			if (state.getState().equals(MacState.S40_DATA_SERVICES)) {
 				if (SpduUtil.isCommChange(spdu)) {

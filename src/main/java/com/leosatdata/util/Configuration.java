@@ -165,13 +165,19 @@ public class Configuration {
 		return true;
 	}
 
-	public ControllerEvent createNotification(String prefix, boolean success) {
+	public ControllerEvent createNotification(String prefix, String failureMessage) {
 		PersistentActivity activity = new PersistentActivity();
-		activity.setSuccess(success);
 		activity.setLifetime(getInteger(prefix + "_lifetime", 0));
 		activity.setWaitingPeriod(getInteger(prefix + "_wait_duration", 0));
 		activity.setNotification(PersistentActivityType.valueOf(getProperty(prefix + "_notification")));
 		activity.setResponse(getInteger(prefix + "_response", 0));
-		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
+		if (failureMessage == null) {
+			return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity);
+		}
+		return new ControllerEvent(ControllerEventType.PERSISTENT_ACTIVITY, activity, 1, failureMessage);
+	}
+
+	public ControllerEvent createNotification(String prefix) {
+		return createNotification(prefix, null);
 	}
 }

@@ -118,14 +118,14 @@ public class Node implements Runnable, TransceiverCallback {
 			break;
 		case TIME_DISTRIBUTION:
 			if (!isDataServices()) {
-				// TODO notify controller about error
+				callback.handle(new ControllerEvent(ControllerEventType.TIME_DISTRIBUTION, 1, "not in data services state"));
 				return;
 			}
 			state.getMacQueue().add((Spdu) e.getArg());
 			break;
 		case TIME_TAGGING:
 			if (!isDataServices() || isTimeTaggingActive()) {
-				// TODO notify controller about error
+				callback.handle(new ControllerEvent(ControllerEventType.TIMING_SERVICES_INSTANCE, 1, "not in data services state"));
 				return;
 			}
 			int numberOfFramesToTag = (int) e.getArg();
@@ -134,7 +134,7 @@ public class Node implements Runnable, TransceiverCallback {
 			break;
 		case TIME_DELAY_CALCULATION:
 			if (!isDataServices() || isTimeTaggingActive()) {
-				// TODO notify controller about error
+				callback.handle(new ControllerEvent(ControllerEventType.TIME_DELAY_CALCULATION, 1, "not in data services state"));
 				return;
 			}
 			timeDelayCalculation = new TimeDelayCalculationResult();

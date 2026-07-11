@@ -299,7 +299,7 @@ class FrameSublayer {
 						if (synchTimerTask != null) {
 							synchTimerTask.cancel();
 						}
-						callback.handle(config.createNotification("resync", true));
+						callback.handle(config.createNotification("resync"));
 					}
 				} else {
 					Object seqMesage = null;
@@ -355,7 +355,7 @@ class FrameSublayer {
 			int maxAttempts = config.getInteger("resync_lifetime", 0);
 			if (maxAttempts != 0 && currentResyncAttempt >= maxAttempts) {
 				currentResyncAttempt = 0;
-				callback.handle(config.createNotification("resync", false));
+				callback.handle(config.createNotification("resync", "retry failed"));
 			} else {
 				resynch();
 			}

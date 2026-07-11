@@ -6,7 +6,6 @@ public class PersistentActivity {
 	private int waitingPeriod;
 	private int lifetime;
 	private int response;
-	private boolean success;
 
 	public int getLifetime() {
 		return lifetime;
@@ -14,14 +13,6 @@ public class PersistentActivity {
 
 	public void setLifetime(int lifetime) {
 		this.lifetime = lifetime;
-	}
-
-	public boolean isSuccess() {
-		return success;
-	}
-
-	public void setSuccess(boolean success) {
-		this.success = success;
 	}
 
 	public PersistentActivityType getNotification() {
@@ -50,7 +41,7 @@ public class PersistentActivity {
 
 	@Override
 	public String toString() {
-		return "PersistentActivity [notification=" + notification + ", waitingPeriod=" + waitingPeriod + ", lifetime=" + lifetime + ", response=" + response + ", success=" + success + "]";
+		return "PersistentActivity [notification=" + notification + ", waitingPeriod=" + waitingPeriod + ", lifetime=" + lifetime + ", response=" + response + "]";
 	}
 
 }

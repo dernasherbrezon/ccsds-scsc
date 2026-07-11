@@ -42,7 +42,6 @@ import com.leosatdata.model.Frequency;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PersistentActivityType;
 import com.leosatdata.model.PlExtensions;
 import com.leosatdata.model.Plcw;
@@ -1017,8 +1016,11 @@ public class NodeTest {
 	private static void assertEvent(ControllerEvent hail, boolean expectedStatus) {
 		assertNotNull(hail);
 		if (hail.getType().equals(ControllerEventType.PERSISTENT_ACTIVITY)) {
-			PersistentActivity event = (PersistentActivity) hail.getObj();
-			assertEquals(expectedStatus, event.isSuccess());
+			if (expectedStatus) {
+				assertEquals(0, hail.getStatusCode());
+			} else {
+				assertTrue(hail.getStatusCode() > 0);
+			}
 		}
 	}
 

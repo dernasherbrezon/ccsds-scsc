@@ -179,13 +179,11 @@ public class HalfDuplexMac {
 			break;
 		case E31_CONNECTING_T:
 			if (state.getCommParameters() == null) {
-				LOG.error("comm parameters not configured");
-				callback.handle(config.createNotification("hail", false));
+				callback.handle(config.createNotification("hail", "comm parameters not configured"));
 				return;
 			}
 			if (!SpduUtil.isCommDirective(spduVersion, state.getCommParameters())) {
-				LOG.error("mismatch between provided comm parameters and spdu version: {}", spduVersion);
-				callback.handle(config.createNotification("hail", false));
+				callback.handle(config.createNotification("hail", "mismatch between provided comm parameters and spdu version"));
 				return;
 			}
 			LOG.info("attempting hail: {} of {}", (currentHailAttempt + 1), config.getInteger("hail_lifetime", 0));
@@ -234,7 +232,7 @@ public class HalfDuplexMac {
 			int maxAttempts = config.getInteger("hail_lifetime", 0);
 			if (maxAttempts != 0 && currentHailAttempt >= maxAttempts) {
 				currentHailAttempt = 0;
-				callback.handle(config.createNotification("hail", false));
+				callback.handle(config.createNotification("hail", "retry failed"));
 			} else {
 				sendEvent(new Event(EventType.E31_CONNECTING_T));
 			}
@@ -244,7 +242,7 @@ public class HalfDuplexMac {
 			// check several states because responder can send response faster than extra
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S36_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S14_SEND_HAIL_TAIL)) {
-				callback.handle(config.createNotification("hail", true));
+				callback.handle(config.createNotification("hail"));
 				currentHailAttempt = 0;
 
 				// switch over to the agreed link
@@ -262,7 +260,7 @@ public class HalfDuplexMac {
 				if (!SpduUtil.isCommDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
 					break;
 				}
-				callback.handle(config.createNotification("hail", true));
+				callback.handle(config.createNotification("hail"));
 
 				state.setCommParameters(spdu);
 
@@ -437,7 +435,7 @@ public class HalfDuplexMac {
 				transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
 				currentCommChangeAttempt = 0;
-				callback.handle(config.createNotification("comm_change", true));
+				callback.handle(config.createNotification("comm_change"));
 				state.setPersistence(false);
 			}
 			if (SpduUtil.isCommChange(spdu) && (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME))) {
@@ -447,7 +445,7 @@ public class HalfDuplexMac {
 				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
 				currentCommChangeAttempt = 0;
-				callback.handle(config.createNotification("comm_change", true));
+				callback.handle(config.createNotification("comm_change"));
 				state.setNeedPlcw(true);
 				switchToTx();
 			}
@@ -526,7 +524,7 @@ public class HalfDuplexMac {
 		int maxAttempts = config.getInteger("comm_change_lifetime", 0);
 		if (maxAttempts != 0 && currentCommChangeAttempt >= maxAttempts) {
 			currentCommChangeAttempt = 0;
-			callback.handle(config.createNotification("comm_change", false));
+			callback.handle(config.createNotification("comm_change", "retry failed"));
 			// ignore further comm change attempts
 			state.setY(0);
 			return;
