@@ -60,7 +60,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void send(byte[] data) {
+	public int send(byte[] data) {
 		assert (txSymbolRate != 0);
 		long txMillisToWait;
 		if (txDelay == null) {
@@ -75,23 +75,25 @@ public class NullTransceiver implements Transceiver {
 			executor.schedule(new DelayedTxTask(this), txMillisToWait, TimeUnit.MILLISECONDS);
 		}
 		if (txFrameFilter != null && !txFrameFilter.accept(this, otherSide, data)) {
-			return;
+			return 0;
 		}
 		otherSide.executor.schedule(new DelayedRxTask(otherSide, data, otherSide.rxFrameFilter), channelDelay + txMillisToWait, TimeUnit.MILLISECONDS);
+		return 0;
 	}
 
 	@Override
-	public void setRxSymbolRate(float baud) {
+	public int setRxSymbolRate(float baud) {
 		this.rxSymbolRate = baud;
+		return 0;
 	}
 
 	@Override
-	public void setRxLineCoding(LineCoding dataModulation) {
-		// do nothing
+	public int setRxLineCoding(LineCoding dataModulation) {
+		return 0;
 	}
 
 	@Override
-	public void setRxFrequency(float frequency) {
+	public int setRxFrequency(float frequency) {
 		// assume change frequency when symbol lock/unlock is required
 		boolean notifyChange = this.rxFrequency != frequency;
 		boolean mismatchFrequencies = otherSide.txFrequency != frequency;
@@ -113,6 +115,7 @@ public class NullTransceiver implements Transceiver {
 				callback.onSymbolLock();
 			}
 		}
+		return 0;
 	}
 
 	public float getRxFrequency() {
@@ -120,32 +123,33 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxCoding(Coding dataEncoding) {
-		// do nothing
+	public int setRxCoding(Coding dataEncoding) {
+		return 0;
 	}
 
 	@Override
-	public void setRxPolarization(Polarization polarization) {
-		// do nothing
+	public int setRxPolarization(Polarization polarization) {
+		return 0;
 	}
 
 	@Override
-	public void setRxCoherency(Coherency modulation) {
-		// do nothing
+	public int setRxCoherency(Coherency modulation) {
+		return 0;
 	}
 
 	@Override
-	public void setTxSymbolRate(float baud) {
+	public int setTxSymbolRate(float baud) {
 		this.txSymbolRate = baud;
+		return 0;
 	}
 
 	@Override
-	public void setTxLineCoding(LineCoding modulation) {
-		// do nothing
+	public int setTxLineCoding(LineCoding modulation) {
+		return 0;
 	}
 
 	@Override
-	public void setTxFrequency(float frequency) {
+	public int setTxFrequency(float frequency) {
 		// assume change frequency when symbol lock/unlock is required
 		boolean notifyChange = this.txFrequency != frequency;
 		boolean mismatchFrequencies = otherSide.rxFrequency != frequency;
@@ -169,6 +173,7 @@ public class NullTransceiver implements Transceiver {
 				otherSide.callback.onSymbolLock();
 			}
 		}
+		return 0;
 	}
 
 	public float getTxFrequency() {
@@ -184,18 +189,18 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxCoding(Coding encoding) {
-		// do nothing
+	public int setTxCoding(Coding encoding) {
+		return 0;
 	}
 
 	@Override
-	public void setTxPolarization(Polarization polarization) {
-		// do nothing
+	public int setTxPolarization(Polarization polarization) {
+		return 0;
 	}
 
 	@Override
-	public void setTxCoherency(Coherency modulation) {
-		// do nothing
+	public int setTxCoherency(Coherency modulation) {
+		return 0;
 	}
 
 	public void setTxFrameFilter(FrameFilter frameFilter) {
@@ -213,7 +218,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxState(TransceiverTxState state) {
+	public int setTxState(TransceiverTxState state) {
 		if (this.txState != null && !skipCallbacks) {
 			if (this.txState.equals(TransceiverTxState.MODULATION)) {
 				if (state.equals(TransceiverTxState.CARRIER_ONLY) || state.equals(TransceiverTxState.OFF)) {
@@ -241,6 +246,7 @@ public class NullTransceiver implements Transceiver {
 			}
 		}
 		this.txState = state;
+		return 0;
 	}
 
 	@Override
@@ -249,7 +255,7 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxState(TransceiverRxState state) {
+	public int setRxState(TransceiverRxState state) {
 		if (this.rxState != null && !skipCallbacks && rxFrequency == otherSide.txFrequency) {
 			if (this.rxState.equals(TransceiverRxState.RECEIVING)) {
 				if (state.equals(TransceiverRxState.OFF)) {
@@ -269,6 +275,7 @@ public class NullTransceiver implements Transceiver {
 			}
 		}
 		this.rxState = state;
+		return 0;
 	}
 
 	@Override
@@ -293,53 +300,55 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxCarrierModulation(CarrierModulation carrierModulation) {
-		// do nothing
+	public int setRxCarrierModulation(CarrierModulation carrierModulation) {
+		return 0;
 	}
 
 	@Override
-	public void setTxCarrierModulation(CarrierModulation carrierModulation) {
-		// do nothing
+	public int setTxCarrierModulation(CarrierModulation carrierModulation) {
+		return 0;
 	}
 
 	@Override
-	public void setRxModulationIndex(ModulationIndex modulationIndex) {
-		// do nothing
+	public int setRxModulationIndex(ModulationIndex modulationIndex) {
+		return 0;
 	}
 
 	@Override
-	public void setTxModulationIndex(ModulationIndex modulationIndex) {
-		// do nothing
+	public int setTxModulationIndex(ModulationIndex modulationIndex) {
+		return 0;
 	}
 
 	@Override
-	public void setRxScrambler(ScramblerType scrambler) {
-		// do nothing
+	public int setRxScrambler(ScramblerType scrambler) {
+		return 0;
 	}
 
 	@Override
-	public void setTxScrambler(ScramblerType scrambler) {
-		// do nothing
+	public int setTxScrambler(ScramblerType scrambler) {
+		return 0;
 	}
 
 	@Override
-	public void setRxDifferentialEncoding(boolean differentialEncoding) {
-		// do nothing
+	public int setRxDifferentialEncoding(boolean differentialEncoding) {
+		return 0;
 	}
 
 	@Override
-	public void setTxDifferentialEncoding(boolean differentialEncoding) {
-		// do nothing
+	public int setTxDifferentialEncoding(boolean differentialEncoding) {
+		return 0;
 	}
 
 	@Override
-	public void enableAsmRxCallback(boolean enable) {
+	public int enableAsmRxCallback(boolean enable) {
 		this.asmRxCallback = enable;
+		return 0;
 	}
 
 	@Override
-	public void enableAsmTxCallback(boolean enable) {
+	public int enableAsmTxCallback(boolean enable) {
 		this.asmTxCallback = enable;
+		return 0;
 	}
 
 	public boolean isAsmRxCallback() {

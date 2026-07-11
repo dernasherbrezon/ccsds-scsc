@@ -64,10 +64,10 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void send(byte[] data) {
+	public int send(byte[] data) {
 		if (clientSocket == null) {
 			LOG.error("can't send data when client disconnected");
-			return;
+			return 0;
 		}
 		assert (txSymbolRate != 0);
 		long txMillisToWait;
@@ -82,36 +82,37 @@ public class TcpTransceiver implements Transceiver {
 		} else {
 			executor.schedule(new TcpDelayedTxTask(clientSocket, callback, data), txMillisToWait, TimeUnit.MILLISECONDS);
 		}
+		return 0;
 	}
 
 	@Override
-	public void setRxSymbolRate(float baud) {
-		// do nothing
+	public int setRxSymbolRate(float baud) {
+		return 0;
 	}
 
 	@Override
-	public void setRxLineCoding(LineCoding modulation) {
-		// do nothing
+	public int setRxLineCoding(LineCoding modulation) {
+		return 0;
 	}
 
 	@Override
-	public void setRxFrequency(float frequency) {
-		// do nothing
+	public int setRxFrequency(float frequency) {
+		return 0;
 	}
 
 	@Override
-	public void setRxCoding(Coding encoding) {
-		// do nothing
+	public int setRxCoding(Coding encoding) {
+		return 0;
 	}
 
 	@Override
-	public void setRxPolarization(Polarization polarization) {
-		// do nothing
+	public int setRxPolarization(Polarization polarization) {
+		return 0;
 	}
 
 	@Override
-	public void setRxCoherency(Coherency modulation) {
-		// do nothing
+	public int setRxCoherency(Coherency modulation) {
+		return 0;
 	}
 
 	@Override
@@ -125,37 +126,38 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxSymbolRate(float baud) {
+	public int setTxSymbolRate(float baud) {
 		this.txSymbolRate = baud;
+		return 0;
 	}
 
 	@Override
-	public void setTxLineCoding(LineCoding modulation) {
-		// do nothing
+	public int setTxLineCoding(LineCoding modulation) {
+		return 0;
 	}
 
 	@Override
-	public void setTxFrequency(float frequency) {
-		// do nothing
+	public int setTxFrequency(float frequency) {
+		return 0;
 	}
 
 	@Override
-	public void setTxCoding(Coding encoding) {
-		// do nothing
+	public int setTxCoding(Coding encoding) {
+		return 0;
 	}
 
 	@Override
-	public void setTxPolarization(Polarization polarization) {
-		// do nothing
+	public int setTxPolarization(Polarization polarization) {
+		return 0;
 	}
 
 	@Override
-	public void setTxCoherency(Coherency modulation) {
-		// do nothing
+	public int setTxCoherency(Coherency modulation) {
+		return 0;
 	}
 
 	@Override
-	public void setTxState(TransceiverTxState state) {
+	public int setTxState(TransceiverTxState state) {
 		if (state.equals(TransceiverTxState.OFF) && clientSocket != null) {
 			closeQuietly(clientSocket);
 			clientSocket = null;
@@ -170,6 +172,7 @@ public class TcpTransceiver implements Transceiver {
 			}
 		}
 		this.txState = state;
+		return 0;
 	}
 
 	@Override
@@ -178,10 +181,10 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxState(TransceiverRxState state) {
+	public int setRxState(TransceiverRxState state) {
 		if (state.equals(TransceiverRxState.OFF) && server != null) {
 			rxFuture.cancel(true);
-			return;
+			return 0;
 		}
 		if (state.equals(TransceiverRxState.RECEIVING) && server == null) {
 			int port = config.getInteger("tcp.transceiver.port", 8081);
@@ -221,8 +224,10 @@ public class TcpTransceiver implements Transceiver {
 				});
 			} catch (IOException e) {
 				LOG.error("unable to start rx", e);
+				return 1;
 			}
 		}
+		return 0;
 	}
 
 	private void read(InputStream is) {
@@ -280,52 +285,52 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxCarrierModulation(CarrierModulation carrierModulation) {
-		// do nothing
+	public int setRxCarrierModulation(CarrierModulation carrierModulation) {
+		return 0;
 	}
 
 	@Override
-	public void setTxCarrierModulation(CarrierModulation carrierModulation) {
-		// do nothing
+	public int setTxCarrierModulation(CarrierModulation carrierModulation) {
+		return 0;
 	}
 
 	@Override
-	public void setRxModulationIndex(ModulationIndex modulationIndex) {
-		// do nothing
+	public int setRxModulationIndex(ModulationIndex modulationIndex) {
+		return 0;
 	}
 
 	@Override
-	public void setTxModulationIndex(ModulationIndex modulationIndex) {
-		// do nothing
+	public int setTxModulationIndex(ModulationIndex modulationIndex) {
+		return 0;
 	}
 
 	@Override
-	public void setRxScrambler(ScramblerType scrambler) {
-		// do nothing
+	public int setRxScrambler(ScramblerType scrambler) {
+		return 0;
 	}
 
 	@Override
-	public void setTxScrambler(ScramblerType scrambler) {
-		// do nothing
+	public int setTxScrambler(ScramblerType scrambler) {
+		return 0;
 	}
 
 	@Override
-	public void setRxDifferentialEncoding(boolean differentialEncoding) {
-		// do nothing
+	public int setRxDifferentialEncoding(boolean differentialEncoding) {
+		return 0;
 	}
 
 	@Override
-	public void setTxDifferentialEncoding(boolean differentialEncoding) {
-		// do nothing
+	public int setTxDifferentialEncoding(boolean differentialEncoding) {
+		return 0;
 	}
 
 	@Override
-	public void enableAsmRxCallback(boolean enable) {
-		// not supported
+	public int enableAsmRxCallback(boolean enable) {
+		return 0;
 	}
 
 	@Override
-	public void enableAsmTxCallback(boolean enable) {
-		// not supported
+	public int enableAsmTxCallback(boolean enable) {
+		return 0;
 	}
 }

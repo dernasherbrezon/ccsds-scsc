@@ -76,7 +76,7 @@ public class Sx127xTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void send(byte[] data) {
+	public int send(byte[] data) {
 		executor.execute(new Runnable() {
 
 			@Override
@@ -86,134 +86,131 @@ public class Sx127xTransceiver implements Transceiver {
 				callback.onTx();
 			}
 		});
+		return 0;
 	}
 
 	@Override
-	public void setRxSymbolRate(float baud) {
-		impl.sx127x_fsk_ook_set_bitrate(baud);
+	public int setRxSymbolRate(float baud) {
+		return impl.sx127x_fsk_ook_set_bitrate(baud);
 	}
 
 	@Override
-	public void setRxLineCoding(LineCoding modulation) {
+	public int setRxLineCoding(LineCoding modulation) {
 		if (modulation.equals(LineCoding.NRZ_L)) {
-			impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
+			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
 		} else if (modulation.equals(LineCoding.MANCHESTER)) {
-			impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_MANCHESTER);
+			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_MANCHESTER);
 		} else {
-			impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_SCRAMBLED);
+			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_SCRAMBLED);
 		}
 	}
 
 	@Override
-	public void setRxFrequency(float frequency) {
-		impl.sx127x_set_frequency((long) frequency);
+	public int setRxFrequency(float frequency) {
+		return impl.sx127x_set_frequency((long) frequency);
 	}
 
 	@Override
-	public void setRxCoding(Coding encoding) {
+	public int setRxCoding(Coding encoding) {
 		if (encoding.equals(Coding.UNCODED)) {
-			return;
+			return 0;
 		}
-		throw new IllegalArgumentException("unsupported encoding: " + encoding);
+		return 1;
 	}
 
 	@Override
-	public void setRxPolarization(Polarization polarization) {
-		// ignore. either is not supported
+	public int setRxPolarization(Polarization polarization) {
+		return 0;
 	}
 
 	@Override
-	public void setRxCoherency(Coherency modulation) {
-		// ignore. either is not supported
+	public int setRxCoherency(Coherency modulation) {
+		return 0;
 	}
 
 	@Override
-	public void setRxCarrierModulation(CarrierModulation carrierModulation) {
+	public int setRxCarrierModulation(CarrierModulation carrierModulation) {
 		if (carrierModulation.equals(CarrierModulation.FSK)) {
-			return;
+			return 0;
 		}
-		throw new IllegalArgumentException("unsupported carrier modulation " + carrierModulation);
+		return 1;
 	}
 
 	@Override
-	public void setRxModulationIndex(ModulationIndex modulationIndex) {
-		// ignore. either is not supported
+	public int setRxModulationIndex(ModulationIndex modulationIndex) {
+		return 0;
 	}
 
 	@Override
-	public void setRxScrambler(ScramblerType scrambler) {
-		// ignore. either is not supported
+	public int setRxScrambler(ScramblerType scrambler) {
+		return 0;
 	}
 
 	@Override
-	public void setRxDifferentialEncoding(boolean differentialEncoding) {
-		if (differentialEncoding) {
-			throw new IllegalArgumentException("differential encoding is not supported");
-		}
+	public int setRxDifferentialEncoding(boolean differentialEncoding) {
+		return differentialEncoding ? 1 : 0;
 	}
 
 	@Override
-	public void setTxSymbolRate(float baud) {
-		impl.sx127x_fsk_ook_set_bitrate(baud);
+	public int setTxSymbolRate(float baud) {
+		return impl.sx127x_fsk_ook_set_bitrate(baud);
 	}
 
 	@Override
-	public void setTxLineCoding(LineCoding modulation) {
+	public int setTxLineCoding(LineCoding modulation) {
 		if (modulation.equals(LineCoding.NRZ_L)) {
-			impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
+			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
 		} else if (modulation.equals(LineCoding.MANCHESTER)) {
-			impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_MANCHESTER);
+			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_MANCHESTER);
 		} else {
-			impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_SCRAMBLED);
+			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_SCRAMBLED);
 		}
 	}
 
 	@Override
-	public void setTxFrequency(float frequency) {
-		impl.sx127x_set_frequency((long) frequency);
+	public int setTxFrequency(float frequency) {
+		return impl.sx127x_set_frequency((long) frequency);
 	}
 
 	@Override
-	public void setTxCoding(Coding encoding) {
+	public int setTxCoding(Coding encoding) {
 		if (encoding.equals(Coding.UNCODED)) {
-			return;
+			return 0;
 		}
-		throw new IllegalArgumentException("unsupported encoding: " + encoding);
+		return 1;
 	}
 
 	@Override
-	public void setTxPolarization(Polarization polarization) {
-		// ignore. either is not supported
+	public int setTxPolarization(Polarization polarization) {
+		return 0;
 	}
 
 	@Override
-	public void setTxCoherency(Coherency modulation) {
-		// ignore. either is not supported
+	public int setTxCoherency(Coherency modulation) {
+		return 0;
 	}
 
 	@Override
-	public void setTxCarrierModulation(CarrierModulation carrierModulation) {
+	public int setTxCarrierModulation(CarrierModulation carrierModulation) {
 		if (carrierModulation.equals(CarrierModulation.FSK)) {
-			return;
+			return 0;
 		}
-		throw new IllegalArgumentException("unsupported carrier modulation " + carrierModulation);
+		return 1;
 	}
 
 	@Override
-	public void setTxModulationIndex(ModulationIndex modulationIndex) {
-		// ignore. either is not supported
+	public int setTxModulationIndex(ModulationIndex modulationIndex) {
+		return 0;
 	}
 
 	@Override
-	public void setTxScrambler(ScramblerType scrambler) {
-		// ignore. either is not supported
+	public int setTxScrambler(ScramblerType scrambler) {
+		return 0;
 	}
 
 	@Override
-	public void setTxDifferentialEncoding(boolean differentialEncoding) {
-		if (differentialEncoding) {
-			throw new IllegalArgumentException("differential encoding is not supported");
-		}
+	public int setTxDifferentialEncoding(boolean differentialEncoding) {
+		return differentialEncoding ? 1 : 0;
 	}
 
 	@Override
@@ -227,19 +224,21 @@ public class Sx127xTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setTxState(TransceiverTxState state) {
+	public int setTxState(TransceiverTxState state) {
+		int result = 0;
 		if (state.equals(TransceiverTxState.OFF)) {
 			if (rx.equals(TransceiverRxState.OFF)) {
-				impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_STANDBY, sx127x_modulation_t.SX127X_MODULATION_FSK));
+				result = impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_STANDBY, sx127x_modulation_t.SX127X_MODULATION_FSK));
 			}
 		} else if (state.equals(TransceiverTxState.CARRIER_ONLY)) {
 			stopRx();
-			impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_FSTX, sx127x_modulation_t.SX127X_MODULATION_FSK));
+			result = impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_FSTX, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		} else if (state.equals(TransceiverTxState.MODULATION)) {
 			stopRx();
 			// there is no outgoing random signal here
 		}
 		this.tx = state;
+		return result;
 	}
 
 	@Override
@@ -248,14 +247,16 @@ public class Sx127xTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void setRxState(TransceiverRxState state) {
+	public int setRxState(TransceiverRxState state) {
+		int result = 0;
 		if (state.equals(TransceiverRxState.OFF)) {
 			stopRx();
 		} else {
 			startRx();
-			impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_RX_CONT, sx127x_modulation_t.SX127X_MODULATION_FSK));
+			result = impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_RX_CONT, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		}
 		this.rx = state;
+		return result;
 	}
 
 	private void startRx() {
@@ -294,13 +295,13 @@ public class Sx127xTransceiver implements Transceiver {
 	}
 
 	@Override
-	public void enableAsmRxCallback(boolean enable) {
-		// not supported
+	public int enableAsmRxCallback(boolean enable) {
+		return 0;
 	}
 
 	@Override
-	public void enableAsmTxCallback(boolean enable) {
-		// not supported
+	public int enableAsmTxCallback(boolean enable) {
+		return 0;
 	}
 
 }

@@ -10,20 +10,20 @@ public class HalfDuplexTransceiver extends NullTransceiver {
 
 	// ensure tx and rx properly switched in tests
 	@Override
-	public void setTxState(TransceiverTxState state) {
+	public int setTxState(TransceiverTxState state) {
 		// switch off receiver first
 		if (!state.equals(TransceiverTxState.OFF)) {
 			super.setRxState(TransceiverRxState.OFF);
 		}
-		super.setTxState(state);
+		return super.setTxState(state);
 	}
 
 	@Override
-	public void setRxState(TransceiverRxState state) {
+	public int setRxState(TransceiverRxState state) {
 		// switch off transmitter first
 		if (!state.equals(TransceiverRxState.OFF)) {
 			super.setTxState(TransceiverTxState.OFF);
 		}
-		super.setRxState(state);
+		return super.setRxState(state);
 	}
 }

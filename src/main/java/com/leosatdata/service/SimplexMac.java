@@ -3,6 +3,8 @@ package com.leosatdata.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.leosatdata.model.ControllerEvent;
+import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.MacState;
 import com.leosatdata.model.Spdu;
@@ -18,13 +20,15 @@ public class SimplexMac {
 
 	private final TimerService timer;
 	private final Transceiver transceiver;
+	private final NodeCallback callback;
 	private final TransceiverUtil transceiverUtil;
 	private final State state;
 	private final int spduVersion;
 
-	public SimplexMac(State state, Configuration config, Transceiver transceiver, TimerService timer) {
+	public SimplexMac(State state, Configuration config, Transceiver transceiver, NodeCallback callback, TimerService timer) {
 		this.state = state;
 		this.transceiver = transceiver;
+		this.callback = callback;
 		this.timer = timer;
 		this.transceiverUtil = new TransceiverUtil(config, transceiver);
 		this.spduVersion = config.getInteger("spdu_version", 1);
@@ -50,7 +54,10 @@ public class SimplexMac {
 				return;
 			}
 			state.setTransceiverMode(TransceiverOperationMode.CALLER);
-			transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			int code = transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			if (code != 0) {
+				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to switch to the agreed link"));
+			}
 			// explicit rx off
 			transceiver.setRxState(TransceiverRxState.OFF);
 			transceiver.setTxState(TransceiverTxState.MODULATION);
@@ -66,7 +73,10 @@ public class SimplexMac {
 				return;
 			}
 			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
-			transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			code = transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			if (code != 0) {
+				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to switch to the agreed link"));
+			}			
 			transceiver.setTxState(TransceiverTxState.OFF);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			state.setState(MacState.S72_SIMPLEX_RECEIVE);

@@ -15,6 +15,7 @@ public enum ControllerEventType {
 	INVALID_FRAME_SOURCE,
 	
 	// custom
+	TRANSCEIVER_ERROR,		// notification sent when transceiver command returns error
 	TIME_DISTRIBUTION,		// TimeDistribution directive received from remote side. The result is com.leosatdata.model.TimeDistribution
 	TIME_DELAY_CALCULATION	// results of tx/rx delays calculation. The result is com.leosatdata.model.TimeDelayCalculationResult
 	// @formatter:on

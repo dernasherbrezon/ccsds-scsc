@@ -57,7 +57,10 @@ public class FullDuplexMac {
 			state.setTransceiverMode(TransceiverOperationMode.RESPONDER);
 			Spdu hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
-			transceiverUtil.applyRxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			int code = transceiverUtil.applyRxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			if (code != 0) {
+				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply hail parameters"));
+			}
 			transceiver.setTxState(TransceiverTxState.OFF);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			break;
@@ -74,9 +77,15 @@ public class FullDuplexMac {
 			state.setTransceiverMode(TransceiverOperationMode.CALLER);
 			hailCommParameters = transceiverUtil.createHailTxRx();
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
-			transceiverUtil.applyTxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			code = transceiverUtil.applyTxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			if (code != 0) {
+				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply hail tx"));
+			}
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-			transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			code = transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			if (code != 0) {
+				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply comm rx"));
+			}
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
 			state.setPersistence(true);
 			state.setState(MacState.S31_START_HAIL_ACTION);
@@ -117,7 +126,10 @@ public class FullDuplexMac {
 				callback.handle(config.createNotification("hail"));
 				currentHailAttempt = 0;
 				// switch over to the agreed link
-				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				code = transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				if (code != 0) {
+					callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to switch to the agreed link"));
+				}
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 				timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
@@ -130,7 +142,10 @@ public class FullDuplexMac {
 				state.setCommParameters(spdu);
 				// switch over to the agreed link once plcw sent
 				// assume
-				transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				code = transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				if (code != 0) {
+					callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to switch to the agreed link"));
+				}
 				state.setState(MacState.S41_RADIATE_CARRIER);
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 				callback.handle(config.createNotification("hail"));
@@ -244,7 +259,11 @@ public class FullDuplexMac {
 			state.setState(MacState.S41_RADIATE_CARRIER);
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 			timer.scheduleWait(EventType.E10_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
-			transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			int code = transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			if (code != 0) {
+				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply comm change"));
+				// transition state machine further as if no transceiver error returned. this guarantees state is not in the conflict
+			}
 			state.setNeedPlcw(true);
 			LOG.info("rx/tx comm parameters changed: {}", state.getCommParameters());
 			break;
@@ -252,7 +271,10 @@ public class FullDuplexMac {
 			// comm change routine
 			if (state.getState().equals(MacState.S48_2_SEND_COMM_CHANGE) || state.getState().equals(MacState.S48_3_COMM_CHANGE_WAIT)) {
 				LOG.info("rx comm parameters changed: {}", state.getCommParameters());
-				transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				code = transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				if (code != 0) {
+					callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to switch rx comm parameters"));
+				}
 				state.setState(MacState.S48__1_RX_COMM_CHANGE);
 			}
 			break;
@@ -271,7 +293,10 @@ public class FullDuplexMac {
 			if (state.getState().equals(MacState.S48__1_RX_COMM_CHANGE)) {
 				timer.cancelWait();
 				state.setPersistence(false);
-				transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				code = transceiverUtil.applyTxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				if (code != 0) {
+					callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply comm tx"));
+				}
 				currentCommChangeAttempt = 0;
 				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
 				state.setState(MacState.S41_RADIATE_CARRIER);

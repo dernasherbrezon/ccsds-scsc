@@ -72,7 +72,7 @@ public class Node implements Runnable, TransceiverCallback {
 		this.timer = new TimerService(state, config);
 		this.fullDuplexMac = new FullDuplexMac(state, config, transceiver, callback, timer);
 		this.halfDuplexMac = new HalfDuplexMac(state, config, transceiver, callback, timer);
-		this.simplexMac = new SimplexMac(state, config, transceiver, timer);
+		this.simplexMac = new SimplexMac(state, config, transceiver, callback, timer);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
 		t = new Thread(this, "node-" + localScid);
 		t.setDaemon(true);
