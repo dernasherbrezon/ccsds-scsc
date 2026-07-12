@@ -382,7 +382,7 @@ A basic correlation can be performed by matching local TX tags with correspondin
 
 #### Time delay calculation 
 
-Transfer frames may experience variable queuing delays, making them unsuitable for precise internal delay measurement. This implementation uses a PLCW (Protocol Command Word) to measure internal transmit-side delay, ensuring the measurement follows the same code path as the Time Distribution directive.
+Transfer frames may experience variable queuing delays, making them unsuitable for precise internal delay measurement. This implementation uses a `Time Distribution` directive with type `NULL` to measure internal transmit-side delay, ensuring the measurement follows the same code path as the real `Time Distribution` directive with type `TIME_TRANSFER`.
 
 It is recommended to repeat the measurement several times for better statistical accuracy.
 

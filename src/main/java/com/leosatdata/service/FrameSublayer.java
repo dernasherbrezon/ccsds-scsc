@@ -452,7 +452,11 @@ class FrameSublayer {
 	}
 
 	private byte[] createSerializedPlcw() {
-		Plcw plcw = createPlcw();
+		Plcw plcw = new Plcw();
+		plcw.setReportValue(state.getVr());
+		plcw.setExpeditedFrameCounter(state.getExpeditedFrameCounter());
+		plcw.setPcid(localPcid);
+		plcw.setRetransmit(state.isRs());
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (BitOutputStream bos = new BitOutputStream(baos)) {
 			spduParser.encode(plcw, bos);
@@ -461,15 +465,6 @@ class FrameSublayer {
 			return null;
 		}
 		return baos.toByteArray();
-	}
-
-	Plcw createPlcw() {
-		Plcw plcw = new Plcw();
-		plcw.setReportValue(state.getVr());
-		plcw.setExpeditedFrameCounter(state.getExpeditedFrameCounter());
-		plcw.setPcid(localPcid);
-		plcw.setRetransmit(state.isRs());
-		return plcw;
 	}
 
 	private Spdu createVr() {

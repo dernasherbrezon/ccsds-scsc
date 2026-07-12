@@ -168,8 +168,12 @@ public class TimeDistributionTest {
 		ControllerEvent event = satelliteCallback.waitForEvent(ControllerEventType.TIME_DISTRIBUTION);
 		long current = System.currentTimeMillis();
 		TimeDistribution expected = (TimeDistribution) event.getObj();
+		// 16 bytes for TimeDistribution directive
+		// 4 bytes fo CRC32
+		// asm is not included since it is included into internal delay measurement
+		long timeToSendPDU = (long) (((16 + 4) * 8 * 1000) / groundTransceiver.getTxSymbolRate());
 		// assume rx latency is the same between ground and satellite nodes
-		long expectedTime = expected.getTransceiverClock() + expected.getOneWayLightTime() + expected.getSendSideDelay() + totalRxDelay / internalDelayTotal;
+		long expectedTime = expected.getTransceiverClock() + expected.getOneWayLightTime() + expected.getSendSideDelay() + totalRxDelay / internalDelayTotal + timeToSendPDU;
 		System.out.println("time difference: " + (current - expectedTime) + " ms");
 
 		satellite.stop();

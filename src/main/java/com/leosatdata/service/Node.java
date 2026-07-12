@@ -143,14 +143,17 @@ public class Node implements Runnable, TransceiverCallback {
 
 			transceiver.enableAsmRxCallback(true);
 			transceiver.enableAsmTxCallback(true);
-			// this will take priority over any other frame types
-			// extra out-of-order plcw won't cause any harm
-			state.getMacQueue().add(frameSublayer.createPlcw());
+			TimeDistribution sample = new TimeDistribution();
+			sample.setType(TimeDistributionType.NULL);
+			state.getMacQueue().add(sample);
 			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
 			if (spdu instanceof TimeDistribution) {
-				callback.handle(new ControllerEvent(ControllerEventType.TIME_DISTRIBUTION, spdu));
+				TimeDistribution directive = (TimeDistribution) spdu;
+				if (directive.getType().equals(TimeDistributionType.TIME_TRANSFER)) {
+					callback.handle(new ControllerEvent(ControllerEventType.TIME_DISTRIBUTION, spdu));
+				}
 				return;
 			}
 			numberOfFramesToTag = SpduUtil.getTimeSample(spdu);
@@ -337,7 +340,8 @@ public class Node implements Runnable, TransceiverCallback {
 	public int startTimeTagging(int numberOfSamples) {
 		// both type1 and type4/5 have the same length for time sample field
 		int code = Util.validateInt(6, "time_sample", numberOfSamples);
-		if (code != 0) return code;
+		if (code != 0)
+			return code;
 		sendEvent(new Event(EventType.TIME_TAGGING, numberOfSamples));
 		return ErrorCode.SUCCESS.ordinal();
 	}
@@ -345,9 +349,11 @@ public class Node implements Runnable, TransceiverCallback {
 	public int distributeTime(TimeDistribution directive) {
 		// transceiverClock is the full 8byte long
 		int code = Util.validateInt(3 * 8, "sendSideDelay", directive.getSendSideDelay());
-		if (code != 0) return code;
+		if (code != 0)
+			return code;
 		code = Util.validateInt(3 * 8, "oneWayLightTime", directive.getOneWayLightTime());
-		if (code != 0) return code;
+		if (code != 0)
+			return code;
 		directive.setType(TimeDistributionType.TIME_TRANSFER);
 		sendEvent(new Event(EventType.TIME_DISTRIBUTION, directive));
 		return ErrorCode.SUCCESS.ordinal();
