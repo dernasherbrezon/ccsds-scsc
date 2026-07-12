@@ -531,7 +531,7 @@ public class Node implements Runnable, TransceiverCallback {
 	}
 
 	private boolean isTimeTaggingActive() {
-		return state.getRxFramesToTimeTag() != 0 || state.getTxFramesToTimeTag() != 0;
+		return state.getRxFramesToTimeTag() >= 0 || state.getTxFramesToTimeTag() >= 0;
 	}
 
 	// used on tests only

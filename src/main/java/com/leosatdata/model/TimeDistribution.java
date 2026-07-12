@@ -52,4 +52,9 @@ public class TimeDistribution implements Spdu {
 		this.oneWayLightTime = oneWayLightTime;
 	}
 
+	@Override
+	public String toString() {
+		return "TimeDistribution [transceiverClock=" + transceiverClock + ", sendSideDelay=" + sendSideDelay + ", oneWayLightTime=" + oneWayLightTime + "]";
+	}
+
 }

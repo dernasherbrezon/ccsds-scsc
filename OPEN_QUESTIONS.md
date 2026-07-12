@@ -34,7 +34,7 @@ Here is the list of questions and suggestions to the specification with no parti
   * All comm directives (Type1, Type4 and Type5) support time tagging service, but it is not mentioned anywhere in the specification. At least a reference to proximity-1 is required
   * Not clear when and how to use "PN Ranging" directive. Why extra directive is needed? "The PN RANGING directive is the mechanism by which the PN ranging for a Proximity-1 node is initiated and configured". What is Proximity-1 node in this context? Is it possible to agree on the ranging parameters using Application layer? Should it be in a separate phase in the communication?
   * "TIME DISTRIBUTION" directive briefly mentioned under "E2.6 PN RANGING DIRECTIVE" section. Should it be described under own section?
-  * Unclear purpose of "NULL" value of TIME DISTRIBUTION Type. 
+  * Unclear purpose of "NULL" value of TIME DISTRIBUTION Type.
 
 ### MIB properties
 

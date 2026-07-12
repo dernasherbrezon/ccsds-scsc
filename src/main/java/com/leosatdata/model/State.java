@@ -89,8 +89,8 @@ public class State {
 		macQueue.clear();
 		sentQueue.clear();
 		queue.clear();
-		rxFramesToTimeTag = 0;
-		txFramesToTimeTag = 0;
+		rxFramesToTimeTag = -1;
+		txFramesToTimeTag = -1;
 		currentSequenceNumber = 0;
 		currentQos = null;
 		tags = null;
