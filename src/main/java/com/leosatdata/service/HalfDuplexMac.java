@@ -252,6 +252,9 @@ public class HalfDuplexMac {
 			// check several states because responder can send response faster than extra
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S36_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S14_SEND_HAIL_TAIL)) {
+				if (!SpduUtil.isCommDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
+					break;
+				}
 				callback.handle(config.createNotification("hail"));
 				currentHailAttempt = 0;
 
