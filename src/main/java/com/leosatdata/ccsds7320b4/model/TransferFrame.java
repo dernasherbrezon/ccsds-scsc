@@ -1,3 +1,7 @@
+/*
+ * Copyright 2026 Andrey Rodionov
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.leosatdata.ccsds7320b4.model;
 
 // AOS SPACE DATA LINK PROTOCOL CCSDS 732.0-B-4

@@ -1,3 +1,7 @@
+/*
+ * Copyright 2026 Andrey Rodionov
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.leosatdata.ccsds7321b3.model;
 
 // 4.1.4.2.2.2 Itemized Construction Rules

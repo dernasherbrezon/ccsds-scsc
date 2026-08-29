@@ -1,3 +1,7 @@
+/*
+ * Copyright 2026 Andrey Rodionov
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.leosatdata.ccsds2110b6.util;
 
 import static org.junit.Assert.assertArrayEquals;
