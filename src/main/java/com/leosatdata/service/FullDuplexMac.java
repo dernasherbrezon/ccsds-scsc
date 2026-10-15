@@ -127,10 +127,6 @@ public class FullDuplexMac {
 			// check several states because responder can send response faster than extra
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
-				// ignore stray SPDU
-				if (!SpduUtil.isCommDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
-					break;
-				}
 				timer.cancelWait();
 				callback.handle(config.createNotification("hail"));
 				currentHailAttempt = 0;

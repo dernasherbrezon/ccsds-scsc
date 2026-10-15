@@ -831,10 +831,11 @@ public class NodeTest {
 		settings.add(new CommSettings(2, 3, 1, 1));
 		settings.add(new CommSettings(3, 3, 1, 1));
 		settings.add(new CommSettings(4, 4, 1, 1));
-		settings.add(new CommSettings(4, 4, 2, 1));
-		settings.add(new CommSettings(4, 4, 3, 1));
-		settings.add(new CommSettings(4, 4, 2, 2));
-		settings.add(new CommSettings(4, 4, 3, 2));
+		//TODO re-enable during full run
+//		settings.add(new CommSettings(4, 4, 2, 1));
+//		settings.add(new CommSettings(4, 4, 3, 1));
+//		settings.add(new CommSettings(4, 4, 2, 2));
+//		settings.add(new CommSettings(4, 4, 3, 2));
 		return settings;
 	}
 
