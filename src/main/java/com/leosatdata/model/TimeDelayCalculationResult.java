@@ -38,4 +38,9 @@ public class TimeDelayCalculationResult {
 		return txAsmTimeMillis != 0 && rxAsmTimeMillis != 0;
 	}
 
+	@Override
+	public String toString() {
+		return "[initialTimeMillis=" + initialTimeMillis + ", txAsmTimeMillis=" + txAsmTimeMillis + ", rxAsmTimeMillis=" + rxAsmTimeMillis + "]";
+	}
+
 }

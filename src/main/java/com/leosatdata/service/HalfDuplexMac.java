@@ -223,7 +223,12 @@ public class HalfDuplexMac {
 			timer.scheduleWait(EventType.E33_ACQUISITION_IDLE_TIMEOUT, config.getDuration("acquisition_idle_duration"));
 			break;
 		case E33_ACQUISITION_IDLE_TIMEOUT:
-			state.getMacQueue().add(state.getCommParameters());
+			try {
+				state.getMacQueue().put(state.getCommParameters());
+			} catch (InterruptedException e1) {
+				Thread.currentThread().interrupt();
+				break;
+			}
 			state.setState(MacState.S13_SEND_HAIL_DIRECTIVES);
 			break;
 		case TX_COMPLETE:
@@ -426,7 +431,12 @@ public class HalfDuplexMac {
 			break;
 		case TX_COMPLETE:
 			if (state.getState().equals(MacState.S50_DATA_SERVICES_SEND) && state.getY() == 2 && state.noSpduPending()) {
-				state.getMacQueue().add(state.getCommParameters());
+				try {
+					state.getMacQueue().put(state.getCommParameters());
+				} catch (InterruptedException e1) {
+					Thread.currentThread().interrupt();
+					break;
+				}
 				state.setState(MacState.S56_COMM_CHANGE);
 			}
 			// comm change has been sent
@@ -500,12 +510,22 @@ public class HalfDuplexMac {
 		// this termination initiated locally
 		// - send directive to responder
 		if (state.getX() == 1) {
-			state.getMacQueue().add(rnmdDirective);
+			try {
+				state.getMacQueue().put(rnmdDirective);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
 			state.setX(2);
 		}
 		// this is reply to the remote termination
 		if (state.getX() == 4) {
-			state.getMacQueue().add(rnmdDirective);
+			try {
+				state.getMacQueue().put(rnmdDirective);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
 			state.setState(MacState.S54_TERMINATION_FROM_REMOTE);
 			state.setX(5);
 		}
@@ -528,7 +548,11 @@ public class HalfDuplexMac {
 	private void sendTransmitToken() {
 		currentTokenPassAttempt++;
 		state.setState(MacState.S56_TOKEN_PASS);
-		state.getMacQueue().add(SpduUtil.createTransmit(state.getCommParameters(), true));
+		try {
+			state.getMacQueue().put(SpduUtil.createTransmit(state.getCommParameters(), true));
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	private void switchToRx() {
@@ -563,7 +587,12 @@ public class HalfDuplexMac {
 		LOG.info("rx comm parameters changed: {}", state.getCommParameters());
 		// don't check need_plcw because persistence will never trigger plcw
 		if (state.getMacQueue().isEmpty() && state.isTxReady()) {
-			state.getMacQueue().add(state.getCommParameters());
+			try {
+				state.getMacQueue().put(state.getCommParameters());
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
 			state.setState(MacState.S56_COMM_CHANGE);
 		}
 	}

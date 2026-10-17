@@ -374,7 +374,12 @@ class FrameSublayer {
 		if (vr == null) {
 			return;
 		}
-		state.getMacQueue().add(vr);
+		try {
+			state.getMacQueue().put(vr);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return;
+		}
 		LOG.info("attempting resync: {} of {}", (currentResyncAttempt + 1), config.getInteger("resync_lifetime", 0));
 	}
 

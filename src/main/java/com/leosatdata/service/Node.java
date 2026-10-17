@@ -126,7 +126,11 @@ public class Node implements Runnable, TransceiverCallback {
 				callback.handle(new ControllerEvent(ControllerEventType.TIME_DISTRIBUTION, 1, "not in data services state"));
 				return;
 			}
-			state.getMacQueue().add((Spdu) e.getArg());
+			try {
+				state.getMacQueue().put((Spdu) e.getArg());
+			} catch (InterruptedException e1) {
+				Thread.currentThread().interrupt();
+			}
 			break;
 		case TIME_TAGGING:
 			if (!isDataServices() || isTimeTaggingActive()) {
@@ -135,7 +139,11 @@ public class Node implements Runnable, TransceiverCallback {
 			}
 			int numberOfFramesToTag = (int) e.getArg();
 			startTimeTaggingInternal(numberOfFramesToTag);
-			state.getMacQueue().add(frameSublayer.createTimeTagDirective(numberOfFramesToTag));
+			try {
+				state.getMacQueue().put(frameSublayer.createTimeTagDirective(numberOfFramesToTag));
+			} catch (InterruptedException e1) {
+				Thread.currentThread().interrupt();
+			}
 			break;
 		case TIME_DELAY_CALCULATION:
 			if (!isDataServices() || isTimeTaggingActive()) {
@@ -149,7 +157,11 @@ public class Node implements Runnable, TransceiverCallback {
 			transceiver.enableAsmTxCallback(true);
 			TimeDistribution sample = new TimeDistribution();
 			sample.setType(TimeDistributionType.NULL);
-			state.getMacQueue().add(sample);
+			try {
+				state.getMacQueue().put(sample);
+			} catch (InterruptedException e1) {
+				Thread.currentThread().interrupt();
+			}
 			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();

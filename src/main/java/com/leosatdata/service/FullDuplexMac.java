@@ -105,7 +105,12 @@ public class FullDuplexMac {
 			break;
 		case E5_ACQUISITION_IDLE_TIMEOUT:
 			if (state.getState().equals(MacState.S32_SEND_HAIL_ACQUISITION)) {
-				state.getMacQueue().add(state.getCommParameters());
+				try {
+					state.getMacQueue().put(state.getCommParameters());
+				} catch (InterruptedException e1) {
+					Thread.currentThread().interrupt();
+					break;
+				}
 				state.setState(MacState.S33_SEND_HAIL_DIRECTIVES);
 			}
 			break;
@@ -246,7 +251,12 @@ public class FullDuplexMac {
 		case E14_COMM_CHANGE:
 			LOG.info("attempting comm_change: {} of {}", (currentCommChangeAttempt + 1), config.getInteger("comm_change_lifetime", 0));
 			state.setPersistence(true);
-			state.getMacQueue().add(state.getCommParameters());
+			try {
+				state.getMacQueue().put(state.getCommParameters());
+			} catch (InterruptedException e1) {
+				Thread.currentThread().interrupt();
+				break;
+			}
 			state.setState(MacState.S48_2_SEND_COMM_CHANGE);
 			break;
 		case E18_COMM_CHANGE_WAIT_TIMEOUT:
@@ -336,22 +346,32 @@ public class FullDuplexMac {
 			// initiated locally
 			if (state.getState().equals(MacState.S40_DATA_SERVICES) && state.getX() == 0) {
 				LOG.info("session is stopping");
-				state.setX(2);
 				Spdu rnmdDirective = SpduUtil.createRnmdDirective(state.getCommParameters(), true);
 				if (rnmdDirective == null) {
 					LOG.error("unable to create rnmd - not enough data in comm parameters");
 					return;
 				}
-				state.getMacQueue().add(rnmdDirective);
+				try {
+					state.getMacQueue().put(rnmdDirective);
+				} catch (InterruptedException e1) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+				state.setX(2);
 			}
 			if (state.getState().equals(MacState.S40_DATA_SERVICES) && state.getX() == 4) {
-				state.setX(5);
 				Spdu rnmdDirective = SpduUtil.createRnmdDirective(state.getCommParameters(), true);
 				if (rnmdDirective == null) {
 					LOG.error("unable to create rnmd - not enough data in comm parameters");
 					return;
 				}
-				state.getMacQueue().add(rnmdDirective);
+				try {
+					state.getMacQueue().put(rnmdDirective);
+				} catch (InterruptedException e1) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+				state.setX(5);
 			}
 			break;
 		case E26_TAIL_IDLE_TIMEOUT:
