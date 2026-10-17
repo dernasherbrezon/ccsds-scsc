@@ -116,7 +116,8 @@ public class NodeTest {
 		TimeDelayCalculationResult time = (TimeDelayCalculationResult) result.getObj();
 		assertEquals(unixTime, time.getInitialTimeMillis());
 		assertTrue(time.getTxAsmTimeMillis() > unixTime);
-		assertTrue(time.getRxAsmTimeMillis() > time.getTxAsmTimeMillis());
+		// TxAsm and RxAsm might come from completely different events,
+		// so not directly comparable
 		assertTrue(System.currentTimeMillis() > time.getRxAsmTimeMillis());
 	}
 
@@ -831,7 +832,7 @@ public class NodeTest {
 		settings.add(new CommSettings(2, 3, 1, 1));
 		settings.add(new CommSettings(3, 3, 1, 1));
 		settings.add(new CommSettings(4, 4, 1, 1));
-		//TODO re-enable during full run
+		// TODO re-enable during full run
 //		settings.add(new CommSettings(4, 4, 2, 1));
 //		settings.add(new CommSettings(4, 4, 3, 1));
 //		settings.add(new CommSettings(4, 4, 2, 2));

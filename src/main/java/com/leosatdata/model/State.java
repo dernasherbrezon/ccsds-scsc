@@ -6,7 +6,9 @@ package com.leosatdata.model;
 
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.util.Configuration;
@@ -15,7 +17,7 @@ public class State {
 
 	private boolean persistence;
 	private final BlockingQueue<Event> queue;
-	private final BlockingQueue<Spdu> macQueue;
+	private final BlockingDeque<Spdu> macQueue;
 	private final BlockingQueue<Object> seqQueue;
 	private final BlockingQueue<Object> expQueue;
 	private final BlockingQueue<Object> sentQueue;
@@ -63,7 +65,7 @@ public class State {
 		int capacity = config.getInteger("transmission_window", 10);
 		this.seqQueue = new ArrayBlockingQueue<>(capacity);
 		this.expQueue = new ArrayBlockingQueue<>(capacity); // use the same parameter for expedited and sequenced
-		this.macQueue = new ArrayBlockingQueue<>(capacity);
+		this.macQueue = new LinkedBlockingDeque<>(capacity);
 		this.sentQueue = new ArrayBlockingQueue<>(capacity);
 		// if all message queues filled up, have +2 for event queue to process
 		this.queue = new ArrayBlockingQueue<>(capacity + capacity + capacity + 2);
@@ -148,7 +150,7 @@ public class State {
 		this.ves = ves;
 	}
 
-	public BlockingQueue<Spdu> getMacQueue() {
+	public BlockingDeque<Spdu> getMacQueue() {
 		return macQueue;
 	}
 

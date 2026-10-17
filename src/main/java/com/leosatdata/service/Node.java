@@ -127,7 +127,7 @@ public class Node implements Runnable, TransceiverCallback {
 				return;
 			}
 			try {
-				state.getMacQueue().put((Spdu) e.getArg());
+				state.getMacQueue().putFirst((Spdu) e.getArg());
 			} catch (InterruptedException e1) {
 				Thread.currentThread().interrupt();
 			}
@@ -158,7 +158,7 @@ public class Node implements Runnable, TransceiverCallback {
 			TimeDistribution sample = new TimeDistribution();
 			sample.setType(TimeDistributionType.NULL);
 			try {
-				state.getMacQueue().put(sample);
+				state.getMacQueue().putFirst(sample);
 			} catch (InterruptedException e1) {
 				Thread.currentThread().interrupt();
 			}
