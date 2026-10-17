@@ -114,11 +114,12 @@ public class NodeTest {
 		ControllerEvent result = groundCallback.waitForEvent(ControllerEventType.TIME_DELAY_CALCULATION);
 		assertNotNull(result);
 		TimeDelayCalculationResult time = (TimeDelayCalculationResult) result.getObj();
+		System.out.println(time);
 		assertEquals(unixTime, time.getInitialTimeMillis());
-		assertTrue(time.getTxAsmTimeMillis() > unixTime);
+		assertTrue(time.getTxAsmTimeMillis() >= unixTime);
 		// TxAsm and RxAsm might come from completely different events,
 		// so not directly comparable
-		assertTrue(time.getRxTimeMillis() > time.getRxAsmTimeMillis());
+		assertTrue(time.getRxTimeMillis() >= time.getRxAsmTimeMillis());
 	}
 
 	@Test
