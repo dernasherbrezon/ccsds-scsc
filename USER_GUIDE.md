@@ -402,6 +402,8 @@ When the calculation completes, the `NodeCallback` receives a `TIME_DELAY_CALCUL
 public void handle(ControllerEvent event) {
 	if (event.getType().equals(ControllerEventType.TIME_DELAY_CALCULATION) && event.getObj() != null) {
 		TimeDelayCalculationResult result = (TimeDelayCalculationResult) event.getObj();
+		int sendSideDelay = result.getTxAsmTimeMillis() - result.getInitialTimeMillis();
+		int receiveSideDelay = result.getRxTimeMillis() - result.getRxAsmTimeMillis();
 		// save or process
 	}
 }

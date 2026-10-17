@@ -9,6 +9,15 @@ public class TimeDelayCalculationResult {
 	private long initialTimeMillis;
 	private long txAsmTimeMillis;
 	private long rxAsmTimeMillis;
+	private long rxTimeMillis;
+
+	public long getRxTimeMillis() {
+		return rxTimeMillis;
+	}
+
+	public void setRxTimeMillis(long rxTimeMillis) {
+		this.rxTimeMillis = rxTimeMillis;
+	}
 
 	public long getInitialTimeMillis() {
 		return initialTimeMillis;
@@ -40,7 +49,7 @@ public class TimeDelayCalculationResult {
 
 	@Override
 	public String toString() {
-		return "[initialTimeMillis=" + initialTimeMillis + ", txAsmTimeMillis=" + txAsmTimeMillis + ", rxAsmTimeMillis=" + rxAsmTimeMillis + "]";
+		return "[initialTimeMillis=" + initialTimeMillis + ", txAsmTimeMillis=" + txAsmTimeMillis + ", rxAsmTimeMillis=" + rxAsmTimeMillis + ", rxTimeMillis=" + rxTimeMillis + "]";
 	}
 
 }

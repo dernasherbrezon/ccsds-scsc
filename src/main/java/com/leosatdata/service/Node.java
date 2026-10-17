@@ -187,6 +187,9 @@ public class Node implements Runnable, TransceiverCallback {
 			if (timeDelayCalculation != null && timeDelayCalculation.getRxAsmTimeMillis() == 0) {
 				transceiver.enableAsmRxCallback(false);
 				timeDelayCalculation.setRxAsmTimeMillis(((TimeTag) e.getArg()).getTime());
+				// in half-duplex ASM_RX can come earlier than ASM_TX
+				// the event won't be complete, so need to snap rx final timestamp here
+				timeDelayCalculation.setRxTimeMillis(System.currentTimeMillis());
 				if (timeDelayCalculation.isComplete()) {
 					callback.handle(new ControllerEvent(ControllerEventType.TIME_DELAY_CALCULATION, timeDelayCalculation));
 					timeDelayCalculation = null;

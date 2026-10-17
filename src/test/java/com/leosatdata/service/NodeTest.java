@@ -118,7 +118,7 @@ public class NodeTest {
 		assertTrue(time.getTxAsmTimeMillis() > unixTime);
 		// TxAsm and RxAsm might come from completely different events,
 		// so not directly comparable
-		assertTrue(System.currentTimeMillis() > time.getRxAsmTimeMillis());
+		assertTrue(time.getRxTimeMillis() > time.getRxAsmTimeMillis());
 	}
 
 	@Test
