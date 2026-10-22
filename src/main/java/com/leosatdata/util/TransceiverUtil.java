@@ -11,6 +11,7 @@ import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.CarrierSuppression;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.Coherency;
+import com.leosatdata.model.CommParameters;
 import com.leosatdata.model.ControlParameters;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.ErrorCode;
@@ -181,122 +182,67 @@ public class TransceiverUtil {
 		return ErrorCode.TRANSCEIVER_ERROR.ordinal() + result;
 	}
 
-	private int applyType1RxParameters(Type1Directive params, boolean invert) {
-		TxRxParameters commParams = invert ? params.getTxParams() : params.getRxParams();
-		PlExtensions plParams = invert ? params.getTxPlExtensions() : params.getRxPlExtensions();
+	private CommParameters convertType1Parameters(TxRxParameters commParams, PlExtensions plParams, String direction) {
+		CommParameters result = new CommParameters();
 		int symbolRate = commParams.getDataRate().getRate();
 		if (plParams != null && plParams.isUseExtendedDataRate()) {
 			symbolRate = commParams.getDataRate().getExtendedRate();
 		}
-		int code = transceiver.setRxSymbolRate(symbolRate);
-		if (code != 0)
-			return code;
+		result.setSymbolRate(symbolRate);
+		LineCoding lineCoding;
 		if (plParams != null) {
-			code = transceiver.setRxLineCoding(plParams.getLineCoding());
+			lineCoding = plParams.getLineCoding();
 		} else {
-			code = transceiver.setRxLineCoding(LineCoding.MANCHESTER);
+			lineCoding = LineCoding.MANCHESTER;
 		}
-		if (code != 0)
-			return code;
+		result.setLineCoding(lineCoding);
+		CarrierModulation carrierModulation;
 		if (plParams != null) {
-			code = transceiver.setRxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
+			carrierModulation = convertType1CarrierModulation(plParams.getCarrierModulation());
 		} else {
-			code = transceiver.setRxCarrierModulation(convertType1CarrierModulation(Type1CarrierModulation.PCM_PSK_PM));
+			carrierModulation = convertType1CarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
 		}
-		if (code != 0)
-			return code;
-		code = transceiver.setRxModulationIndex(convertType1ModulationIndex(plParams));
-		if (code != 0)
-			return code;
+		result.setCarrierModulation(carrierModulation);
+		result.setModulationIndex(convertType1ModulationIndex(plParams));
 		int channelId = commParams.getFrequency().getCode();
 		if (plParams != null && plParams.isUseExtendedFreqSet()) {
 			channelId += 8;
 		}
+		result.setFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
+		result.setEncoding(convertType1Coding(commParams.getCoding(), plParams));
+		result.setCoherency(commParams.getCoherency());
+		result.setPolarization(Polarization.RHCP); // defined in 211.1
+		ScramblerType scrambler;
+		if (plParams != null) {
+			scrambler = plParams.getScrambler();
+		} else {
+			scrambler = ScramblerType.NONE;
+		}
+		result.setScrambler(scrambler);
+		boolean differentialEncoding;
+		if (plParams != null) {
+			differentialEncoding = plParams.isDifferentialEncoding();
+		} else {
+			differentialEncoding = false;
+		}
+		result.setDifferentialEncoding(differentialEncoding);
+		return result;
+	}
+
+	private int applyType1RxParameters(Type1Directive params, boolean invert) {
+		TxRxParameters commParams = invert ? params.getTxParams() : params.getRxParams();
+		PlExtensions plParams = invert ? params.getTxPlExtensions() : params.getRxPlExtensions();
 		String direction = invert ? "f" : "r";
-		code = transceiver.setRxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
-		if (code != 0)
-			return code;
-		code = transceiver.setRxCoding(convertType1Coding(commParams.getCoding(), plParams));
-		if (code != 0)
-			return code;
-		code = transceiver.setRxCoherency(commParams.getCoherency());
-		if (code != 0)
-			return code;
-		code = transceiver.setRxPolarization(Polarization.RHCP); // defined in 211.1
-		if (code != 0)
-			return code;
-		if (plParams != null) {
-			code = transceiver.setRxScrambler(plParams.getScrambler());
-		} else {
-			code = transceiver.setRxScrambler(ScramblerType.NONE);
-		}
-		if (code != 0)
-			return code;
-		if (plParams != null) {
-			code = transceiver.setRxDifferentialEncoding(plParams.isDifferentialEncoding());
-		} else {
-			code = transceiver.setRxDifferentialEncoding(false);
-		}
-		return code;
+		CommParameters transceiverParams = convertType1Parameters(commParams, plParams, direction);
+		return transceiver.setRxCommParameters(transceiverParams);
 	}
 
 	private int applyType1TxParameters(Type1Directive params, boolean invert) {
 		TxRxParameters commParams = invert ? params.getRxParams() : params.getTxParams();
 		PlExtensions plParams = invert ? params.getRxPlExtensions() : params.getTxPlExtensions();
-		int symbolRate = commParams.getDataRate().getRate();
-		if (plParams != null && plParams.isUseExtendedDataRate()) {
-			symbolRate = commParams.getDataRate().getExtendedRate();
-		}
-		int code = transceiver.setTxSymbolRate(symbolRate);
-		if (code != 0)
-			return code;
-		if (plParams != null) {
-			code = transceiver.setTxLineCoding(plParams.getLineCoding());
-		} else {
-			code = transceiver.setTxLineCoding(LineCoding.MANCHESTER);
-		}
-		if (code != 0)
-			return code;
-		if (plParams != null) {
-			code = transceiver.setTxCarrierModulation(convertType1CarrierModulation(plParams.getCarrierModulation()));
-		} else {
-			code = transceiver.setTxCarrierModulation(CarrierModulation.PCM_PSK_PM);
-		}
-		if (code != 0)
-			return code;
-		code = transceiver.setTxModulationIndex(convertType1ModulationIndex(plParams));
-		if (code != 0)
-			return code;
-		int channelId = commParams.getFrequency().getCode();
-		if (plParams != null && plParams.isUseExtendedFreqSet()) {
-			channelId += 8;
-		}
 		String direction = invert ? "r" : "f";
-		code = transceiver.setTxFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
-		if (code != 0)
-			return code;
-		code = transceiver.setTxCoding(convertType1Coding(commParams.getCoding(), plParams));
-		if (code != 0)
-			return code;
-		code = transceiver.setTxCoherency(commParams.getCoherency());
-		if (code != 0)
-			return code;
-		code = transceiver.setTxPolarization(Polarization.RHCP); // defined in 211.1
-		if (code != 0)
-			return code;
-		if (plParams != null) {
-			code = transceiver.setTxScrambler(plParams.getScrambler());
-		} else {
-			code = transceiver.setTxScrambler(ScramblerType.NONE);
-		}
-		if (code != 0)
-			return code;
-		if (plParams != null) {
-			code = transceiver.setTxDifferentialEncoding(plParams.isDifferentialEncoding());
-		} else {
-			code = transceiver.setTxDifferentialEncoding(false);
-		}
-		return code;
+		CommParameters transceiverParams = convertType1Parameters(commParams, plParams, direction);
+		return transceiver.setTxCommParameters(transceiverParams);
 	}
 
 	private Type5Directive createHailType5() {
@@ -364,162 +310,72 @@ public class TransceiverUtil {
 		return result;
 	}
 
+	private CommParameters convertType4Parameters(Type4LinkEstablishment params, LinkDirection direction) {
+		CommParameters result = new CommParameters();
+		result.setSymbolRate(params.getSymbolRate());
+		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
+			result.setLineCoding(LineCoding.MANCHESTER);
+		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
+			result.setLineCoding(LineCoding.NRZ_L);
+		} else {
+			result.setLineCoding(LineCoding.NONE);
+		}
+		result.setCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
+		result.setModulationIndex(params.getModulationIndex());
+		result.setFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + direction.getShortCode(), 0));
+		result.setEncoding(convertType4Coding(params.getCoding()));
+		result.setCoherency(Coherency.UNKNOWN); // not clear from the spec
+		result.setPolarization(params.getPolarization());
+		result.setScrambler(ScramblerType.NONE); // not defined in the spec. assume none
+		result.setDifferentialEncoding(false); // not defined in the spec. assume false
+		return result;
+	}
+
 	private int applyType4RxParameters(Type4Directive directive, boolean invert) {
 		Type4LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
 		LinkDirection direction = invert ? LinkDirection.FORWARD : LinkDirection.RETURN;
-		int code = transceiver.setRxSymbolRate(params.getSymbolRate());
-		if (code != 0)
-			return code;
-		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
-			code = transceiver.setRxLineCoding(LineCoding.MANCHESTER);
-		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
-			code = transceiver.setRxLineCoding(LineCoding.NRZ_L);
-		} else {
-			code = transceiver.setRxLineCoding(LineCoding.NONE);
-		}
-		if (code != 0)
-			return code;
-		code = transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
-		if (code != 0)
-			return code;
-		code = transceiver.setRxModulationIndex(params.getModulationIndex());
-		if (code != 0)
-			return code;
-		code = transceiver.setRxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + direction.getShortCode(), 0));
-		if (code != 0)
-			return code;
-		code = transceiver.setRxCoding(convertType4Coding(params.getCoding()));
-		if (code != 0)
-			return code;
-		code = transceiver.setRxCoherency(Coherency.UNKNOWN); // not clear from the spec
-		if (code != 0)
-			return code;
-		code = transceiver.setRxPolarization(params.getPolarization());
-		if (code != 0)
-			return code;
-		code = transceiver.setRxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
-		if (code != 0)
-			return code;
-		code = transceiver.setRxDifferentialEncoding(false); // not defined in the spec. assume false
-		return code;
+		CommParameters comm = convertType4Parameters(params, direction);
+		return transceiver.setRxCommParameters(comm);
 	}
 
 	private int applyType4TxParameters(Type4Directive directive, boolean invert) {
 		Type4LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		LinkDirection direction = invert ? LinkDirection.RETURN : LinkDirection.FORWARD;
-		int code = transceiver.setTxSymbolRate(params.getSymbolRate());
-		if (code != 0)
-			return code;
+		CommParameters comm = convertType4Parameters(params, direction);
+		return transceiver.setTxCommParameters(comm);
+	}
+
+	private static CommParameters convertType5Parameters(Type5LinkEstablishment params) {
+		CommParameters result = new CommParameters();
+		result.setSymbolRate(params.getSymbolRate());
 		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
-			code = transceiver.setTxLineCoding(LineCoding.MANCHESTER);
+			result.setLineCoding(LineCoding.MANCHESTER);
 		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
-			code = transceiver.setTxLineCoding(LineCoding.NRZ_L);
+			result.setLineCoding(LineCoding.NRZ_L);
 		} else {
-			code = transceiver.setTxLineCoding(LineCoding.NONE);
+			result.setLineCoding(LineCoding.NONE);
 		}
-		if (code != 0)
-			return code;
-		code = transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
-		if (code != 0)
-			return code;
-		code = transceiver.setTxModulationIndex(params.getModulationIndex());
-		if (code != 0)
-			return code;
-		code = transceiver.setTxFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + direction.getShortCode(), 0));
-		if (code != 0)
-			return code;
-		code = transceiver.setTxCoding(convertType4Coding(params.getCoding()));
-		if (code != 0)
-			return code;
-		code = transceiver.setTxCoherency(Coherency.UNKNOWN); // not clear from the spec
-		if (code != 0)
-			return code;
-		code = transceiver.setTxPolarization(params.getPolarization());
-		if (code != 0)
-			return code;
-		code = transceiver.setTxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
-		if (code != 0)
-			return code;
-		code = transceiver.setTxDifferentialEncoding(false); // not defined in the spec. assume false
-		return code;
+		result.setCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
+		result.setModulationIndex(params.getModulationIndex());
+		result.setFrequency(params.getFrequency());
+		result.setEncoding(convertType4Coding(params.getCoding()));
+		result.setCoherency(params.getCoherency());
+		result.setPolarization(params.getPolarization());
+		result.setScrambler(ScramblerType.NONE); // not defined in the spec. assume none
+		result.setDifferentialEncoding(false); // not defined in the spec. assume false
+		return result;
 	}
 
 	private int applyType5RxParameters(Type5Directive directive, boolean invert) {
 		Type5LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
-		int code = transceiver.setRxSymbolRate(params.getSymbolRate());
-		if (code != 0)
-			return code;
-		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
-			code = transceiver.setRxLineCoding(LineCoding.MANCHESTER);
-		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
-			code = transceiver.setRxLineCoding(LineCoding.NRZ_L);
-		} else {
-			code = transceiver.setRxLineCoding(LineCoding.NONE);
-		}
-		if (code != 0)
-			return code;
-		code = transceiver.setRxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
-		if (code != 0)
-			return code;
-		code = transceiver.setRxModulationIndex(params.getModulationIndex());
-		if (code != 0)
-			return code;
-		code = transceiver.setRxFrequency(params.getFrequency());
-		if (code != 0)
-			return code;
-		code = transceiver.setRxCoding(convertType4Coding(params.getCoding()));
-		if (code != 0)
-			return code;
-		code = transceiver.setRxCoherency(params.getCoherency());
-		if (code != 0)
-			return code;
-		code = transceiver.setRxPolarization(params.getPolarization());
-		if (code != 0)
-			return code;
-		code = transceiver.setRxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
-		if (code != 0)
-			return code;
-		code = transceiver.setRxDifferentialEncoding(false); // not defined in the spec. assume false
-		return code;
+		CommParameters comm = convertType5Parameters(params);
+		return transceiver.setRxCommParameters(comm);
 	}
 
 	private int applyType5TxParameters(Type5Directive directive, boolean invert) {
 		Type5LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
-		int code = transceiver.setTxSymbolRate(params.getSymbolRate());
-		if (code != 0)
-			return code;
-		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
-			code = transceiver.setTxLineCoding(LineCoding.MANCHESTER);
-		} else if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_NRZL)) {
-			code = transceiver.setTxLineCoding(LineCoding.NRZ_L);
-		} else {
-			code = transceiver.setTxLineCoding(LineCoding.NONE);
-		}
-		if (code != 0)
-			return code;
-		code = transceiver.setTxCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
-		if (code != 0)
-			return code;
-		code = transceiver.setTxModulationIndex(params.getModulationIndex());
-		if (code != 0)
-			return code;
-		code = transceiver.setTxFrequency(params.getFrequency());
-		if (code != 0)
-			return code;
-		code = transceiver.setTxCoding(convertType4Coding(params.getCoding()));
-		if (code != 0)
-			return code;
-		code = transceiver.setTxCoherency(params.getCoherency());
-		if (code != 0)
-			return code;
-		code = transceiver.setTxPolarization(params.getPolarization());
-		if (code != 0)
-			return code;
-		code = transceiver.setTxScrambler(ScramblerType.NONE); // not defined in the spec. assume none
-		if (code != 0)
-			return code;
-		code = transceiver.setTxDifferentialEncoding(false); // not defined in the spec. assume false
-		return code;
+		CommParameters comm = convertType5Parameters(params);
+		return transceiver.setTxCommParameters(comm);
 	}
 
 	private static ModulationIndex convertType1ModulationIndex(PlExtensions params) {

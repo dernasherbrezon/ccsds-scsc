@@ -19,13 +19,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.leosatdata.model.CarrierModulation;
-import com.leosatdata.model.Coding;
-import com.leosatdata.model.Coherency;
-import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.Polarization;
-import com.leosatdata.model.ScramblerType;
+import com.leosatdata.model.CommParameters;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
 
@@ -42,7 +36,7 @@ public class TcpTransceiver implements Transceiver {
 	private Future<?> rxFuture;
 	private TransceiverCallback callback;
 
-	private float txSymbolRate;
+	private CommParameters tx;
 	private Long txDelay;
 
 	public TcpTransceiver(Configuration config) {
@@ -73,10 +67,10 @@ public class TcpTransceiver implements Transceiver {
 			LOG.error("can't send data when client disconnected");
 			return 0;
 		}
-		assert (txSymbolRate != 0);
+		assert (tx != null && tx.getSymbolRate() != 0);
 		long txMillisToWait;
 		if (txDelay == null) {
-			txMillisToWait = (long) ((data.length * 8 * 1000) / txSymbolRate);
+			txMillisToWait = (long) ((data.length * 8 * 1000) / tx.getSymbolRate());
 		} else {
 			txMillisToWait = txDelay;
 		}
@@ -90,32 +84,7 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public int setRxSymbolRate(float baud) {
-		return 0;
-	}
-
-	@Override
-	public int setRxLineCoding(LineCoding modulation) {
-		return 0;
-	}
-
-	@Override
-	public int setRxFrequency(float frequency) {
-		return 0;
-	}
-
-	@Override
-	public int setRxCoding(Coding encoding) {
-		return 0;
-	}
-
-	@Override
-	public int setRxPolarization(Polarization polarization) {
-		return 0;
-	}
-
-	@Override
-	public int setRxCoherency(Coherency modulation) {
+	public int setRxCommParameters(CommParameters params) {
 		return 0;
 	}
 
@@ -130,33 +99,8 @@ public class TcpTransceiver implements Transceiver {
 	}
 
 	@Override
-	public int setTxSymbolRate(float baud) {
-		this.txSymbolRate = baud;
-		return 0;
-	}
-
-	@Override
-	public int setTxLineCoding(LineCoding modulation) {
-		return 0;
-	}
-
-	@Override
-	public int setTxFrequency(float frequency) {
-		return 0;
-	}
-
-	@Override
-	public int setTxCoding(Coding encoding) {
-		return 0;
-	}
-
-	@Override
-	public int setTxPolarization(Polarization polarization) {
-		return 0;
-	}
-
-	@Override
-	public int setTxCoherency(Coherency modulation) {
+	public int setTxCommParameters(CommParameters params) {
+		this.tx = params;
 		return 0;
 	}
 
@@ -286,46 +230,6 @@ public class TcpTransceiver implements Transceiver {
 
 	public void setTxDelay(Long txDelay) {
 		this.txDelay = txDelay;
-	}
-
-	@Override
-	public int setRxCarrierModulation(CarrierModulation carrierModulation) {
-		return 0;
-	}
-
-	@Override
-	public int setTxCarrierModulation(CarrierModulation carrierModulation) {
-		return 0;
-	}
-
-	@Override
-	public int setRxModulationIndex(ModulationIndex modulationIndex) {
-		return 0;
-	}
-
-	@Override
-	public int setTxModulationIndex(ModulationIndex modulationIndex) {
-		return 0;
-	}
-
-	@Override
-	public int setRxScrambler(ScramblerType scrambler) {
-		return 0;
-	}
-
-	@Override
-	public int setTxScrambler(ScramblerType scrambler) {
-		return 0;
-	}
-
-	@Override
-	public int setRxDifferentialEncoding(boolean differentialEncoding) {
-		return 0;
-	}
-
-	@Override
-	public int setTxDifferentialEncoding(boolean differentialEncoding) {
-		return 0;
 	}
 
 	@Override

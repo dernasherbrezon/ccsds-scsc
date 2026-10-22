@@ -832,7 +832,7 @@ public class NodeTest {
 		settings.add(new CommSettings(2, 3, 1, 1));
 		settings.add(new CommSettings(3, 3, 1, 1));
 		settings.add(new CommSettings(4, 4, 1, 1));
-		// TODO re-enable during full run
+		// TODO re-enable for full test suite
 //		settings.add(new CommSettings(4, 4, 2, 1));
 //		settings.add(new CommSettings(4, 4, 3, 1));
 //		settings.add(new CommSettings(4, 4, 2, 2));

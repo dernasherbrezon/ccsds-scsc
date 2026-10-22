@@ -175,7 +175,7 @@ public class TimeDistributionTest {
 		// 16 bytes for TimeDistribution directive
 		// 4 bytes fo CRC32
 		// asm is not included since it is included into internal delay measurement
-		long timeToSendPDU = (long) (((16 + 4) * 8 * 1000) / groundTransceiver.getTxSymbolRate());
+		long timeToSendPDU = (long) (((16 + 4) * 8 * 1000) / groundTransceiver.getTx().getSymbolRate());
 		// assume rx latency is the same between ground and satellite nodes
 		long expectedTime = expected.getTransceiverClock() + expected.getOneWayLightTime() + expected.getSendSideDelay() + totalRxDelay / internalDelayTotal + timeToSendPDU;
 		System.out.println("time difference: " + (current - expectedTime) + " ms");

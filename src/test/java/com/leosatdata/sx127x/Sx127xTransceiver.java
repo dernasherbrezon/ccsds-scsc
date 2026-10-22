@@ -12,9 +12,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
-import com.leosatdata.model.Coherency;
+import com.leosatdata.model.CommParameters;
 import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.ScramblerType;
 import com.leosatdata.service.Transceiver;
@@ -93,129 +92,54 @@ public class Sx127xTransceiver implements Transceiver {
 		});
 		return 0;
 	}
-
-	@Override
-	public int setRxSymbolRate(float baud) {
-		return impl.sx127x_fsk_ook_set_bitrate(baud);
-	}
-
-	@Override
-	public int setRxLineCoding(LineCoding modulation) {
-		if (modulation.equals(LineCoding.NRZ_L)) {
-			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
-		} else if (modulation.equals(LineCoding.MANCHESTER)) {
-			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_MANCHESTER);
+	
+	private int setCommParameters(CommParameters params) {
+		int code = impl.sx127x_fsk_ook_set_bitrate(params.getSymbolRate());
+		if (code != 0) {
+			return code;
+		}
+		if (params.getLineCoding().equals(LineCoding.NRZ_L)) {
+			code = impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
+		} else if (params.getLineCoding().equals(LineCoding.MANCHESTER)) {
+			code = impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_MANCHESTER);
 		} else {
-			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_SCRAMBLED);
+			code = impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_SCRAMBLED);
 		}
-	}
-
-	@Override
-	public int setRxFrequency(float frequency) {
-		return impl.sx127x_set_frequency((long) frequency);
-	}
-
-	@Override
-	public int setRxCoding(Coding encoding) {
-		if (encoding.equals(Coding.UNCODED)) {
-			return 0;
+		if (code != 0) {
+			return code;
 		}
-		return 1;
-	}
-
-	@Override
-	public int setRxPolarization(Polarization polarization) {
-		return 0;
-	}
-
-	@Override
-	public int setRxCoherency(Coherency modulation) {
-		return 0;
-	}
-
-	@Override
-	public int setRxCarrierModulation(CarrierModulation carrierModulation) {
-		if (carrierModulation.equals(CarrierModulation.FSK)) {
-			return 0;
+		code = impl.sx127x_set_frequency((long) params.getFrequency());
+		if (code != 0) {
+			return code;
 		}
-		return 1;
-	}
-
-	@Override
-	public int setRxModulationIndex(ModulationIndex modulationIndex) {
-		return 0;
-	}
-
-	@Override
-	public int setRxScrambler(ScramblerType scrambler) {
-		return 0;
-	}
-
-	@Override
-	public int setRxDifferentialEncoding(boolean differentialEncoding) {
-		return differentialEncoding ? 1 : 0;
-	}
-
-	@Override
-	public int setTxSymbolRate(float baud) {
-		return impl.sx127x_fsk_ook_set_bitrate(baud);
-	}
-
-	@Override
-	public int setTxLineCoding(LineCoding modulation) {
-		if (modulation.equals(LineCoding.NRZ_L)) {
-			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
-		} else if (modulation.equals(LineCoding.MANCHESTER)) {
-			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_MANCHESTER);
-		} else {
-			return impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_SCRAMBLED);
+		if (params.getScrambler() != null && !params.getScrambler().equals(ScramblerType.NONE)) {
+			return 1;
 		}
-	}
-
-	@Override
-	public int setTxFrequency(float frequency) {
-		return impl.sx127x_set_frequency((long) frequency);
-	}
-
-	@Override
-	public int setTxCoding(Coding encoding) {
-		if (encoding.equals(Coding.UNCODED)) {
-			return 0;
+		if (params.getPolarization() != null && !params.getPolarization().equals(Polarization.UNKNOWN)) {
+			return 1;
 		}
-		return 1;
-	}
-
-	@Override
-	public int setTxPolarization(Polarization polarization) {
-		return 0;
-	}
-
-	@Override
-	public int setTxCoherency(Coherency modulation) {
-		return 0;
-	}
-
-	@Override
-	public int setTxCarrierModulation(CarrierModulation carrierModulation) {
-		if (carrierModulation.equals(CarrierModulation.FSK)) {
-			return 0;
+		if (params.getEncoding() != null && !params.getEncoding().equals(Coding.UNCODED)) {
+			return 1;
 		}
-		return 1;
-	}
-
-	@Override
-	public int setTxModulationIndex(ModulationIndex modulationIndex) {
+		if (params.getCarrierModulation() != null && !params.getCarrierModulation().equals(CarrierModulation.FSK)) {
+			return 1;
+		}
+		if (params.isDifferentialEncoding()) {
+			return 1;
+		}
 		return 0;
 	}
 
 	@Override
-	public int setTxScrambler(ScramblerType scrambler) {
-		return 0;
+	public int setRxCommParameters(CommParameters params) {
+		return setCommParameters(params);
 	}
 
+	// for now both rx and tx are the same
+	// can be different though
 	@Override
-	public int setTxDifferentialEncoding(boolean differentialEncoding) {
-		return differentialEncoding ? 1 : 0;
+	public int setTxCommParameters(CommParameters params) {
+		return setCommParameters(params);
 	}
 
 	@Override

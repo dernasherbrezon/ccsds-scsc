@@ -8,13 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.leosatdata.model.CarrierModulation;
-import com.leosatdata.model.Coding;
-import com.leosatdata.model.Coherency;
-import com.leosatdata.model.LineCoding;
-import com.leosatdata.model.ModulationIndex;
-import com.leosatdata.model.Polarization;
-import com.leosatdata.model.ScramblerType;
+import com.leosatdata.model.CommParameters;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.NamingThreadFactory;
 
@@ -32,10 +26,8 @@ public class NullTransceiver implements Transceiver {
 	private TransceiverRxState rxState = TransceiverRxState.OFF;
 	private boolean skipCallbacks = false;
 
-	private float rxSymbolRate;
-	private float txSymbolRate;
-	private float rxFrequency;
-	private float txFrequency;
+	private CommParameters rx;
+	private CommParameters tx;
 
 	private Long txDelay;
 
@@ -65,10 +57,10 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public int send(byte[] data) {
-		assert (txSymbolRate != 0);
+		assert (tx.getSymbolRate() != 0);
 		long txMillisToWait;
 		if (txDelay == null) {
-			txMillisToWait = (long) ((data.length * 8 * 1000) / txSymbolRate);
+			txMillisToWait = (long) ((data.length * 8 * 1000) / tx.getSymbolRate());
 		} else {
 			txMillisToWait = txDelay;
 		}
@@ -86,21 +78,14 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public int setRxSymbolRate(float baud) {
-		this.rxSymbolRate = baud;
-		return 0;
-	}
-
-	@Override
-	public int setRxLineCoding(LineCoding dataModulation) {
-		return 0;
-	}
-
-	@Override
-	public int setRxFrequency(float frequency) {
+	public int setRxCommParameters(CommParameters params) {
+		if (this.rx == null) {
+			this.rx = params;
+			return 0;
+		}
 		// assume change frequency when symbol lock/unlock is required
-		boolean notifyChange = this.rxFrequency != frequency;
-		boolean mismatchFrequencies = otherSide.txFrequency != frequency;
+		boolean notifyChange = this.rx.getFrequency() != params.getFrequency();
+		boolean mismatchFrequencies = otherSide.tx == null || otherSide.tx.getFrequency() != params.getFrequency();
 		boolean rxEnabled = rxState.equals(TransceiverRxState.RECEIVING);
 		if (notifyChange && mismatchFrequencies && !skipCallbacks && rxEnabled) {
 			if (callback != null) {
@@ -110,7 +95,7 @@ public class NullTransceiver implements Transceiver {
 				callback.onCarrierLost();
 			}
 		}
-		this.rxFrequency = frequency;
+		this.rx = params;
 		if (notifyChange && !mismatchFrequencies && !skipCallbacks && rxEnabled) {
 			if (callback != null) {
 				callback.onCarrierAcquired();
@@ -122,41 +107,15 @@ public class NullTransceiver implements Transceiver {
 		return 0;
 	}
 
-	public float getRxFrequency() {
-		return rxFrequency;
-	}
-
 	@Override
-	public int setRxCoding(Coding dataEncoding) {
-		return 0;
-	}
-
-	@Override
-	public int setRxPolarization(Polarization polarization) {
-		return 0;
-	}
-
-	@Override
-	public int setRxCoherency(Coherency modulation) {
-		return 0;
-	}
-
-	@Override
-	public int setTxSymbolRate(float baud) {
-		this.txSymbolRate = baud;
-		return 0;
-	}
-
-	@Override
-	public int setTxLineCoding(LineCoding modulation) {
-		return 0;
-	}
-
-	@Override
-	public int setTxFrequency(float frequency) {
+	public int setTxCommParameters(CommParameters params) {
+		if (this.tx == null) {
+			this.tx = params;
+			return 0;
+		}
 		// assume change frequency when symbol lock/unlock is required
-		boolean notifyChange = this.txFrequency != frequency;
-		boolean mismatchFrequencies = otherSide.rxFrequency != frequency;
+		boolean notifyChange = this.tx.getFrequency() != params.getFrequency();
+		boolean mismatchFrequencies = otherSide.rx == null || otherSide.rx.getFrequency() != params.getFrequency();
 		boolean rxOtherSideEnabled = otherSide.rxState.equals(TransceiverRxState.RECEIVING);
 		boolean txCarrierEnabled = txState.equals(TransceiverTxState.CARRIER_ONLY) || txState.equals(TransceiverTxState.MODULATION);
 		boolean txSymbolEnabled = txState.equals(TransceiverTxState.MODULATION);
@@ -168,7 +127,7 @@ public class NullTransceiver implements Transceiver {
 				otherSide.callback.onCarrierLost();
 			}
 		}
-		this.txFrequency = frequency;
+		this.tx = params;
 		if (notifyChange && !mismatchFrequencies && !skipCallbacks && rxOtherSideEnabled) {
 			if (otherSide.callback != null && txCarrierEnabled) {
 				otherSide.callback.onCarrierAcquired();
@@ -177,33 +136,6 @@ public class NullTransceiver implements Transceiver {
 				otherSide.callback.onSymbolLock();
 			}
 		}
-		return 0;
-	}
-
-	public float getTxFrequency() {
-		return txFrequency;
-	}
-
-	public float getRxSymbolRate() {
-		return rxSymbolRate;
-	}
-
-	public float getTxSymbolRate() {
-		return txSymbolRate;
-	}
-
-	@Override
-	public int setTxCoding(Coding encoding) {
-		return 0;
-	}
-
-	@Override
-	public int setTxPolarization(Polarization polarization) {
-		return 0;
-	}
-
-	@Override
-	public int setTxCoherency(Coherency modulation) {
 		return 0;
 	}
 
@@ -260,7 +192,7 @@ public class NullTransceiver implements Transceiver {
 
 	@Override
 	public int setRxState(TransceiverRxState state) {
-		if (this.rxState != null && !skipCallbacks && rxFrequency == otherSide.txFrequency) {
+		if (this.rxState != null && !skipCallbacks && rx != null && otherSide.tx != null && rx.getFrequency() == otherSide.tx.getFrequency()) {
 			if (this.rxState.equals(TransceiverRxState.RECEIVING)) {
 				if (state.equals(TransceiverRxState.OFF)) {
 					callback.onSymbolUnlock();
@@ -304,46 +236,6 @@ public class NullTransceiver implements Transceiver {
 	}
 
 	@Override
-	public int setRxCarrierModulation(CarrierModulation carrierModulation) {
-		return 0;
-	}
-
-	@Override
-	public int setTxCarrierModulation(CarrierModulation carrierModulation) {
-		return 0;
-	}
-
-	@Override
-	public int setRxModulationIndex(ModulationIndex modulationIndex) {
-		return 0;
-	}
-
-	@Override
-	public int setTxModulationIndex(ModulationIndex modulationIndex) {
-		return 0;
-	}
-
-	@Override
-	public int setRxScrambler(ScramblerType scrambler) {
-		return 0;
-	}
-
-	@Override
-	public int setTxScrambler(ScramblerType scrambler) {
-		return 0;
-	}
-
-	@Override
-	public int setRxDifferentialEncoding(boolean differentialEncoding) {
-		return 0;
-	}
-
-	@Override
-	public int setTxDifferentialEncoding(boolean differentialEncoding) {
-		return 0;
-	}
-
-	@Override
 	public int enableAsmRxCallback(boolean enable) {
 		this.asmRxCallback = enable;
 		return 0;
@@ -361,5 +253,13 @@ public class NullTransceiver implements Transceiver {
 
 	public boolean isAsmTxCallback() {
 		return asmTxCallback;
+	}
+
+	public CommParameters getTx() {
+		return tx;
+	}
+
+	public CommParameters getRx() {
+		return rx;
 	}
 }

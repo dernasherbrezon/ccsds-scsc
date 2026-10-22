@@ -21,12 +21,12 @@ public class DefaultFrameFilter implements FrameFilter {
 			LOG.error("invalid rx state: {}, expected {}", rx.getRxState(), TransceiverRxState.RECEIVING);
 			return false;
 		}
-		if (tx.getTxFrequency() != rx.getRxFrequency()) {
-			LOG.error("tx frequency {} doesn't match rx {}", tx.getTxFrequency(), rx.getRxFrequency());
+		if (tx.getTx().getFrequency() != rx.getRx().getFrequency()) {
+			LOG.error("tx frequency {} doesn't match rx {}", tx.getTx().getFrequency(), rx.getRx().getFrequency());
 			return false;
 		}
-		if (tx.getTxSymbolRate() != rx.getRxSymbolRate()) {
-			LOG.error("tx symbold rate {} doesn't match rx symbol rate {}", tx.getTxSymbolRate(), rx.getRxSymbolRate());
+		if (tx.getTx().getSymbolRate() != rx.getRx().getSymbolRate()) {
+			LOG.error("tx symbold rate {} doesn't match rx symbol rate {}", tx.getTx().getSymbolRate(), rx.getRx().getSymbolRate());
 			return false;
 		}
 		return true;
