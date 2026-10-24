@@ -38,6 +38,7 @@ import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduParser;
 import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransferFrameUtil;
+import com.leosatdata.util.Util;
 
 class FrameSublayer {
 
@@ -458,6 +459,9 @@ class FrameSublayer {
 			logData.add(decodeSpdu(data));
 		}
 		log.info(logMessage, logData.toArray());
+		if (log.isDebugEnabled()) {
+			log.debug(Util.bytesToHex(data));
+		}
 	}
 
 	private byte[] createSerializedPlcw() {

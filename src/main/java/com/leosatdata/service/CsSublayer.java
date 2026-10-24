@@ -16,6 +16,8 @@ import com.leosatdata.util.Util;
 public class CsSublayer {
 
 	private final static Logger LOG = LoggerFactory.getLogger(CsSublayer.class);
+	private final static Logger RX = LoggerFactory.getLogger("rx");
+	private final static Logger TX = LoggerFactory.getLogger("tx");
 
 	private final byte[] asm;
 	private final boolean prependAsm;
@@ -44,10 +46,17 @@ public class CsSublayer {
 			baos.write((int) ((crc >>> 8) & 0xFF));
 			baos.write((int) ((crc >>> 0) & 0xFF));
 		}
-		return baos.toByteArray();
+		byte[] result = baos.toByteArray();
+		if (TX.isDebugEnabled()) {
+			TX.debug(Util.bytesToHex(result));
+		}
+		return result;
 	}
 
 	public byte[] decode(byte[] data) {
+		if (RX.isDebugEnabled()) {
+			RX.debug(Util.bytesToHex(data));
+		}
 		if (!prependAsm && !appendCrc) {
 			return data;
 		}
