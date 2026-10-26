@@ -2,7 +2,7 @@
 <launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
     <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_SYSTEM_CONSOLE_ENCODING" value="false"/>
     <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-        <listEntry value="/ccsds235.1/src/test/java/com/leosatdata/service/CliNode.java"/>
+        <listEntry value="/ccsds-scsc&#13;&#10;&#13;&#10;/src/test/java/com/leosatdata/service/CliNode.java"/>
     </listAttribute>
     <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
         <listEntry value="1"/>
@@ -14,6 +14,6 @@
     <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.leosatdata.service.CliNode"/>
     <stringAttribute key="org.eclipse.jdt.launching.MODULE_NAME" value="ccsds235.1"/>
     <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="src/test/resources/satellite.properties src/test/resources/cli-server.properties"/>
-    <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="ccsds235.1"/>
+    <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="ccsds-scsc&#13;&#10;&#13;&#10;"/>
     <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>
 </launchConfiguration>
