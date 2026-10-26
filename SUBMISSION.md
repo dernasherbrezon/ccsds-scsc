@@ -6,7 +6,7 @@
 | Members | Andrey Rodionov |
 | Institution / Affiliation | independent |
 | Contact Email | dernasherbrezon@gmail.com |
-| Repository URL  | https://github.com/g4dpz/esa-submission-leosatdata |
+| Repository URL  | https://github.com/dernasherbrezon/ccsds-scsc |
 
 ## Implementation Overview
 
@@ -23,7 +23,7 @@
 
 ### Architecture Summary
 
-![diagram](https://github.com/g4dpz/esa-submission-leosatdata/blob/review/docs/diagram.svg)
+![diagram](https://github.com/dernasherbrezon/ccsds-scsc/blob/review/docs/diagram.svg)
 
 Key features:
 
@@ -35,7 +35,7 @@ Key features:
 
 #### Threading model
 
-![threads](https://github.com/g4dpz/esa-submission-leosatdata/blob/review/docs/threads.svg)
+![threads](https://github.com/dernasherbrezon/ccsds-scsc/blob/review/docs/threads.svg)
 
 Key features:
 
@@ -120,7 +120,7 @@ Then run ```connect``` command. This will put node into CONNECTING_T state.
 
 Here is setup overview:
 
-![sx127x](https://github.com/g4dpz/esa-submission-leosatdata/blob/review/docs/sx127x.svg)
+![sx127x](https://github.com/dernasherbrezon/ccsds-scsc/blob/review/docs/sx127x.svg)
 
 Steps to configure:
 

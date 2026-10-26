@@ -327,7 +327,7 @@ Although time services are not defined in the CCSDS 235.1 specification, the dat
 
 The supported latency model is shown below:
 
-![latencyModel](https://github.com/g4dpz/esa-submission-leosatdata/blob/review/docs/latencyModel.svg)
+![latencyModel](https://github.com/dernasherbrezon/ccsds-scsc/blob/review/docs/latencyModel.svg)
 
 This implementation fully supports the latency model. To enable time services, the `Transceiver` must support two additional interrupts:
 
