@@ -6,25 +6,36 @@ package com.leosatdata.service;
 
 import static org.junit.Assert.assertNull;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Properties;
 
 import org.junit.Test;
 
+import com.leosatdata.ccsds2110b6.util.TransferFrameParser;
+import com.leosatdata.util.BitOutputStream;
 import com.leosatdata.util.Configuration;
 
 public class CsSublayerCrcTest {
 
 	@Test
-	public void testInvalidData() {
+	public void testInvalidData() throws Exception {
 		Properties props = new Properties();
 		props.setProperty("cs.sublayer.asm", "FAF320");
 		props.setProperty("cs.sublayer.asm.prepend", String.valueOf(true));
 		props.setProperty("cs.sublayer.crc.append", String.valueOf(true));
+		props.setProperty("maximum_frame_length", "255"); // some arbitary big number
 		Configuration config = new Configuration(props);
 		CsSublayer cs = new CsSublayer(config);
-		byte[] input = new byte[] { 1, 2, 3 };
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			TransferFrameParser.encode(CsSublayerTest.createFrame(), bos);
+		}
+
+		byte[] input = baos.toByteArray();
+
 		byte[] encoded = cs.encode(input);
-		encoded[4]++;
+		encoded[7]++;
 		assertNull(cs.decode(encoded)); // invalid crc
 		encoded[0]++;
 		assertNull(cs.decode(encoded)); // invalid asm

@@ -22,11 +22,13 @@ public class CsSublayer {
 	private final byte[] asm;
 	private final boolean prependAsm;
 	private final boolean appendCrc;
+	private final int maxFrameLength;
 
 	public CsSublayer(Configuration config) {
 		this.asm = Util.hexToBytes(config.getProperty("cs.sublayer.asm"));
 		this.prependAsm = config.getBoolean("cs.sublayer.asm.prepend");
 		this.appendCrc = config.getBoolean("cs.sublayer.crc.append");
+		this.maxFrameLength = config.getInteger("maximum_frame_length", 0);
 	}
 
 	public byte[] encode(byte[] data) {
@@ -54,10 +56,10 @@ public class CsSublayer {
 	}
 
 	public byte[] decode(byte[] data) {
-		if (RX.isDebugEnabled()) {
-			RX.debug(Util.bytesToHex(data));
-		}
 		if (!prependAsm && !appendCrc) {
+			if (RX.isDebugEnabled()) {
+				RX.debug(Util.bytesToHex(data));
+			}
 			return data;
 		}
 		int offset = 0;
@@ -73,31 +75,56 @@ public class CsSublayer {
 			offset += asm.length;
 		}
 
-		int length = data.length;
-		if (prependAsm) {
-			length -= asm.length;
-		}
-		if (appendCrc) {
-			length -= 4;
-		}
-
-		if (length <= 0) {
-			LOG.debug("invalid pdu length: {}", data.length);
+		int length = getLength(data);
+		// corrupted frame
+		if (length == -1) {
 			return null;
 		}
-
 		if (appendCrc) {
-			long actualCrc = ((data[data.length - 4] & 0xFFL) << 24) | ((data[data.length - 3] & 0xFFL) << 16) | ((data[data.length - 2] & 0xFFL) << 8) | (data[data.length - 1] & 0xFFL);
+			if (data.length < offset + length + 4) {
+				return null;
+			}
+			long actualCrc = ((data[offset + length] & 0xFFL) << 24) | ((data[offset + length + 1] & 0xFFL) << 16) | ((data[offset + length + 2] & 0xFFL) << 8) | (data[offset + length + 3] & 0xFFL);
 			long expectedCrc = Crc32c.calculate(data, offset, length);
 			if (actualCrc != expectedCrc) {
 				LOG.debug("crc mismatch");
 				return null;
 			}
 		}
-
+		if (RX.isDebugEnabled()) {
+			RX.debug(Util.bytesToHex(data));
+		}
 		byte[] result = new byte[length];
 		System.arraycopy(data, offset, result, 0, length);
 		return result;
+	}
+
+	private int getLength(byte[] data) {
+		int offset = 0;
+		if (prependAsm) {
+			offset = asm.length;
+		}
+		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data, offset)) {
+			// aos frames are fixed length. frame length is header + data
+			return maxFrameLength;
+		}
+		if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data, offset)) {
+			int result = com.leosatdata.ccsds2110b6.util.TransferFrameParser.decodeFrameLength(data, offset);
+			// quick discard of the data
+			if (result > maxFrameLength) {
+				return -1;
+			}
+			return result;
+		}
+		if (com.leosatdata.ccsds7321b3.util.TransferFrameParser.accept(data, offset)) {
+			int result = com.leosatdata.ccsds7321b3.util.TransferFrameParser.decodeFrameLength(data, offset);
+			// quick discard of the data
+			if (result > maxFrameLength) {
+				return -1;
+			}
+			return result;
+		}
+		return -1;
 	}
 
 	private boolean checkAsm(byte[] data) {

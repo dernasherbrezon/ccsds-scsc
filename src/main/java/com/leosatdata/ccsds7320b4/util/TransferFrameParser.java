@@ -22,7 +22,7 @@ public class TransferFrameParser {
 	static final int VCID_LENGTH_BITS = 6;
 	static final int VCFRAME_COUNT_LENGTH_BITS = 24;
 	public final static int SPACECRAFT_LENGTH_BITS = 8;
-	
+
 	private final Configuration config;
 	private final int insertZoneLength;
 	private final boolean frameHeaderErrorControl;
@@ -73,10 +73,14 @@ public class TransferFrameParser {
 	}
 
 	public static boolean accept(byte[] data) {
-		if (data == null || data.length == 0) {
+		return accept(data, 0);
+	}
+
+	public static boolean accept(byte[] data, int offset) {
+		if (data == null || data.length <= offset) {
 			return false;
 		}
-		return ((data[0] & 0b1100_0000) >> 6) == TransferFrame.VERSION_NUMBER;
+		return ((data[offset] & 0b1100_0000) >> 6) == TransferFrame.VERSION_NUMBER;
 	}
 
 	public TransferFrame decode(BitInputStream bis) throws IOException {
@@ -189,7 +193,7 @@ public class TransferFrameParser {
 
 	public List<TransferFrame> createUFrame(byte[] packet, int portId) {
 		int code = Util.validateInt(VCID_LENGTH_BITS, "portId", portId);
-		if( code != 0 ) {
+		if (code != 0) {
 			return Collections.emptyList();
 		}
 		PacketService service = serviceByVcid.get(portId);

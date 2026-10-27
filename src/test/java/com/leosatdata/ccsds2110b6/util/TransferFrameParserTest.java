@@ -38,6 +38,25 @@ public class TransferFrameParserTest {
 	private OnePacketUserDataCallback callback;
 
 	@Test
+	public void testDecodeFrameLength() throws Exception {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			TransferFrame frame = createFrame();
+			frame.setSourceOrDestination(SourceDestination.DESTINATION);
+			TransferFrameParser.encode(frame, bos);
+		}
+
+		byte[] data = baos.toByteArray();
+		assertEquals(data.length, TransferFrameParser.decodeFrameLength(data, 0));
+
+		byte[] pltu = new byte[2 + data.length];
+		System.arraycopy(data, 0, pltu, 2, data.length);
+		assertEquals(data.length, TransferFrameParser.decodeFrameLength(pltu, 2));
+
+		assertEquals(-1, TransferFrameParser.decodeFrameLength(new byte[3], 0));
+	}
+
+	@Test
 	public void testSuccess() throws Exception {
 		assertDirectives(createFrame());
 	}

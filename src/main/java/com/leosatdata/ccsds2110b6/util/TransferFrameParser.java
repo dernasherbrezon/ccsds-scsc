@@ -60,10 +60,23 @@ public class TransferFrameParser {
 	}
 
 	public static boolean accept(byte[] data) {
-		if (data == null || data.length == 0) {
+		return accept(data, 0);
+	}
+
+	public static boolean accept(byte[] data, int offset) {
+		if (data == null || data.length <= offset) {
 			return false;
 		}
-		return ((data[0] & 0b1100_0000) >> 6) == TransferFrame.VERSION_NUMBER;
+		return ((data[offset] & 0b1100_0000) >> 6) == TransferFrame.VERSION_NUMBER;
+	}
+
+	public static int decodeFrameLength(byte[] data, int offset) {
+		if (data.length < offset + 4) {
+			return -1;
+		}
+		int b1 = data[offset + 2] & 0xFF;
+		int b2 = data[offset + 3] & 0xFF;
+		return (((b1 & 0b111) << 8) | b2) + 1;
 	}
 
 	public static TransferFrame decode(BitInputStream bis) throws IOException {
