@@ -13,7 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.leosatdata.util.Configuration;
-import com.leosatdata.util.Crc32c;
+import com.leosatdata.util.Crc32;
 import com.leosatdata.util.Util;
 
 public class TcpCsSublayerTest {
@@ -104,7 +104,7 @@ public class TcpCsSublayerTest {
 	private static byte[] createPdu(String frame) {
 		byte[] asm = Util.hexToBytes(ASM);
 		byte[] bytes = Util.hexToBytes(frame);
-		long crc = Crc32c.calculate(bytes);
+		long crc = Crc32.calculate(bytes);
 		byte[] result = new byte[asm.length + bytes.length + 4];
 		System.arraycopy(asm, 0, result, 0, asm.length);
 		System.arraycopy(bytes, 0, result, asm.length, bytes.length);

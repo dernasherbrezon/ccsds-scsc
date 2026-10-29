@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.leosatdata.util.Configuration;
-import com.leosatdata.util.Crc32c;
+import com.leosatdata.util.Crc32;
 import com.leosatdata.util.Util;
 
 public class TcpCsSublayer {
@@ -131,7 +131,7 @@ public class TcpCsSublayer {
 			return false;
 		}
 		long actualCrc = ((buffer[endIndex - 4] & 0xFFL) << 24) | ((buffer[endIndex - 3] & 0xFFL) << 16) | ((buffer[endIndex - 2] & 0xFFL) << 8) | (buffer[endIndex - 1] & 0xFFL);
-		long expectedCrc = Crc32c.calculate(buffer, startIndex + asm.length, pduLength - asm.length - 4); // 4 is for CRC length
+		long expectedCrc = Crc32.calculate(buffer, startIndex + asm.length, pduLength - asm.length - 4); // 4 is for CRC length
 		return actualCrc == expectedCrc;
 	}
 

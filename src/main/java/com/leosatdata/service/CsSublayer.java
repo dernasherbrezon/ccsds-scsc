@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.util.Configuration;
-import com.leosatdata.util.Crc32c;
+import com.leosatdata.util.Crc32;
 import com.leosatdata.util.Util;
 
 public class CsSublayer {
@@ -42,7 +42,7 @@ public class CsSublayer {
 		}
 		baos.writeBytes(data);
 		if (appendCrc) {
-			long crc = Crc32c.calculate(data);
+			long crc = Crc32.calculate(data);
 			baos.write((int) ((crc >>> 24) & 0xFF));
 			baos.write((int) ((crc >>> 16) & 0xFF));
 			baos.write((int) ((crc >>> 8) & 0xFF));
@@ -85,7 +85,7 @@ public class CsSublayer {
 				return null;
 			}
 			long actualCrc = ((data[offset + length] & 0xFFL) << 24) | ((data[offset + length + 1] & 0xFFL) << 16) | ((data[offset + length + 2] & 0xFFL) << 8) | (data[offset + length + 3] & 0xFFL);
-			long expectedCrc = Crc32c.calculate(data, offset, length);
+			long expectedCrc = Crc32.calculate(data, offset, length);
 			if (actualCrc != expectedCrc) {
 				LOG.debug("crc mismatch");
 				return null;
