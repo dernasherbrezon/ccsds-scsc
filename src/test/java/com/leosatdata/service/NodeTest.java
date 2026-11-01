@@ -512,7 +512,7 @@ public class NodeTest {
 		groundConfig.setProperty("default_frame_type", "2");
 		groundConfig.setProperty("p_frame_version", "2");
 		groundConfig.setProperty("spdu_version", "2");
-		groundConfig.setProperty("maximum_frame_sequence_length", "2");
+		groundConfig.setProperty("copp_variable_size", "2");
 
 		ground.stop();
 		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
@@ -522,7 +522,7 @@ public class NodeTest {
 		satelliteConfig.setProperty("default_frame_type", "2");
 		satelliteConfig.setProperty("p_frame_version", "2");
 		satelliteConfig.setProperty("spdu_version", "2");
-		satelliteConfig.setProperty("maximum_frame_sequence_length", "2");
+		satelliteConfig.setProperty("copp_variable_size", "2");
 
 		satellite.stop();
 		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
@@ -540,7 +540,7 @@ public class NodeTest {
 		// across sequence overflow
 		int rate = 2;
 		byte[] packet = TestUtil.createTestData(rate * maxFrameLength);
-		int maxNumber = groundConfig.getInteger("maximum_frame_sequence_length", 1) == 1 ? 0xFF : 0xFFFF;
+		int maxNumber = groundConfig.getInteger("copp_variable_size", 1) == 1 ? 0xFF : 0xFFFF;
 		resetSequences(maxNumber - 10);
 		int totalPackets = 10;
 		LOG.info("sending {} packets. each ~ {} frames", totalPackets, (rate + 1));
@@ -559,12 +559,12 @@ public class NodeTest {
 			groundConfig.setProperty("default_frame_type", String.valueOf(cur.getuFrameVersion()));
 			groundConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
 			groundConfig.setProperty("p_frame_version", String.valueOf(cur.getpFrameVersion()));
-			groundConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
+			groundConfig.setProperty("copp_variable_size", String.valueOf(cur.getMaxFrameSequenceLength()));
 
 			satelliteConfig.setProperty("default_frame_type", String.valueOf(cur.getuFrameVersion()));
 			satelliteConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
 			satelliteConfig.setProperty("p_frame_version", String.valueOf(cur.getpFrameVersion()));
-			satelliteConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
+			satelliteConfig.setProperty("copp_variable_size", String.valueOf(cur.getMaxFrameSequenceLength()));
 
 			ground.stop();
 			ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
@@ -584,7 +584,7 @@ public class NodeTest {
 				throw new IllegalArgumentException("unsupported: " + cur.getuFrameVersion());
 			}
 
-			if (cur.getuFrameVersion() == 2) {
+			if (cur.getuFrameVersion() == TransceiverMode.AOS.getCode()) {
 				testAosComm(ground, satelliteDataCallback);
 				testAosComm(satellite, groundDataCallback);
 			} else {
@@ -829,14 +829,14 @@ public class NodeTest {
 	public static List<CommSettings> getSupportedSettingsCombination() {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
-		settings.add(new CommSettings(3, 1, 1, 1));
-		settings.add(new CommSettings(1, 1, 1, 1));
-		settings.add(new CommSettings(2, 2, 1, 1));
+		settings.add(new CommSettings(TransceiverMode.AOS.getCode(), TransceiverMode.PROXIMITY_1.getCode(), 1, 1));
+		settings.add(new CommSettings(TransceiverMode.PROXIMITY_1.getCode(), TransceiverMode.PROXIMITY_1.getCode(), 1, 1));
+		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 1, 1));
 		// TODO re-enable for full test suite
-//		settings.add(new CommSettings(2, 2, 2, 1));
-//		settings.add(new CommSettings(2, 2, 3, 1));
-//		settings.add(new CommSettings(2, 2, 2, 2));
-//		settings.add(new CommSettings(2, 2, 3, 2));
+//		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 2, 1));
+//		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 3, 1));
+//		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 2, 2));
+//		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 3, 2));
 		return settings;
 	}
 

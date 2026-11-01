@@ -99,10 +99,10 @@ public class Configuration {
 			result = false;
 			LOG.error("unsupported spdu_version: {}", spduVersion);
 		}
-		int maximumFrameSequenceLength = getInteger("maximum_frame_sequence_length", 0);
+		int maximumFrameSequenceLength = getInteger("copp_variable_size", 0);
 		if (maximumFrameSequenceLength != 1 && maximumFrameSequenceLength != 2) {
 			result = false;
-			LOG.error("invalid maximum_frame_sequence_length: {}", maximumFrameSequenceLength);
+			LOG.error("invalid copp_variable_size: {}", maximumFrameSequenceLength);
 		}
 		int uFrameVersion = getInteger("default_frame_type", -1);
 		if (uFrameVersion < 1 || uFrameVersion > 3) {
@@ -119,7 +119,7 @@ public class Configuration {
 		// v4 (ccsds7321b3) dynamic from 8 to 24 and more
 		if (spduVersion == Type1Directive.SPDU_VERSION && maximumFrameSequenceLength == 2) {
 			result = false;
-			LOG.error("u_frame_version {} doesn't support maximum_frame_sequence_length {}", uFrameVersion, maximumFrameSequenceLength);
+			LOG.error("u_frame_version {} doesn't support copp_variable_size {}", uFrameVersion, maximumFrameSequenceLength);
 		}
 		long carrierOnlyDuration = getDuration("carrier_only_duration");
 		long acquisitionIdleDuration = getDuration("acquisition_idle_duration");

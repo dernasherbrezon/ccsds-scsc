@@ -55,7 +55,7 @@ public class TransferFrameParser {
 		this.insertZoneLength = config.getInteger("framev4.insertZoneLength", 0);
 		this.frameErrorControl = config.getBoolean("framev4.frameErrorControl");
 		this.fixedFrameLength = config.getBoolean("framev4.fixedLength");
-		this.vcfCountLength = config.getInteger("maximum_frame_sequence_length", 0);
+		this.vcfCountLength = config.getInteger("copp_variable_size", 0);
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
 		int headerLength = 32 / 8;
 		headerLength += 24 / 8; // not truncated header

@@ -57,7 +57,7 @@ public class TimeDistributionTest {
 		groundConfig.setProperty("default_frame_type", String.valueOf(commSettings.getuFrameVersion()));
 		groundConfig.setProperty("spdu_version", String.valueOf(commSettings.getSpduVersion()));
 		groundConfig.setProperty("p_frame_version", String.valueOf(commSettings.getpFrameVersion()));
-		groundConfig.setProperty("maximum_frame_sequence_length", String.valueOf(commSettings.getMaxFrameSequenceLength()));
+		groundConfig.setProperty("copp_variable_size", String.valueOf(commSettings.getMaxFrameSequenceLength()));
 
 		groundTransceiver = new NullTransceiver(groundConfig);
 		groundTransceiver.start();
@@ -75,7 +75,7 @@ public class TimeDistributionTest {
 		satelliteConfig.setProperty("default_frame_type", String.valueOf(commSettings.getuFrameVersion()));
 		satelliteConfig.setProperty("spdu_version", String.valueOf(commSettings.getSpduVersion()));
 		satelliteConfig.setProperty("p_frame_version", String.valueOf(commSettings.getpFrameVersion()));
-		satelliteConfig.setProperty("maximum_frame_sequence_length", String.valueOf(commSettings.getMaxFrameSequenceLength()));
+		satelliteConfig.setProperty("copp_variable_size", String.valueOf(commSettings.getMaxFrameSequenceLength()));
 
 		satelliteTransceiver = new NullTransceiver(satelliteConfig);
 		satelliteTransceiver.start();

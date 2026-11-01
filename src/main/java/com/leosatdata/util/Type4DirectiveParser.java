@@ -30,7 +30,7 @@ public class Type4DirectiveParser {
 	private final int maximumFrameSequenceLengthBits;
 
 	public Type4DirectiveParser(Configuration config) {
-		this.maximumFrameSequenceLengthBits = config.getInteger("maximum_frame_sequence_length", 1) * 8;
+		this.maximumFrameSequenceLengthBits = config.getInteger("copp_variable_size", 1) * 8;
 	}
 
 	public Type4Directive decode(BitInputStream bis) throws IOException {

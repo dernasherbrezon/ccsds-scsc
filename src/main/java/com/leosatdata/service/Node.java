@@ -71,7 +71,7 @@ public class Node implements Runnable, TransceiverCallback {
 		this.localScid = config.getInteger("local_spacecraft_id", 0);
 		this.testSource = config.getBoolean("test_source");
 		this.remoteScid = config.getInteger("remote_spacecraft_id", -1);
-		this.maxSequenceNumber = (config.getInteger("maximum_frame_sequence_length", 0) == 1) ? 0xFF : 0xFFFF;
+		this.maxSequenceNumber = (config.getInteger("copp_variable_size", 0) == 1) ? 0xFF : 0xFFFF;
 		this.state = new State(config);
 		this.state.setDuplex(Duplex.FULL_DUPLEX); // reasonable default
 		this.timer = new TimerService(state, config);

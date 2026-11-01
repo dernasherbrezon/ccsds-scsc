@@ -19,6 +19,7 @@ import com.leosatdata.model.Spdu;
 import com.leosatdata.model.SpduHeader;
 import com.leosatdata.model.StatusReport;
 import com.leosatdata.model.TimeDistribution;
+import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
@@ -45,8 +46,7 @@ public class SpduParser {
 	private final Type5DirectiveParser type5Parser;
 
 	public SpduParser(Configuration config) {
-		// TODO maximum_frame_sequence_length should be removed?
-		this.plcwType = config.getInteger("p_frame_version", 0) == 1 ? Plcw.SHORT_PLCW : Plcw.LONG_PLCW;
+		this.plcwType = config.getInteger("p_frame_version", 0) == TransceiverMode.PROXIMITY_1.getCode() ? Plcw.SHORT_PLCW : Plcw.LONG_PLCW;
 		this.type4Parser = new Type4DirectiveParser(config);
 		this.type5Parser = new Type5DirectiveParser();
 	}
