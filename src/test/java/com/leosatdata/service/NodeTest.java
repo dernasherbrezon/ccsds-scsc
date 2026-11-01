@@ -290,7 +290,7 @@ public class NodeTest {
 		tx.setDataRate(DataRate.R8C);
 		tx.setFrequency(Frequency.CH5);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setCoherency(Coherency.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT);
 		result.setTxParams(tx);
 
 		ground.setCommParameters(result);
@@ -509,8 +509,8 @@ public class NodeTest {
 	public void testSequenceOverflow2() throws Exception {
 		// make test a little bit faster
 		groundConfig.setProperty("maximum_frame_length", "255");
-		groundConfig.setProperty("u_frame_version", "4");
-		groundConfig.setProperty("frame_version", "4");
+		groundConfig.setProperty("default_frame_type", "2");
+		groundConfig.setProperty("p_frame_version", "2");
 		groundConfig.setProperty("spdu_version", "2");
 		groundConfig.setProperty("maximum_frame_sequence_length", "2");
 
@@ -519,8 +519,8 @@ public class NodeTest {
 		ground.start();
 
 		satelliteConfig.setProperty("maximum_frame_length", "255");
-		satelliteConfig.setProperty("u_frame_version", "4");
-		satelliteConfig.setProperty("frame_version", "4");
+		satelliteConfig.setProperty("default_frame_type", "2");
+		satelliteConfig.setProperty("p_frame_version", "2");
 		satelliteConfig.setProperty("spdu_version", "2");
 		satelliteConfig.setProperty("maximum_frame_sequence_length", "2");
 
@@ -556,14 +556,14 @@ public class NodeTest {
 	public void testStartSendStop() throws Exception {
 		for (CommSettings cur : getSupportedSettingsCombination()) {
 			LOG.info("testing: {}", cur);
-			groundConfig.setProperty("u_frame_version", String.valueOf(cur.getuFrameVersion()));
+			groundConfig.setProperty("default_frame_type", String.valueOf(cur.getuFrameVersion()));
 			groundConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
-			groundConfig.setProperty("frame_version", String.valueOf(cur.getpFrameVersion()));
+			groundConfig.setProperty("p_frame_version", String.valueOf(cur.getpFrameVersion()));
 			groundConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
 
-			satelliteConfig.setProperty("u_frame_version", String.valueOf(cur.getuFrameVersion()));
+			satelliteConfig.setProperty("default_frame_type", String.valueOf(cur.getuFrameVersion()));
 			satelliteConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
-			satelliteConfig.setProperty("frame_version", String.valueOf(cur.getpFrameVersion()));
+			satelliteConfig.setProperty("p_frame_version", String.valueOf(cur.getpFrameVersion()));
 			satelliteConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
 
 			ground.stop();
@@ -603,7 +603,7 @@ public class NodeTest {
 	@Test
 	public void testSeqIsNotSupportedForAos() throws Exception {
 		// aos
-		groundConfig.setProperty("u_frame_version", "2");
+		groundConfig.setProperty("default_frame_type", "3");
 		ground.stop();
 		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
 		ground.start();
@@ -829,14 +829,14 @@ public class NodeTest {
 	public static List<CommSettings> getSupportedSettingsCombination() {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
-		settings.add(new CommSettings(2, 3, 1, 1));
-		settings.add(new CommSettings(3, 3, 1, 1));
-		settings.add(new CommSettings(4, 4, 1, 1));
+		settings.add(new CommSettings(3, 1, 1, 1));
+		settings.add(new CommSettings(1, 1, 1, 1));
+		settings.add(new CommSettings(2, 2, 1, 1));
 		// TODO re-enable for full test suite
-//		settings.add(new CommSettings(4, 4, 2, 1));
-//		settings.add(new CommSettings(4, 4, 3, 1));
-//		settings.add(new CommSettings(4, 4, 2, 2));
-//		settings.add(new CommSettings(4, 4, 3, 2));
+//		settings.add(new CommSettings(2, 2, 2, 1));
+//		settings.add(new CommSettings(2, 2, 3, 1));
+//		settings.add(new CommSettings(2, 2, 2, 2));
+//		settings.add(new CommSettings(2, 2, 3, 2));
 		return settings;
 	}
 
@@ -884,9 +884,8 @@ public class NodeTest {
 
 	public static Type5Directive createType5CommParameters() {
 		Type5LinkEstablishment rx = new Type5LinkEstablishment();
-		rx.setAosFrameLength(0);
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
-		rx.setCoherency(Coherency.COHERENT_PSK);
+		rx.setCoherency(Coherency.COHERENT);
 		rx.setDemandQuery(Type5NegotiationType.DEMAND);
 		rx.setFrequency(2_100_000_000f);
 		rx.setLinkSnr(0);
@@ -899,9 +898,8 @@ public class NodeTest {
 		rx.setTransmitToken(false);
 
 		Type5LinkEstablishment tx = new Type5LinkEstablishment();
-		tx.setAosFrameLength(0);
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
-		tx.setCoherency(Coherency.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT);
 		tx.setDemandQuery(Type5NegotiationType.DEMAND);
 		tx.setFrequency(2_200_000_000f);
 		tx.setLinkSnr(0);
@@ -958,7 +956,7 @@ public class NodeTest {
 		tx.setDataRate(dataRate);
 		tx.setFrequency(Frequency.CH3);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setCoherency(Coherency.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT);
 
 		PlExtensions txExt = new PlExtensions();
 		txExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
@@ -975,7 +973,7 @@ public class NodeTest {
 		rx.setDataRate(dataRate);
 		rx.setFrequency(Frequency.CH3);
 		rx.setMode(Mode.PROXIMITY1);
-		rx.setCoherency(Coherency.COHERENT_PSK);
+		rx.setCoherency(Coherency.COHERENT);
 
 		PlExtensions rxExt = new PlExtensions();
 		rxExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);

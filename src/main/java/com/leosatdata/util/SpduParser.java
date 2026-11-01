@@ -10,6 +10,7 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Frequency;
@@ -44,9 +45,10 @@ public class SpduParser {
 	private final Type5DirectiveParser type5Parser;
 
 	public SpduParser(Configuration config) {
-		this.plcwType = config.getInteger("maximum_frame_sequence_length", 1) == 1 ? Plcw.SHORT_PLCW : Plcw.LONG_PLCW;
+		// TODO maximum_frame_sequence_length should be removed?
+		this.plcwType = config.getInteger("p_frame_version", 0) == 1 ? Plcw.SHORT_PLCW : Plcw.LONG_PLCW;
 		this.type4Parser = new Type4DirectiveParser(config);
-		this.type5Parser = new Type5DirectiveParser(config);
+		this.type5Parser = new Type5DirectiveParser();
 	}
 
 	public void encode(Spdu message, BitOutputStream bos) throws IOException {
@@ -61,9 +63,10 @@ public class SpduParser {
 				bos.writeUnsignedInt(3, plcw.getExpeditedFrameCounter());
 				bos.writeUnsignedInt(8, plcw.getReportValue());
 			} else {
-				bos.writeUnsignedInt(9, 0); // unused
+				bos.writeUnsignedInt(3, 0); // unused
+				bos.writeUnsignedInt(6, plcw.getVcid());
 				bos.writeBoolean(plcw.isRetransmit());
-				bos.writeUnsignedInt(1, plcw.getPcid());
+				bos.writeUnsignedInt(1, 0); // unused
 				bos.writeUnsignedInt(3, plcw.getExpeditedFrameCounter());
 				bos.writeUnsignedInt(16, plcw.getReportValue());
 			}
@@ -95,8 +98,13 @@ public class SpduParser {
 		}
 
 		byte[] payloadData = baos.toByteArray();
-		// output length despite directive type
-		bos.writeUnsignedInt(4, payloadData.length);
+		if (!(message instanceof Type5Directive)) {
+			// output length despite directive type
+			bos.writeUnsignedInt(4, payloadData.length);
+		} else {
+			// Type5 directive has 12bits length
+			bos.writeUnsignedInt(12, payloadData.length);
+		}
 		bos.writeFully(payloadData);
 	}
 
@@ -114,9 +122,10 @@ public class SpduParser {
 				plcw.setExpeditedFrameCounter(bis.readUnsignedInt(3));
 				plcw.setReportValue(bis.readUnsignedInt(8));
 			} else {
-				bis.skipBits(9);
+				bis.skipBits(3);
+				plcw.setVcid(bis.readUnsignedInt(6));
 				plcw.setRetransmit(bis.readBoolean());
-				plcw.setPcid(bis.readUnsignedInt(1));
+				bis.skipBits(1);
 				plcw.setExpeditedFrameCounter(bis.readUnsignedInt(3));
 				plcw.setReportValue(bis.readUnsignedInt(16));
 			}
@@ -125,22 +134,26 @@ public class SpduParser {
 
 		// VARIABLE_SPDU
 		header.setType(bis.readUnsignedInt(3));
-		int lengthBytes = bis.readUnsignedInt(4);
 		Spdu result;
 		switch (header.getType()) {
 		case TYPE1_DIRECTIVE:
+			int lengthBytes = bis.readUnsignedInt(4);
 			result = Type1DirectiveParser.decode(lengthBytes, bis);
 			break;
 		case TYPE2_DIRECTIVE:
+			bis.skipBits(4);
 			result = TimeDistributionParser.decode(bis);
 			break;
 		case TYPE3_DIRECTIVE:
+			bis.skipBits(4);
 			result = StatusReportParser.decode(bis);
 			break;
 		case TYPE4_DIRECTIVE:
+			bis.skipBits(4);
 			result = type4Parser.decode(bis);
 			break;
 		case TYPE5_DIRECTIVE:
+			lengthBytes = bis.readUnsignedInt(12);
 			result = type5Parser.decode(bis);
 			break;
 		default:
@@ -202,18 +215,42 @@ public class SpduParser {
 		if (code != 0) {
 			return code;
 		}
-		return validate(obj.getRxLink());
+		code = validate(obj.getRxLink());
+		if (code != 0) {
+			return code;
+		}
+		if (obj.getRxLink() != null && obj.getTxLink() != null) {
+			// at least one side should be non-coherent and convey frequency
+			if (obj.getRxLink().getCoherency().equals(Coherency.COHERENT) && obj.getTxLink().getCoherency().equals(Coherency.COHERENT)) {
+				return ErrorCode.INVALID_ARGUMENT.ordinal();
+			}
+		}
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
 	private static int validate(Type5LinkEstablishment params) {
-		if (params.getAosFrameLength() < 0 || params.getAosFrameLength() > ((1 << 16) - 1)) {
+		if (params.getTimeSampleField() < 0 || params.getTimeSampleField() > ((1 << 6) - 1)) {
 			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
 		if (params.getSymbolRate() < 0) {
 			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
 		}
-		if (params.getFrequency() < 0) {
+		if (params.getCoherency() == null) {
+			return ErrorCode.INVALID_ARGUMENT.ordinal();
+		}
+		if (params.getCoherency().equals(Coherency.NON_COHERENT) && params.getFrequency() <= 0) {
 			return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
+		}
+		if (params.getCoherency().equals(Coherency.COHERENT)) {
+			if (params.getTurnaroundRatio() == null) {
+				return ErrorCode.INVALID_ARGUMENT.ordinal();
+			}
+			if (params.getTurnaroundRatio().getNumerator() < 0 || params.getTurnaroundRatio().getNumerator() > ((1 << 16) - 1)) {
+				return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
+			}
+			if (params.getTurnaroundRatio().getDenominator() < 0 || params.getTurnaroundRatio().getDenominator() > ((1 << 16) - 1)) {
+				return ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal();
+			}
 		}
 		return ErrorCode.SUCCESS.ordinal();
 	}

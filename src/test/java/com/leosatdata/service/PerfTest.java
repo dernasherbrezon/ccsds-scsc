@@ -68,9 +68,9 @@ public class PerfTest {
 		props.putAll(NodeTest.load("src/test/resources/channel.properties"));
 		props.setProperty("channel_delay_duration", "0");
 		groundConfig = new Configuration(props);
-		groundConfig.setProperty("u_frame_version", String.valueOf(commSettings.getuFrameVersion()));
+		groundConfig.setProperty("default_frame_type", String.valueOf(commSettings.getuFrameVersion()));
 		groundConfig.setProperty("spdu_version", String.valueOf(commSettings.getSpduVersion()));
-		groundConfig.setProperty("frame_version", String.valueOf(commSettings.getpFrameVersion()));
+		groundConfig.setProperty("p_frame_version", String.valueOf(commSettings.getpFrameVersion()));
 		groundConfig.setProperty("maximum_frame_sequence_length", String.valueOf(commSettings.getMaxFrameSequenceLength()));
 
 		groundTransceiver = new NullTransceiver(groundConfig);
@@ -88,9 +88,9 @@ public class PerfTest {
 		props.putAll(NodeTest.load("src/test/resources/channel.properties"));
 		props.setProperty("channel_delay_duration", "0");
 		satelliteConfig = new Configuration(props);
-		satelliteConfig.setProperty("u_frame_version", String.valueOf(commSettings.getuFrameVersion()));
+		satelliteConfig.setProperty("default_frame_type", String.valueOf(commSettings.getuFrameVersion()));
 		satelliteConfig.setProperty("spdu_version", String.valueOf(commSettings.getSpduVersion()));
-		satelliteConfig.setProperty("frame_version", String.valueOf(commSettings.getpFrameVersion()));
+		satelliteConfig.setProperty("p_frame_version", String.valueOf(commSettings.getpFrameVersion()));
 		satelliteConfig.setProperty("maximum_frame_sequence_length", String.valueOf(commSettings.getMaxFrameSequenceLength()));
 
 		satelliteTransceiver = new NullTransceiver(satelliteConfig);

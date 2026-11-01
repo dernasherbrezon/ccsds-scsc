@@ -45,7 +45,7 @@ public class TimeDistributionTest {
 		MockUserDataCallback satelliteDataCallback;
 		Node satellite;
 
-		CommSettings commSettings = new CommSettings(3, 3, 1, 1);
+		CommSettings commSettings = new CommSettings(1, 1, 1, 1);
 
 		Properties props = new Properties();
 		props.putAll(NodeTest.load("src/main/resources/mib.properties"));
@@ -54,9 +54,9 @@ public class TimeDistributionTest {
 		props.putAll(NodeTest.load("src/test/resources/ground.properties"));
 		props.putAll(NodeTest.load("src/test/resources/channel.properties"));
 		groundConfig = new Configuration(props);
-		groundConfig.setProperty("u_frame_version", String.valueOf(commSettings.getuFrameVersion()));
+		groundConfig.setProperty("default_frame_type", String.valueOf(commSettings.getuFrameVersion()));
 		groundConfig.setProperty("spdu_version", String.valueOf(commSettings.getSpduVersion()));
-		groundConfig.setProperty("frame_version", String.valueOf(commSettings.getpFrameVersion()));
+		groundConfig.setProperty("p_frame_version", String.valueOf(commSettings.getpFrameVersion()));
 		groundConfig.setProperty("maximum_frame_sequence_length", String.valueOf(commSettings.getMaxFrameSequenceLength()));
 
 		groundTransceiver = new NullTransceiver(groundConfig);
@@ -72,9 +72,9 @@ public class TimeDistributionTest {
 		props.putAll(NodeTest.load("src/test/resources/satellite.properties"));
 		props.putAll(NodeTest.load("src/test/resources/channel.properties"));
 		satelliteConfig = new Configuration(props);
-		satelliteConfig.setProperty("u_frame_version", String.valueOf(commSettings.getuFrameVersion()));
+		satelliteConfig.setProperty("default_frame_type", String.valueOf(commSettings.getuFrameVersion()));
 		satelliteConfig.setProperty("spdu_version", String.valueOf(commSettings.getSpduVersion()));
-		satelliteConfig.setProperty("frame_version", String.valueOf(commSettings.getpFrameVersion()));
+		satelliteConfig.setProperty("p_frame_version", String.valueOf(commSettings.getpFrameVersion()));
 		satelliteConfig.setProperty("maximum_frame_sequence_length", String.valueOf(commSettings.getMaxFrameSequenceLength()));
 
 		satelliteTransceiver = new NullTransceiver(satelliteConfig);

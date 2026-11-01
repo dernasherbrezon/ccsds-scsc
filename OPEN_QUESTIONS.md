@@ -62,3 +62,11 @@ Here is the list of questions and suggestions to the specification with no parti
 3. 6.2.3.2.2. "setting the PCID field in the SET V(R) directive to the value associated with this FOP-P". There is no such field in the V(R) directive
 
 4. Set V(R) directive supports only 8bit sequence numbers. However 32-bit plcw supports 16bit( (2 bytes) sequences.
+
+====================================
+
+Updtes 
+
+1. E2.3.1 has "The REPORT REQUEST directive is the mechanism for requesting ...  time-tag sample collection ...". Which is no longer the case for type5 directive. 
+
+2. E2.8.3.2 says 1100 while Figure E-2 shows PN Ranging as 0110

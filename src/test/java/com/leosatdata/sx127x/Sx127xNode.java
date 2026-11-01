@@ -156,7 +156,7 @@ public class Sx127xNode {
 		tx.setDataRate(dataRate);
 		tx.setFrequency(Frequency.CH3);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setCoherency(Coherency.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT);
 
 		PlExtensions txExt = new PlExtensions();
 		txExt.setCarrierModulation(Type1CarrierModulation.FSK);
@@ -173,7 +173,7 @@ public class Sx127xNode {
 		rx.setDataRate(dataRate);
 		rx.setFrequency(Frequency.CH3);
 		rx.setMode(Mode.PROXIMITY1);
-		rx.setCoherency(Coherency.COHERENT_PSK);
+		rx.setCoherency(Coherency.COHERENT);
 
 		PlExtensions rxExt = new PlExtensions();
 		rxExt.setCarrierModulation(Type1CarrierModulation.FSK);

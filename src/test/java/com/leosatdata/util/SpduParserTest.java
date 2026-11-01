@@ -23,6 +23,7 @@ import com.leosatdata.model.Duplex;
 import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.LineCoding;
+import com.leosatdata.model.LinkDirection;
 import com.leosatdata.model.Mode;
 import com.leosatdata.model.ModulationIndex;
 import com.leosatdata.model.PlExtensions;
@@ -35,14 +36,19 @@ import com.leosatdata.model.RangingModulationIndex;
 import com.leosatdata.model.RangingReportRequest;
 import com.leosatdata.model.RangingType;
 import com.leosatdata.model.ReportRequest;
+import com.leosatdata.model.ReportSourceScid;
 import com.leosatdata.model.RsCodeType;
 import com.leosatdata.model.ScramblerType;
+import com.leosatdata.model.ServiceRequest;
+import com.leosatdata.model.SetFixedLengthFrame;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.SpduHeader;
 import com.leosatdata.model.StatusReport;
+import com.leosatdata.model.StatusType;
 import com.leosatdata.model.TimeDistribution;
 import com.leosatdata.model.TimeDistributionType;
 import com.leosatdata.model.TransceiverMode;
+import com.leosatdata.model.TurnaroundRatio;
 import com.leosatdata.model.TxRxParameters;
 import com.leosatdata.model.Type1CarrierModulation;
 import com.leosatdata.model.Type1Coding;
@@ -55,6 +61,7 @@ import com.leosatdata.model.Type4NegotiationType;
 import com.leosatdata.model.Type5Directive;
 import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.Type5NegotiationType;
+import com.leosatdata.model.Type5ReportRequest;
 import com.leosatdata.model.Vr;
 
 public class SpduParserTest {
@@ -77,7 +84,7 @@ public class SpduParserTest {
 
 	@Test
 	public void testPlcw() throws Exception {
-		config.setProperty("maximum_frame_sequence_length", "1");
+		config.setProperty("p_frame_version", "1");
 		parser = new SpduParser(config);
 		SpduHeader header = new SpduHeader();
 		header.setFormat(SpduParser.FIXED_SPDU);
@@ -92,7 +99,7 @@ public class SpduParserTest {
 
 		assertDirectives(plcw);
 
-		config.setProperty("maximum_frame_sequence_length", "2");
+		config.setProperty("p_frame_version", "2");
 		parser = new SpduParser(config);
 		header = new SpduHeader();
 		header.setFormat(SpduParser.FIXED_SPDU);
@@ -224,14 +231,48 @@ public class SpduParserTest {
 		type5.setTxLink(null);
 		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type5));
 		type5 = createValidType5();
-		type5.getTxLink().setAosFrameLength(-1);
+		type5.getTxLink().setTimeSampleField(-1);
 		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
 		type5 = createValidType5();
-		type5.getTxLink().setAosFrameLength(65536);
+		type5.getTxLink().setTimeSampleField(64);
 		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
 		type5 = createValidType5();
-		type5.getTxLink().setFrequency(-1);
+		type5.getTxLink().setCoherency(Coherency.NON_COHERENT);
+		type5.getTxLink().setFrequency(-1.0f);
 		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
+
+		type5 = createValidType5();
+		type5.getTxLink().setCoherency(null);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type5));
+
+		type5 = createValidType5();
+		type5.getTxLink().setCoherency(Coherency.COHERENT);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type5));
+
+		type5 = createValidType5();
+		type5.getTxLink().setCoherency(Coherency.COHERENT);
+		TurnaroundRatio ratio = new TurnaroundRatio();
+		ratio.setNumerator(1 << 16);
+		type5.getTxLink().setTurnaroundRatio(ratio);
+		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
+
+		type5 = createValidType5();
+		type5.getTxLink().setCoherency(Coherency.COHERENT);
+		ratio = new TurnaroundRatio();
+		ratio.setDenominator(1 << 16);
+		type5.getTxLink().setTurnaroundRatio(ratio);
+		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
+
+		type5 = createValidType5();
+		ratio = new TurnaroundRatio();
+		ratio.setNumerator(10);
+		ratio.setDenominator(11);
+		type5.getTxLink().setCoherency(Coherency.COHERENT);
+		type5.getTxLink().setTurnaroundRatio(ratio);
+		type5.getRxLink().setCoherency(Coherency.COHERENT);
+		type5.getRxLink().setTurnaroundRatio(ratio);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), parser.validateCommParameters(type5));
+
 		type5 = createValidType5();
 		type5.getTxLink().setSymbolRate(-1);
 		assertEquals(ErrorCode.INVALID_ARGUMENT_LENGTH.ordinal(), parser.validateCommParameters(type5));
@@ -273,7 +314,7 @@ public class SpduParserTest {
 		rxParams.setDataRate(DataRate.R128NC);
 		rxParams.setFrequency(Frequency.CH3);
 		rxParams.setMode(Mode.PROXIMITY1);
-		rxParams.setCoherency(Coherency.COHERENT_PSK);
+		rxParams.setCoherency(Coherency.COHERENT);
 
 		PlExtensions rxPlExt = new PlExtensions();
 		rxPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
@@ -290,7 +331,7 @@ public class SpduParserTest {
 		txParams.setDataRate(DataRate.R128NC);
 		txParams.setFrequency(Frequency.CH6);
 		txParams.setMode(Mode.PROXIMITY1);
-		txParams.setCoherency(Coherency.COHERENT_PSK);
+		txParams.setCoherency(Coherency.COHERENT);
 
 		PlExtensions txPlExt = new PlExtensions();
 		txPlExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
@@ -324,7 +365,7 @@ public class SpduParserTest {
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
 		rx.setDuplex(Duplex.FULL_DUPLEX);
 		rx.setLinkSnr(2);
-		rx.setCoherency(Coherency.COHERENT_PSK);
+		rx.setCoherency(Coherency.NON_COHERENT);
 		rx.setFrequency(2240000000f);
 		rx.setSymbolRate(8400);
 		rx.setDemandQuery(Type5NegotiationType.DEMAND);
@@ -332,7 +373,6 @@ public class SpduParserTest {
 		rx.setCarrierModulation(Type4CarrierModulation.BPSK);
 		rx.setPolarization(Polarization.LHCP);
 		rx.setTransmitToken(false);
-		rx.setAosFrameLength(23);
 		rx.setTransceiverMode(TransceiverMode.USLP);
 
 		Type5LinkEstablishment tx = new Type5LinkEstablishment();
@@ -340,7 +380,7 @@ public class SpduParserTest {
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
 		tx.setDuplex(Duplex.FULL_DUPLEX);
 		tx.setLinkSnr(2);
-		tx.setCoherency(Coherency.COHERENT_PSK);
+		tx.setCoherency(Coherency.NON_COHERENT);
 		tx.setFrequency(2250000000f);
 		tx.setSymbolRate(8400);
 		tx.setDemandQuery(Type5NegotiationType.DEMAND);
@@ -348,14 +388,16 @@ public class SpduParserTest {
 		tx.setCarrierModulation(Type4CarrierModulation.BPSK);
 		tx.setPolarization(Polarization.LHCP);
 		tx.setTransmitToken(false);
-		tx.setAosFrameLength(23);
 		tx.setTransceiverMode(TransceiverMode.USLP);
 
 		PnRanging pnRanging = new PnRanging();
 		pnRanging.setChipRateK(3);
 		pnRanging.setChipRateL(2);
 		pnRanging.setChipRateM(3);
-		pnRanging.setPnEpochTime(new DaySegmented());
+		DaySegmented daySegmented = new DaySegmented();
+		daySegmented.setDay(20);
+		daySegmented.setMillisecondsOfTheDay(1000);
+		pnRanging.setPnEpochTime(daySegmented);
 		pnRanging.setRangingCode(RangingCode.T2B);
 		pnRanging.setRangingType(RangingType.ONE_WAY);
 		pnRanging.setReportRequest(RangingReportRequest.OBSERVABLE);
@@ -364,20 +406,36 @@ public class SpduParserTest {
 		Vr vr = new Vr();
 		vr.setFrameSequenceNumber(123);
 
-		ReportRequest reportReq = new ReportRequest();
+		ServiceRequest serviceRequest = new ServiceRequest();
+		serviceRequest.setEmergency(false);
+		serviceRequest.setMissionSpecificEvent(45);
+
+		SetFixedLengthFrame fixedLength = new SetFixedLengthFrame();
+		fixedLength.setDirection(LinkDirection.FORWARD);
+		fixedLength.setFrameLength(140);
+		fixedLength.setSlicing(false);
+
+		Type5ReportRequest reportReq = new Type5ReportRequest();
 		reportReq.setPcid0PlcwRequest(true);
 		reportReq.setPcid1PlcwRequest(false);
 		reportReq.setStatusReportRequest(1);
-		reportReq.setTimeTagRequest(2);
+		reportReq.setLecRequested(false);
+		reportReq.setVcid(34);
+
+		ReportSourceScid reportSource = new ReportSourceScid();
+		reportSource.setSourceSpacecraftId(14);
+		reportSource.setType(StatusType.LOCAL_SCID);
 
 		Type5Directive type5 = new Type5Directive();
 		type5.setHeader(header);
 		type5.setVr(vr);
 		type5.setRxLink(rx);
 		type5.setTxLink(tx);
+		type5.setServiceRequest(serviceRequest);
+		type5.setSetFixedLength(fixedLength);
 		type5.setPnRanging(pnRanging);
 		type5.setReportRequest(reportReq);
-		type5.setSourceSpacecraftId(14);
+		type5.setReportSourceScid(reportSource);
 		return type5;
 	}
 

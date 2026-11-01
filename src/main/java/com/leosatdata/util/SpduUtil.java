@@ -389,8 +389,11 @@ public class SpduUtil {
 		}
 		if (params instanceof Type5Directive) {
 			Type5Directive type5 = (Type5Directive) params;
-			if (type5.getReportRequest() != null) {
-				return type5.getReportRequest().getTimeTagRequest();
+			if (type5.getTxLink() != null) {
+				return type5.getTxLink().getTimeSampleField();
+			}
+			if (type5.getRxLink() != null) {
+				return type5.getRxLink().getTimeSampleField();
 			}
 			return 0;
 		}

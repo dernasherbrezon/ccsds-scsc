@@ -119,7 +119,7 @@ public class TransceiverUtil {
 			result.setFrequency(Frequency.CH1);
 		}
 		result.setMode(Mode.PROXIMITY1);
-		result.setCoherency(Coherency.NON_COHERENT_PSK);
+		result.setCoherency(Coherency.NON_COHERENT);
 		return result;
 	}
 
@@ -264,7 +264,7 @@ public class TransceiverUtil {
 		result.setPolarization(Polarization.LHCP);
 		result.setRnmd(false);
 		result.setTransmitToken(false);
-		result.setCoherency(Coherency.NON_COHERENT_PSK);
+		result.setCoherency(Coherency.NON_COHERENT);
 
 		int hailingChannel = channel;
 		if (channel == -1) {
@@ -272,7 +272,7 @@ public class TransceiverUtil {
 		}
 
 		// use the same channel for type 4 and type 5 directives
-		result.setFrequency(config.getLong("frequency.4.ch" + hailingChannel + direction.getShortCode(), 0));
+		result.setFrequency((float) (config.getLong("frequency.4.ch" + hailingChannel + direction.getShortCode(), 0)));
 		result.setCarrierModulation(type5HailCarrierModulation);
 		result.setCoding(Type4Coding.LDPC2048_1024);
 		result.setModulationIndex(ModulationIndex.M0); // not specified in the spec
@@ -345,7 +345,7 @@ public class TransceiverUtil {
 		return transceiver.setTxCommParameters(comm);
 	}
 
-	private static CommParameters convertType5Parameters(Type5LinkEstablishment params) {
+	private static CommParameters convertType5Parameters(Type5LinkEstablishment params, Type5LinkEstablishment otherSide) {
 		CommParameters result = new CommParameters();
 		result.setSymbolRate(params.getSymbolRate());
 		if (params.getCarrierModulation().equals(Type4CarrierModulation.PCM_PM_BI_PHASE)) {
@@ -357,7 +357,11 @@ public class TransceiverUtil {
 		}
 		result.setCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		result.setModulationIndex(params.getModulationIndex());
-		result.setFrequency(params.getFrequency());
+		if (params.getCoherency().equals(Coherency.NON_COHERENT)) {
+			result.setFrequency(params.getFrequency());
+		} else {
+			result.setFrequency(otherSide.getFrequency() * params.getTurnaroundRatio().getNumerator() / params.getTurnaroundRatio().getDenominator());
+		}
 		result.setEncoding(convertType4Coding(params.getCoding()));
 		result.setCoherency(params.getCoherency());
 		result.setPolarization(params.getPolarization());
@@ -368,13 +372,15 @@ public class TransceiverUtil {
 
 	private int applyType5RxParameters(Type5Directive directive, boolean invert) {
 		Type5LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
-		CommParameters comm = convertType5Parameters(params);
+		Type5LinkEstablishment otherSide = invert ? directive.getRxLink() : directive.getTxLink();
+		CommParameters comm = convertType5Parameters(params, otherSide);
 		return transceiver.setRxCommParameters(comm);
 	}
 
 	private int applyType5TxParameters(Type5Directive directive, boolean invert) {
 		Type5LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
-		CommParameters comm = convertType5Parameters(params);
+		Type5LinkEstablishment otherSide = invert ? directive.getTxLink() : directive.getRxLink();
+		CommParameters comm = convertType5Parameters(params, otherSide);
 		return transceiver.setTxCommParameters(comm);
 	}
 

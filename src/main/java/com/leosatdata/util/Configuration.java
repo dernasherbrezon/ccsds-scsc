@@ -104,15 +104,15 @@ public class Configuration {
 			result = false;
 			LOG.error("invalid maximum_frame_sequence_length: {}", maximumFrameSequenceLength);
 		}
-		int uFrameVersion = getInteger("u_frame_version", 0);
-		if (uFrameVersion < 2 || uFrameVersion > 4) {
+		int uFrameVersion = getInteger("default_frame_type", -1);
+		if (uFrameVersion < 1 || uFrameVersion > 3) {
 			result = false;
-			LOG.error("unsupported u_frame_version: {}", uFrameVersion);
+			LOG.error("unsupported default_frame_type: {}", uFrameVersion);
 		}
-		int pFrameVersion = getInteger("frame_version", 0);
-		if (pFrameVersion < 3 || pFrameVersion > 4) {
+		int pFrameVersion = getInteger("p_frame_version", 0);
+		if (pFrameVersion < 1 || pFrameVersion > 2) {
 			result = false;
-			LOG.error("unsupported frame_version: {}", pFrameVersion);
+			LOG.error("unsupported p_frame_version: {}", pFrameVersion);
 		}
 		// v2 (ccsds7320b4) support 24 bit
 		// v3 (ccsds2110b6) support 8 bit only

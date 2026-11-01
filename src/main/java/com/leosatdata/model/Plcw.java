@@ -15,6 +15,7 @@ public class Plcw implements Spdu {
 	private int pcid; // See 5.1.2.10, ‘RECEIVING_PCID_BUFFER’.
 	private int expeditedFrameCounter;
 	private int reportValue; // nr
+	private int vcid;
 
 	public Plcw() {
 		// do nothing
@@ -28,6 +29,14 @@ public class Plcw implements Spdu {
 	@Override
 	public void setHeader(SpduHeader header) {
 		this.header = header;
+	}
+	
+	public int getVcid() {
+		return vcid;
+	}
+	
+	public void setVcid(int vcid) {
+		this.vcid = vcid;
 	}
 
 	public boolean isRetransmit() {
@@ -64,7 +73,7 @@ public class Plcw implements Spdu {
 
 	@Override
 	public String toString() {
-		return "plcw [header=" + header + ", retransmit=" + retransmit + ", pcid=" + pcid + ", expeditedFrameCounter=" + expeditedFrameCounter + ", reportValue=" + reportValue + "]";
+		return "plcw [header=" + header + ", retransmit=" + retransmit + ", pcid=" + pcid + ", expeditedFrameCounter=" + expeditedFrameCounter + ", reportValue=" + reportValue + ", vcid=" + vcid + "]";
 	}
 
 }
