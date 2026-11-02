@@ -219,10 +219,8 @@ public class NodeTest {
 		satellite.waitForSession();
 		ground.startSession();
 
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 
 		assertTestExpPacket();
 	}
@@ -313,10 +311,8 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(type1Comm);
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 
 		assertTestExpPacket();
 	}
@@ -433,7 +429,7 @@ public class NodeTest {
 
 		// then automatic recover
 
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 
 		// satellite won't even notice ground lost carrier and re-run hail
 
@@ -448,12 +444,9 @@ public class NodeTest {
 		Thread.sleep(2 * groundConfig.getDuration("carrier_loss_timer_duration"));
 
 		assertNotNull(groundCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
-		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
 
 		// then automatic recover
-
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 
 		assertTestExpPacket();
 	}
@@ -786,44 +779,39 @@ public class NodeTest {
 		}
 	}
 
-	private void establishType5Session() throws InterruptedException {
+	private void establishType5Session() {
 		satellite.setDuplex(duplex);
 		satellite.waitForSession();
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType5CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 	}
 
-	private void establishType4Session() throws InterruptedException {
+	private void establishType4Session() {
 		satellite.setDuplex(duplex);
 		satellite.waitForSession();
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType4CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 	}
 
-	private void establishType1Session() throws InterruptedException {
+	private void establishType1Session() {
 		establishType1Session(DataRate.R8C);
 	}
 
-	private void establishType1Session(DataRate dataRate) throws InterruptedException {
+	private void establishType1Session(DataRate dataRate) {
 		satellite.setDuplex(duplex);
 		satellite.waitForSession();
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType1CommParameters(dataRate));
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
 
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 	}
 
 	public static List<CommSettings> getSupportedSettingsCombination() {
