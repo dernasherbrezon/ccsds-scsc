@@ -14,6 +14,7 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PersistentActivityType;
+import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
@@ -87,13 +88,6 @@ public class Configuration {
 
 	public boolean validate() {
 		boolean result = true;
-		int transmissionWindow = getInteger("transmission_window", 0);
-		// for 2 byte frame sequence numbers upper limit can be more than 127,
-		// keep this limit anyway
-		if (transmissionWindow <= 0 || transmissionWindow > 127) {
-			result = false;
-			LOG.error("invalid transmission_window parameter: {}", transmissionWindow);
-		}
 		int spduVersion = getInteger("spdu_version", 0);
 		if (spduVersion != Type1Directive.SPDU_VERSION && spduVersion != Type4Directive.SPDU_VERSION && spduVersion != Type5Directive.SPDU_VERSION) {
 			result = false;
@@ -120,6 +114,11 @@ public class Configuration {
 		if (spduVersion == Type1Directive.SPDU_VERSION && maximumFrameSequenceLength == 2) {
 			result = false;
 			LOG.error("u_frame_version {} doesn't support copp_variable_size {}", uFrameVersion, maximumFrameSequenceLength);
+		}
+		int transmissionWindow = getInteger("transmission_window", 0);
+		if (transmissionWindow <= 0 || (pFrameVersion == TransceiverMode.PROXIMITY_1.getCode() && transmissionWindow > 127) || (pFrameVersion == TransceiverMode.USLP.getCode() && transmissionWindow > 32767)) {
+			result = false;
+			LOG.error("invalid transmission_window parameter: {}", transmissionWindow);
 		}
 		long carrierOnlyDuration = getDuration("carrier_only_duration");
 		long acquisitionIdleDuration = getDuration("acquisition_idle_duration");
