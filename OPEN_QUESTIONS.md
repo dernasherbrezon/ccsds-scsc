@@ -65,7 +65,7 @@ Here is the list of questions and suggestions to the specification with no parti
 
 ====================================
 
-Updtes 
+Updtes RED BOOK September 22 2026
 
 1. E2.3.1 has "The REPORT REQUEST directive is the mechanism for requesting ...  time-tag sample collection ...". Which is no longer the case for type5 directive. 
 

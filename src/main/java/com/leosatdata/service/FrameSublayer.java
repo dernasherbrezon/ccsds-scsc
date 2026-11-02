@@ -245,10 +245,14 @@ class FrameSublayer {
 		case SPDU:
 			Vr vr = SpduUtil.getVr((Spdu) e.getArg());
 			if (vr != null) {
-				LOG.info("received set v(r) directive: {}", vr.getFrameSequenceNumber());
-				state.setRs(false);
-				state.setVr(vr.getFrameSequenceNumber());
-				state.setNeedPlcw(true);
+				if (config.getBoolean("resync_remote")) {
+					LOG.info("received set v(r) directive: {}", vr.getFrameSequenceNumber());
+					state.setRs(false);
+					state.setVr(vr.getFrameSequenceNumber());
+					state.setNeedPlcw(true);
+				} else {
+					LOG.info("resync_remote is disabled. re-synchronization skipped");
+				}
 			}
 			break;
 		case RE3_EXPEDITED_FRAME:
@@ -349,6 +353,8 @@ class FrameSublayer {
 				state.setPersistence(true);
 				currentResyncAttempt = 0;
 				resynch();
+			} else {
+				LOG.info("resync_local is disabled. re-synchronization skipped");
 			}
 			break;
 		case SE4_1_RESYNCH_TIMEOUT:
