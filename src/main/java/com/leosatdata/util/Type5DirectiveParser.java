@@ -77,7 +77,7 @@ public class Type5DirectiveParser {
 				link.setTimeSampleField(bis.readUnsignedInt(6));
 				bis.skipBits(2);
 				// IEEE 754 standard for half-precision floating point numbers
-				link.setSymbolRate(Float.float16ToFloat((short) bis.readUnsignedInt(16)));
+				link.setSymbolRate(Float.float16ToFloat((short) bis.readUnsignedInt(16)) * (1 << 16));
 				if (link.getCoherency().equals(Coherency.COHERENT)) {
 					TurnaroundRatio ratio = new TurnaroundRatio();
 					ratio.setNumerator(bis.readUnsignedInt(16));
@@ -255,7 +255,7 @@ public class Type5DirectiveParser {
 		bos.writeUnsignedInt(8, params.getLinkSnr());
 		bos.writeUnsignedInt(6, params.getTimeSampleField());
 		bos.writeUnsignedInt(2, 0); // unused
-		bos.writeUnsignedInt(16, (int) Float.floatToFloat16(params.getSymbolRate()));
+		bos.writeUnsignedInt(16, (int) (Float.floatToFloat16(params.getSymbolRate() / (1 << 16))));
 		if (params.getTurnaroundRatio() != null) {
 			bos.writeUnsignedInt(16, params.getTurnaroundRatio().getNumerator());
 			bos.writeUnsignedInt(16, params.getTurnaroundRatio().getDenominator());
