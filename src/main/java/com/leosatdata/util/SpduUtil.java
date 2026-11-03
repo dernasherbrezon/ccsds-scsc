@@ -36,6 +36,21 @@ public class SpduUtil {
 		}
 	}
 
+	public static boolean isSetVrDirective(Spdu obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (obj instanceof Type1Directive) {
+			return ((Type1Directive) obj).getVr() != null;
+		} else if (obj instanceof Type4Directive) {
+			return ((Type4Directive) obj).getVr() != null;
+		} else if (obj instanceof Type5Directive) {
+			return ((Type5Directive) obj).getVr() != null;
+		} else {
+			return false;
+		}
+	}
+
 	public static Spdu createRnmdDirective(Spdu obj, boolean rnmd) {
 		if (obj instanceof Type1Directive) {
 			Type1Directive directive = (Type1Directive) obj;

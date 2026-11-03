@@ -23,6 +23,7 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
+import com.leosatdata.model.PFrameUpid;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.ReportRequest;
@@ -137,7 +138,13 @@ class FrameSublayer {
 				LOG.error("cannot encode spdu", e);
 				return;
 			}
-			frame = createPFrame(baos.toByteArray());
+			PFrameUpid upid;
+			if (SpduUtil.isSetVrDirective(spdu)) {
+				upid = PFrameUpid.COPP_CONTROL_COMMAND;
+			} else {
+				upid = PFrameUpid.PROXIMITY_1_SPDU;
+			}
+			frame = createPFrame(baos.toByteArray(), upid);
 		}
 
 		if (frame == null && state.isPersistence()) {
@@ -147,7 +154,7 @@ class FrameSublayer {
 		if (frame == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
-			frame = createPFrame(createSerializedPlcw());
+			frame = createPFrame(createSerializedPlcw(), PFrameUpid.COPP_CONTROL_COMMAND);
 		}
 
 		if (frame == null) {
@@ -167,7 +174,7 @@ class FrameSublayer {
 		if (frame == null && !state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
-			frame = createPFrame(createSerializedPlcw());
+			frame = createPFrame(createSerializedPlcw(), PFrameUpid.COPP_CONTROL_COMMAND);
 		}
 
 		if (frame == null) {
@@ -526,12 +533,12 @@ class FrameSublayer {
 		return Collections.emptyList();
 	}
 
-	private Object createPFrame(byte[] payload) {
+	private Object createPFrame(byte[] payload, PFrameUpid upid) {
 		if (pFrameVersion == TransceiverMode.PROXIMITY_1.getCode()) {
 			return framev3Parser.createPFrame(payload);
 		}
 		if (pFrameVersion == TransceiverMode.USLP.getCode()) {
-			return framev4Parser.createPFrame(payload);
+			return framev4Parser.createPFrame(payload, upid);
 		}
 		LOG.error("unknown p frame version: {}", pFrameVersion);
 		return null;

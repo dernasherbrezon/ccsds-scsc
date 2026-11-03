@@ -18,6 +18,7 @@ import com.leosatdata.ccsds2110b6.model.QualityOfService;
 import com.leosatdata.ccsds2110b6.model.SourceDestination;
 import com.leosatdata.ccsds7321b3.model.ConstructionRules;
 import com.leosatdata.ccsds7321b3.model.TransferFrame;
+import com.leosatdata.model.PFrameUpid;
 import com.leosatdata.service.UserDataCallback;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
@@ -260,7 +261,7 @@ public class TransferFrameParser {
 		return maxDataLength;
 	}
 
-	public TransferFrame createPFrame(byte[] payload) {
+	public TransferFrame createPFrame(byte[] payload, PFrameUpid upid) {
 		com.leosatdata.ccsds7321b3.model.TransferFrame frame = new com.leosatdata.ccsds7321b3.model.TransferFrame();
 		frame.setSourceOrDestination(sourceDestination);
 		if (sourceDestination.equals(SourceDestination.SOURCE)) {
@@ -277,6 +278,9 @@ public class TransferFrameParser {
 		frame.setOcf(false);
 		frame.setDataField(payload);
 		frame.setVcfCountLength(vcfCountLength);
+		if (upid != null) {
+			frame.setUpid(upid.getCode());
+		}
 		return frame;
 	}
 
