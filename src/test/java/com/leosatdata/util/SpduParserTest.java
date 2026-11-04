@@ -118,6 +118,70 @@ public class SpduParserTest {
 	}
 
 	@Test
+	public void testExtraBytes() throws Exception {
+		config.setProperty("lec_length", "13");
+		config.setProperty("pn_ranging_length", "13");
+		config.setProperty("report_request_length", "3");
+		config.setProperty("report_source_spacecraft_status_length", "4");
+		config.setProperty("service_request_length", "3");
+		config.setProperty("set_fixed_length_frame_length", "4");
+		config.setProperty("set_vr_length", "4");
+		parser = new SpduParser(config);
+
+		Type5Directive expected = createValidType5();
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			parser.encode(expected, bos);
+		}
+
+		byte[] original = baos.toByteArray();
+		byte[] extraBytesForEachType = new byte[original.length + 8];
+
+		int currentOffsetOriginal = 0;
+		int currentOffsetExtra = 0;
+		int currentLength = 2; // spdu header
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+		currentOffsetOriginal += currentLength;
+		currentOffsetExtra += currentLength;
+		currentLength = 12; // rx
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+		currentOffsetOriginal += currentLength;
+		currentOffsetExtra += currentLength + 1;
+		currentLength = 12; // tx
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+		currentOffsetOriginal += currentLength;
+		currentOffsetExtra += currentLength + 1;
+		currentLength = 2; // report request
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+		currentOffsetOriginal += currentLength;
+		currentOffsetExtra += currentLength + 1;
+		currentLength = 3; // vr
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+		currentOffsetOriginal += currentLength;
+		currentOffsetExtra += currentLength + 1;
+		currentLength = 3; // report source scid
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+		currentOffsetOriginal += currentLength;
+		currentOffsetExtra += currentLength + 1;
+		currentLength = 2; // service request
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+		currentOffsetOriginal += currentLength;
+		currentOffsetExtra += currentLength + 1;
+		currentLength = 3; // set fixed length
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+		currentOffsetOriginal += currentLength;
+		currentOffsetExtra += currentLength + 1;
+		currentLength = 12; // pn ranging
+		System.arraycopy(original, currentOffsetOriginal, extraBytesForEachType, currentOffsetExtra, currentLength);
+
+		Object actual;
+		try (BitInputStream bis = new BitInputStream(extraBytesForEachType)) {
+			actual = parser.decode(bis);
+		}
+		TestUtil.assertObjectEqual(expected, actual);
+	}
+
+	@Test
 	public void testType4() throws Exception {
 		Type4Directive type4 = createValidType4();
 		parser.validateCommParameters(type4);

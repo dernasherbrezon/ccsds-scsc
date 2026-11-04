@@ -49,6 +49,24 @@ public class Type5DirectiveParser {
 	private final static int LINK2_SET_FIXED_LENGTH_FRAME = 0b0101;
 	private final static int LINK2_PN_RANGING = 0b0110;
 
+	private final int lecSkipBits;
+	private final int pnRangingSkipBits;
+	private final int reportRequestSkipBits;
+	private final int reportSourceScidSkipBits;
+	private final int serviceRequestSkipBits;
+	private final int setFixedFrameLengthSkipBits;
+	private final int setVrSkipBits;
+
+	public Type5DirectiveParser(Configuration config) {
+		this.lecSkipBits = (config.getInteger("lec_length", 12) - 12) * 8;
+		this.pnRangingSkipBits = (config.getInteger("pn_ranging_length", 12) - 12) * 8;
+		this.reportRequestSkipBits = (config.getInteger("report_request_length", 2) - 2) * 8;
+		this.reportSourceScidSkipBits = (config.getInteger("report_source_spacecraft_status_length", 3) - 3) * 8;
+		this.serviceRequestSkipBits = (config.getInteger("service_request_length", 2) - 2) * 8;
+		this.setFixedFrameLengthSkipBits = (config.getInteger("set_fixed_length_frame_length", 3) - 3) * 8;
+		this.setVrSkipBits = (config.getInteger("set_vr_length", 3) - 3) * 8;
+	}
+
 	public Type5Directive decode(BitInputStream bis) throws IOException {
 		Type5Directive result = new Type5Directive();
 		while (bis.available() > 0) {
@@ -91,6 +109,7 @@ public class Type5DirectiveParser {
 				} else {
 					result.setTxLink(link);
 				}
+				bis.skipBits(lecSkipBits);
 				break;
 			case LINK2_REPORT_REQUEST:
 				Type5ReportRequest reportRequest = new Type5ReportRequest();
@@ -100,12 +119,14 @@ public class Type5DirectiveParser {
 				reportRequest.setStatusReportRequest(bis.readUnsignedInt(3));
 				reportRequest.setVcid(bis.readUnsignedInt(6));
 				result.setReportRequest(reportRequest);
+				bis.skipBits(reportRequestSkipBits);
 				break;
 			case LINK2_SET_VR:
 				Vr vr = new Vr();
 				bis.skipBits(4);
 				vr.setFrameSequenceNumber(bis.readUnsignedInt(16));
 				result.setVr(vr);
+				bis.skipBits(setVrSkipBits);
 				break;
 			case LINK2_REPORT_SOURCE_SCID:
 				ReportSourceScid report = new ReportSourceScid();
@@ -128,6 +149,7 @@ public class Type5DirectiveParser {
 					bis.skipBits(16);
 				}
 				result.setReportSourceScid(report);
+				bis.skipBits(reportSourceScidSkipBits);
 				break;
 			case LINK2_SERVICE_REQUEST:
 				ServiceRequest serviceRequest = new ServiceRequest();
@@ -135,6 +157,7 @@ public class Type5DirectiveParser {
 				bis.skipBits(5);
 				serviceRequest.setEmergency(bis.readBoolean());
 				result.setServiceRequest(serviceRequest);
+				bis.skipBits(serviceRequestSkipBits);
 				break;
 			case LINK2_SET_FIXED_LENGTH_FRAME:
 				SetFixedLengthFrame fixedLength = new SetFixedLengthFrame();
@@ -143,6 +166,7 @@ public class Type5DirectiveParser {
 				fixedLength.setDirection(LinkDirection.valueOfCode(bis.readUnsignedInt(1)));
 				fixedLength.setFrameLength(bis.readUnsignedInt(16));
 				result.setSetFixedLength(fixedLength);
+				bis.skipBits(setFixedFrameLengthSkipBits);
 				break;
 			case LINK2_PN_RANGING:
 				PnRanging pnRanging = new PnRanging();
@@ -159,6 +183,7 @@ public class Type5DirectiveParser {
 				pnRanging.setReportRequest(RangingReportRequest.valueOfCode(bis.readUnsignedInt(5)));
 				bis.skipBits(1);
 				result.setPnRanging(pnRanging);
+				bis.skipBits(pnRangingSkipBits);
 				break;
 			default:
 				break;

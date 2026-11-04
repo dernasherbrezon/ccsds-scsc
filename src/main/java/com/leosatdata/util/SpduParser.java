@@ -48,7 +48,7 @@ public class SpduParser {
 	public SpduParser(Configuration config) {
 		this.plcwType = config.getInteger("p_frame_version", 0) == TransceiverMode.PROXIMITY_1.getCode() ? Plcw.SHORT_PLCW : Plcw.LONG_PLCW;
 		this.type4Parser = new Type4DirectiveParser(config);
-		this.type5Parser = new Type5DirectiveParser();
+		this.type5Parser = new Type5DirectiveParser(config);
 	}
 
 	public void encode(Spdu message, BitOutputStream bos) throws IOException {
