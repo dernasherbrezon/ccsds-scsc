@@ -17,9 +17,10 @@ public class Type5LinkEstablishment {
 	private Type4Coding coding;
 	private int linkSnr;
 	private TransceiverMode transceiverMode;
-	private int aosFrameLength;
+	private int timeSampleField; // number of frames to sample
 	private float symbolRate;
-	private float frequency;
+	private TurnaroundRatio turnaroundRatio;
+	private Float frequency;
 
 	public Type5LinkEstablishment() {
 		// do nothing
@@ -40,9 +41,20 @@ public class Type5LinkEstablishment {
 		this.coding = other.coding;
 		this.linkSnr = other.linkSnr;
 		this.transceiverMode = other.transceiverMode;
-		this.aosFrameLength = other.aosFrameLength;
+		this.timeSampleField = other.timeSampleField;
 		this.symbolRate = other.symbolRate;
 		this.frequency = other.frequency;
+		if (other.turnaroundRatio != null) {
+			this.turnaroundRatio = new TurnaroundRatio(other.turnaroundRatio);
+		}
+	}
+
+	public int getTimeSampleField() {
+		return timeSampleField;
+	}
+
+	public void setTimeSampleField(int timeSampleField) {
+		this.timeSampleField = timeSampleField;
 	}
 
 	public Type5NegotiationType getDemandQuery() {
@@ -133,14 +145,6 @@ public class Type5LinkEstablishment {
 		this.transceiverMode = transceiverMode;
 	}
 
-	public int getAosFrameLength() {
-		return aosFrameLength;
-	}
-
-	public void setAosFrameLength(int aosFrameLength) {
-		this.aosFrameLength = aosFrameLength;
-	}
-
 	public float getSymbolRate() {
 		return symbolRate;
 	}
@@ -149,12 +153,19 @@ public class Type5LinkEstablishment {
 		this.symbolRate = symbolRate;
 	}
 
-	public float getFrequency() {
+	public Float getFrequency() {
 		return frequency;
 	}
 
-	public void setFrequency(float frequency) {
+	public void setFrequency(Float frequency) {
 		this.frequency = frequency;
 	}
 
+	public TurnaroundRatio getTurnaroundRatio() {
+		return turnaroundRatio;
+	}
+	
+	public void setTurnaroundRatio(TurnaroundRatio turnaroundRatio) {
+		this.turnaroundRatio = turnaroundRatio;
+	}
 }

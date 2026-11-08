@@ -7,13 +7,15 @@ package com.leosatdata.model;
 public class Type5Directive implements Spdu {
 
 	public static final int SPDU_VERSION = 3;
-	
+
 	private SpduHeader header;
 	private Type5LinkEstablishment rxLink;
 	private Type5LinkEstablishment txLink;
-	private ReportRequest reportRequest;
+	private Type5ReportRequest reportRequest;
 	private Vr vr;
-	private Integer sourceSpacecraftId;
+	private ServiceRequest serviceRequest;
+	private SetFixedLengthFrame setFixedLength;
+	private ReportSourceScid reportSourceScid;
 	private PnRanging pnRanging;
 
 	public void merge(Type5Directive obj) {
@@ -41,11 +43,11 @@ public class Type5Directive implements Spdu {
 		this.txLink = txLink;
 	}
 
-	public ReportRequest getReportRequest() {
+	public Type5ReportRequest getReportRequest() {
 		return reportRequest;
 	}
 
-	public void setReportRequest(ReportRequest reportRequest) {
+	public void setReportRequest(Type5ReportRequest reportRequest) {
 		this.reportRequest = reportRequest;
 	}
 
@@ -57,12 +59,12 @@ public class Type5Directive implements Spdu {
 		this.vr = vr;
 	}
 
-	public Integer getSourceSpacecraftId() {
-		return sourceSpacecraftId;
+	public ReportSourceScid getReportSourceScid() {
+		return reportSourceScid;
 	}
-
-	public void setSourceSpacecraftId(Integer sourceSpacecraftId) {
-		this.sourceSpacecraftId = sourceSpacecraftId;
+	
+	public void setReportSourceScid(ReportSourceScid reportSourceScid) {
+		this.reportSourceScid = reportSourceScid;
 	}
 
 	public PnRanging getPnRanging() {
@@ -71,6 +73,22 @@ public class Type5Directive implements Spdu {
 
 	public void setPnRanging(PnRanging pnRanging) {
 		this.pnRanging = pnRanging;
+	}
+	
+	public ServiceRequest getServiceRequest() {
+		return serviceRequest;
+	}
+	
+	public void setServiceRequest(ServiceRequest serviceRequest) {
+		this.serviceRequest = serviceRequest;
+	}
+	
+	public SetFixedLengthFrame getSetFixedLength() {
+		return setFixedLength;
+	}
+	
+	public void setSetFixedLength(SetFixedLengthFrame setFixedLength) {
+		this.setFixedLength = setFixedLength;
 	}
 
 	@Override

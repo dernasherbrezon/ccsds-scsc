@@ -178,6 +178,7 @@ public class FullDuplexMac {
 				transceiver.setTxState(TransceiverTxState.MODULATION);
 				state.setState(MacState.S40_DATA_SERVICES);
 				timer.startPeriodicPlcw();
+				callback.handle(new ControllerEvent(ControllerEventType.START_OF_SESSION));
 				LOG.info("data services ready");
 			}
 			break;

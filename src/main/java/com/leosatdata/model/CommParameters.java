@@ -143,4 +143,10 @@ public class CommParameters {
 		return true;
 	}
 
+	@Override
+	public String toString() {
+		return "[symbolRate=" + symbolRate + ", lineCoding=" + lineCoding + ", frequency=" + frequency + ", encoding=" + encoding + ", polarization=" + polarization + ", coherency=" + coherency + ", carrierModulation=" + carrierModulation + ", modulationIndex=" + modulationIndex
+				+ ", scrambler=" + scrambler + ", differentialEncoding=" + differentialEncoding + "]";
+	}
+
 }

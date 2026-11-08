@@ -27,28 +27,28 @@ public class TcpCsSublayerTest {
 	public void testSuccess() throws Exception {
 		// small payload
 		handle("01");
-		assertArrayEquals(Util.hexToBytes("FAF32001A016D052"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF3200100A00805"), rx.getFrames().get(0));
 
 		// bigger payload
 		rx.getFrames().clear();
 		handle("01020304");
-		assertArrayEquals(Util.hexToBytes("FAF3200102030429308CF4"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF3200102030455B8622D"), rx.getFrames().get(0));
 
 		// payload with just asm in it
 		rx.getFrames().clear();
 		handle("FAF320");
-		assertArrayEquals(Util.hexToBytes("FAF320FAF3209A3EB68F"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF320FAF3206EB93DC9"), rx.getFrames().get(0));
 
 		// payload with asm and some extra data
 		rx.getFrames().clear();
 		handle("01FAF320");
-		assertArrayEquals(Util.hexToBytes("FAF32001FAF3206F78F48A"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF32001FAF32041397CB5"), rx.getFrames().get(0));
 
 		// 2 frames in the same update
 		rx.getFrames().clear();
 		handle(concat(createPdu("0102"), createPdu("0909")));
-		assertArrayEquals(Util.hexToBytes("FAF320010203F89F52"), rx.getFrames().get(0));
-		assertArrayEquals(Util.hexToBytes("FAF32009090765F7D1"), rx.getFrames().get(1));
+		assertArrayEquals(Util.hexToBytes("FAF3200102A148150A"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF3200909A7C84D3C"), rx.getFrames().get(1));
 
 		// partial frame
 		rx.getFrames().clear();
@@ -56,7 +56,7 @@ public class TcpCsSublayerTest {
 		handle(cut(frame, 0, 4));
 		assertTrue(rx.getFrames().isEmpty());
 		handle(cut(frame, 4, frame.length));
-		assertArrayEquals(Util.hexToBytes("FAF320010203F89F52"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF3200102A148150A"), rx.getFrames().get(0));
 
 		// partial frame with enough data for crc check
 		rx.getFrames().clear();
@@ -65,19 +65,19 @@ public class TcpCsSublayerTest {
 		handle(cut(frame, 0, length));
 		assertTrue(rx.getFrames().isEmpty());
 		handle(cut(frame, length, frame.length));
-		assertArrayEquals(Util.hexToBytes("FAF320010203F89F52"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF3200102A148150A"), rx.getFrames().get(0));
 
 		// idle data is not supported
 		rx.getFrames().clear();
 		handle(concat(concat(createPdu("0102"), new byte[] { 01, 02 }), createPdu("0909")));
-		assertArrayEquals(Util.hexToBytes("FAF32009090765F7D1"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF3200909A7C84D3C"), rx.getFrames().get(0));
 
 		// write beyound max frame length
 		rx.getFrames().clear();
 		handle(concat(concat(createPdu("0102"), createPdu("0909")), createPdu("AAAA")));
-		assertArrayEquals(Util.hexToBytes("FAF320010203F89F52"), rx.getFrames().get(0));
-		assertArrayEquals(Util.hexToBytes("FAF32009090765F7D1"), rx.getFrames().get(1));
-		assertArrayEquals(Util.hexToBytes("FAF320AAAA06D100E1"), rx.getFrames().get(2));
+		assertArrayEquals(Util.hexToBytes("FAF3200102A148150A"), rx.getFrames().get(0));
+		assertArrayEquals(Util.hexToBytes("FAF3200909A7C84D3C"), rx.getFrames().get(1));
+		assertArrayEquals(Util.hexToBytes("FAF320AAAA2D155142"), rx.getFrames().get(2));
 
 	}
 

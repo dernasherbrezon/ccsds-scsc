@@ -14,6 +14,7 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.PersistentActivity;
 import com.leosatdata.model.PersistentActivityType;
+import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
@@ -87,39 +88,37 @@ public class Configuration {
 
 	public boolean validate() {
 		boolean result = true;
-		int transmissionWindow = getInteger("transmission_window", 0);
-		// for 2 byte frame sequence numbers upper limit can be more than 127,
-		// keep this limit anyway
-		if (transmissionWindow <= 0 || transmissionWindow > 127) {
-			result = false;
-			LOG.error("invalid transmission_window parameter: {}", transmissionWindow);
-		}
 		int spduVersion = getInteger("spdu_version", 0);
 		if (spduVersion != Type1Directive.SPDU_VERSION && spduVersion != Type4Directive.SPDU_VERSION && spduVersion != Type5Directive.SPDU_VERSION) {
 			result = false;
 			LOG.error("unsupported spdu_version: {}", spduVersion);
 		}
-		int maximumFrameSequenceLength = getInteger("maximum_frame_sequence_length", 0);
+		int maximumFrameSequenceLength = getInteger("copp_variable_size", 0);
 		if (maximumFrameSequenceLength != 1 && maximumFrameSequenceLength != 2) {
 			result = false;
-			LOG.error("invalid maximum_frame_sequence_length: {}", maximumFrameSequenceLength);
+			LOG.error("invalid copp_variable_size: {}", maximumFrameSequenceLength);
 		}
-		int uFrameVersion = getInteger("u_frame_version", 0);
-		if (uFrameVersion < 2 || uFrameVersion > 4) {
+		int uFrameVersion = getInteger("default_frame_type", -1);
+		if (uFrameVersion < 1 || uFrameVersion > 3) {
 			result = false;
-			LOG.error("unsupported u_frame_version: {}", uFrameVersion);
+			LOG.error("unsupported default_frame_type: {}", uFrameVersion);
 		}
-		int pFrameVersion = getInteger("frame_version", 0);
-		if (pFrameVersion < 3 || pFrameVersion > 4) {
+		int pFrameVersion = getInteger("p_frame_version", 0);
+		if (pFrameVersion < 1 || pFrameVersion > 2) {
 			result = false;
-			LOG.error("unsupported frame_version: {}", pFrameVersion);
+			LOG.error("unsupported p_frame_version: {}", pFrameVersion);
 		}
 		// v2 (ccsds7320b4) support 24 bit
 		// v3 (ccsds2110b6) support 8 bit only
 		// v4 (ccsds7321b3) dynamic from 8 to 24 and more
 		if (spduVersion == Type1Directive.SPDU_VERSION && maximumFrameSequenceLength == 2) {
 			result = false;
-			LOG.error("u_frame_version {} doesn't support maximum_frame_sequence_length {}", uFrameVersion, maximumFrameSequenceLength);
+			LOG.error("u_frame_version {} doesn't support copp_variable_size {}", uFrameVersion, maximumFrameSequenceLength);
+		}
+		int transmissionWindow = getInteger("transmission_window", 0);
+		if (transmissionWindow <= 0 || (pFrameVersion == TransceiverMode.PROXIMITY_1.getCode() && transmissionWindow > 127) || (pFrameVersion == TransceiverMode.USLP.getCode() && transmissionWindow > 32767)) {
+			result = false;
+			LOG.error("invalid transmission_window parameter: {}", transmissionWindow);
 		}
 		long carrierOnlyDuration = getDuration("carrier_only_duration");
 		long acquisitionIdleDuration = getDuration("acquisition_idle_duration");

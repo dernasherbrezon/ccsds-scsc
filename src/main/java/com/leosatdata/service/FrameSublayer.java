@@ -23,14 +23,17 @@ import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Event;
 import com.leosatdata.model.EventType;
+import com.leosatdata.model.PFrameUpid;
 import com.leosatdata.model.Plcw;
 import com.leosatdata.model.QueueType;
 import com.leosatdata.model.ReportRequest;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
+import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.model.Type1Directive;
 import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Type5LinkEstablishment;
 import com.leosatdata.model.Vr;
 import com.leosatdata.util.BitInputStream;
 import com.leosatdata.util.BitOutputStream;
@@ -71,10 +74,10 @@ class FrameSublayer {
 		this.state = state;
 		this.config = config;
 		this.transceiver = transceiver;
-		this.uFrameVersion = config.getInteger("u_frame_version", -1);
-		this.pFrameVersion = config.getInteger("frame_version", -1);
+		this.uFrameVersion = config.getInteger("default_frame_type", -1);
+		this.pFrameVersion = config.getInteger("p_frame_version", -1);
 		this.spduVersion = config.getInteger("spdu_version", 1);
-		this.maxSequenceNumber = (config.getInteger("maximum_frame_sequence_length", 0) == 1) ? 0xFF : 0xFFFF;
+		this.maxSequenceNumber = (config.getInteger("copp_variable_size", 0) == 1) ? 0xFF : 0xFFFF;
 		this.localPcid = config.getInteger("local_pcid", 0);
 		this.transmissionWindow = config.getInteger("transmission_window", 10);
 		this.framev2Parser = new com.leosatdata.ccsds7320b4.util.TransferFrameParser(config);
@@ -106,11 +109,8 @@ class FrameSublayer {
 		case SPDU:
 			if (e.getArg() instanceof Type5Directive) {
 				Type5Directive type5 = (Type5Directive) e.getArg();
-				if (type5.getRxLink() != null && type5.getRxLink().getAosFrameLength() != 0) {
-					framev2Parser.setFrameLength(type5.getRxLink().getAosFrameLength());
-				}
-				if (type5.getTxLink() != null && type5.getTxLink().getAosFrameLength() != 0) {
-					framev2Parser.setFrameLength(type5.getTxLink().getAosFrameLength());
+				if (type5.getSetFixedLength() != null) {
+					framev2Parser.setFrameLength(type5.getSetFixedLength().getFrameLength());
 				}
 			}
 			break;
@@ -138,7 +138,13 @@ class FrameSublayer {
 				LOG.error("cannot encode spdu", e);
 				return;
 			}
-			frame = createPFrame(baos.toByteArray());
+			PFrameUpid upid;
+			if (SpduUtil.isSetVrDirective(spdu)) {
+				upid = PFrameUpid.COPP_CONTROL_COMMAND;
+			} else {
+				upid = PFrameUpid.PROXIMITY_1_SPDU;
+			}
+			frame = createPFrame(baos.toByteArray(), upid);
 		}
 
 		if (frame == null && state.isPersistence()) {
@@ -148,7 +154,7 @@ class FrameSublayer {
 		if (frame == null && state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
-			frame = createPFrame(createSerializedPlcw());
+			frame = createPFrame(createSerializedPlcw(), PFrameUpid.COPP_CONTROL_COMMAND);
 		}
 
 		if (frame == null) {
@@ -168,7 +174,7 @@ class FrameSublayer {
 		if (frame == null && !state.isuFrameLastSent() && state.isNeedPlcw()) {
 			state.setNeedPlcw(false);
 			state.setuFrameLastSent(false);
-			frame = createPFrame(createSerializedPlcw());
+			frame = createPFrame(createSerializedPlcw(), PFrameUpid.COPP_CONTROL_COMMAND);
 		}
 
 		if (frame == null) {
@@ -246,10 +252,14 @@ class FrameSublayer {
 		case SPDU:
 			Vr vr = SpduUtil.getVr((Spdu) e.getArg());
 			if (vr != null) {
-				LOG.info("received set v(r) directive: {}", vr.getFrameSequenceNumber());
-				state.setRs(false);
-				state.setVr(vr.getFrameSequenceNumber());
-				state.setNeedPlcw(true);
+				if (config.getBoolean("resync_remote")) {
+					LOG.info("received set v(r) directive: {}", vr.getFrameSequenceNumber());
+					state.setRs(false);
+					state.setVr(vr.getFrameSequenceNumber());
+					state.setNeedPlcw(true);
+				} else {
+					LOG.info("resync_remote is disabled. re-synchronization skipped");
+				}
 			}
 			break;
 		case RE3_EXPEDITED_FRAME:
@@ -350,6 +360,8 @@ class FrameSublayer {
 				state.setPersistence(true);
 				currentResyncAttempt = 0;
 				resynch();
+			} else {
+				LOG.info("resync_local is disabled. re-synchronization skipped");
 			}
 			break;
 		case SE4_1_RESYNCH_TIMEOUT:
@@ -504,29 +516,29 @@ class FrameSublayer {
 
 	@SuppressWarnings("rawtypes")
 	public List createUFrame(byte[] payload, QualityOfService qos, int portId) {
-		if (uFrameVersion == 2) {
+		if (uFrameVersion == TransceiverMode.PROXIMITY_1.getCode()) {
+			return framev3Parser.createUFrame(payload, qos, portId);
+		}
+		if (uFrameVersion == TransceiverMode.USLP.getCode()) {
+			return framev4Parser.createUFrame(payload, qos, portId);
+		}
+		if (uFrameVersion == TransceiverMode.AOS.getCode()) {
 			if (qos.equals(QualityOfService.SEQUENCE_CONTROLLED)) {
 				LOG.error("SEQUENCE_CONTROLLED qos is not supported for AOS");
 				return Collections.emptyList();
 			}
 			return framev2Parser.createUFrame(payload, portId);
 		}
-		if (uFrameVersion == 3) {
-			return framev3Parser.createUFrame(payload, qos, portId);
-		}
-		if (uFrameVersion == 4) {
-			return framev4Parser.createUFrame(payload, qos, portId);
-		}
 		LOG.error("unknown u frame version: {}", uFrameVersion);
 		return Collections.emptyList();
 	}
 
-	private Object createPFrame(byte[] payload) {
-		if (pFrameVersion == 3) {
+	private Object createPFrame(byte[] payload, PFrameUpid upid) {
+		if (pFrameVersion == TransceiverMode.PROXIMITY_1.getCode()) {
 			return framev3Parser.createPFrame(payload);
 		}
-		if (pFrameVersion == 4) {
-			return framev4Parser.createPFrame(payload);
+		if (pFrameVersion == TransceiverMode.USLP.getCode()) {
+			return framev4Parser.createPFrame(payload, upid);
 		}
 		LOG.error("unknown p frame version: {}", pFrameVersion);
 		return null;
@@ -554,13 +566,25 @@ class FrameSublayer {
 			return result;
 		}
 		if (spduVersion == Type5Directive.SPDU_VERSION) {
-			ReportRequest params = new ReportRequest();
-			params.setPcid0PlcwRequest(localPcid == 0);
-			params.setPcid1PlcwRequest(localPcid == 1);
-			params.setStatusReportRequest(0);
-			params.setTimeTagRequest(numberOfFramesToTag);
+			Spdu previous = state.getCommParameters();
 			Type5Directive result = new Type5Directive();
-			result.setReportRequest(params);
+			if (previous != null && (previous instanceof Type5Directive)) {
+				Type5Directive directive = (Type5Directive) previous;
+				if (directive.getRxLink() != null) {
+					Type5LinkEstablishment copyRx = new Type5LinkEstablishment(directive.getRxLink());
+					copyRx.setTimeSampleField(numberOfFramesToTag);
+					result.setRxLink(copyRx);
+				}
+				if (directive.getTxLink() != null) {
+					Type5LinkEstablishment copyTx = new Type5LinkEstablishment(directive.getTxLink());
+					copyTx.setTimeSampleField(numberOfFramesToTag);
+					result.setTxLink(copyTx);
+				}
+			} else {
+				Type5LinkEstablishment rx = new Type5LinkEstablishment();
+				rx.setTimeSampleField(numberOfFramesToTag);
+				result.setRxLink(rx);
+			}
 			return result;
 		}
 		LOG.error("unknown spdu version for time tag directive: {}", spduVersion);
@@ -579,21 +603,9 @@ class FrameSublayer {
 		if (data == null) {
 			return null;
 		}
-		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data)) {
-			if (uFrameVersion != 2 && pFrameVersion != 2) {
-				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, 2);
-				return null;
-			}
-			try (BitInputStream bis = new BitInputStream(data)) {
-				return framev2Parser.decode(bis);
-			} catch (IOException e) {
-				LOG.error("unable to read transferframe2", e);
-				return null;
-			}
-		}
 		if (com.leosatdata.ccsds2110b6.util.TransferFrameParser.accept(data)) {
-			if (uFrameVersion != 3 && pFrameVersion != 3) {
-				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, 3);
+			if (uFrameVersion != TransceiverMode.PROXIMITY_1.getCode() && pFrameVersion != TransceiverMode.PROXIMITY_1.getCode()) {
+				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, TransceiverMode.PROXIMITY_1.getCode());
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
@@ -604,14 +616,26 @@ class FrameSublayer {
 			}
 		}
 		if (com.leosatdata.ccsds7321b3.util.TransferFrameParser.accept(data)) {
-			if (uFrameVersion != 4 && pFrameVersion != 4) {
-				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, 4);
+			if (uFrameVersion != TransceiverMode.USLP.getCode() && pFrameVersion != TransceiverMode.USLP.getCode()) {
+				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, TransceiverMode.USLP.getCode());
 				return null;
 			}
 			try (BitInputStream bis = new BitInputStream(data)) {
 				return framev4Parser.decode(bis);
 			} catch (IOException e) {
 				LOG.error("unable to read transferframe4", e);
+				return null;
+			}
+		}
+		if (com.leosatdata.ccsds7320b4.util.TransferFrameParser.accept(data)) {
+			if (uFrameVersion != TransceiverMode.AOS.getCode() && pFrameVersion != TransceiverMode.AOS.getCode()) {
+				LOG.info("version mismatch. expected: {} or {} got {}", uFrameVersion, pFrameVersion, TransceiverMode.AOS.getCode());
+				return null;
+			}
+			try (BitInputStream bis = new BitInputStream(data)) {
+				return framev2Parser.decode(bis);
+			} catch (IOException e) {
+				LOG.error("unable to read transferframe2", e);
 				return null;
 			}
 		}
@@ -666,27 +690,27 @@ class FrameSublayer {
 	}
 
 	public int getMaxDataLength() {
-		if (uFrameVersion == 2) {
-			return framev2Parser.getMaxDataLength();
-		}
-		if (uFrameVersion == 3) {
+		if (uFrameVersion == TransceiverMode.PROXIMITY_1.getCode()) {
 			return framev3Parser.getMaxDataLength();
 		}
-		if (uFrameVersion == 4) {
+		if (uFrameVersion == TransceiverMode.USLP.getCode()) {
 			return framev4Parser.getMaxDataLength();
+		}
+		if (uFrameVersion == TransceiverMode.AOS.getCode()) {
+			return framev2Parser.getMaxDataLength();
 		}
 		return 0;
 	}
 
 	public void onFrame(UserDataCallback callback, Object frame) {
-		if (uFrameVersion == 2) {
-			framev2Parser.onFrame(callback, frame);
-		}
-		if (uFrameVersion == 3) {
+		if (uFrameVersion == TransceiverMode.PROXIMITY_1.getCode()) {
 			framev3Parser.onFrame(callback, frame);
 		}
-		if (uFrameVersion == 4) {
+		if (uFrameVersion == TransceiverMode.USLP.getCode()) {
 			framev4Parser.onFrame(callback, frame);
+		}
+		if (uFrameVersion == TransceiverMode.AOS.getCode()) {
+			framev2Parser.onFrame(callback, frame);
 		}
 	}
 

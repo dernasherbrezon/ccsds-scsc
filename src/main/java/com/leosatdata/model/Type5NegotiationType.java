@@ -6,7 +6,7 @@ package com.leosatdata.model;
 
 public enum Type5NegotiationType {
 
-	DEMAND(0b000), QUERY_REQ(0b001), QUERY_ACK(0b010), QUERY_NACK(0b011), REPORT(0b100), REQUEST(0b101), UNKNOWN(255);
+	DEMAND(0b000), QUERY_REQ(0b001), QUERY_ACK(0b010), QUERY_NACK(0b011), UNKNOWN(255);
 
 	private final int code;
 
@@ -22,7 +22,7 @@ public enum Type5NegotiationType {
 		}
 		return UNKNOWN;
 	}
-	
+
 	public int getCode() {
 		return code;
 	}

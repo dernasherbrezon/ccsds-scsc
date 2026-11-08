@@ -6,10 +6,10 @@ package com.leosatdata.model;
 
 public enum TransceiverMode {
 
-	PROXIMITY_1(0b000),
-	USLP(0b001),
-	AOS_SLICED(0b010),
-	AOS_NON_SLICED(0b011),
+	MISSION_SPECIFIC(0b00),
+	PROXIMITY_1(0b01),
+	USLP(0b10),
+	AOS(0b011),
 	UNKNOWN(255);
 
 	private final int code;

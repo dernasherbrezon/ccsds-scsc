@@ -219,10 +219,8 @@ public class NodeTest {
 		satellite.waitForSession();
 		ground.startSession();
 
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 
 		assertTestExpPacket();
 	}
@@ -290,7 +288,7 @@ public class NodeTest {
 		tx.setDataRate(DataRate.R8C);
 		tx.setFrequency(Frequency.CH5);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setCoherency(Coherency.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT);
 		result.setTxParams(tx);
 
 		ground.setCommParameters(result);
@@ -313,10 +311,8 @@ public class NodeTest {
 		ground.setDuplex(duplex);
 		ground.setCommParameters(type1Comm);
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 
 		assertTestExpPacket();
 	}
@@ -433,7 +429,7 @@ public class NodeTest {
 
 		// then automatic recover
 
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 
 		// satellite won't even notice ground lost carrier and re-run hail
 
@@ -448,12 +444,9 @@ public class NodeTest {
 		Thread.sleep(2 * groundConfig.getDuration("carrier_loss_timer_duration"));
 
 		assertNotNull(groundCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
-		assertNotNull(satelliteCallback.waitForEvent(ControllerEventType.CARRIER_LOSS));
 
 		// then automatic recover
-
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY), true);
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 
 		assertTestExpPacket();
 	}
@@ -509,20 +502,20 @@ public class NodeTest {
 	public void testSequenceOverflow2() throws Exception {
 		// make test a little bit faster
 		groundConfig.setProperty("maximum_frame_length", "255");
-		groundConfig.setProperty("u_frame_version", "4");
-		groundConfig.setProperty("frame_version", "4");
+		groundConfig.setProperty("default_frame_type", "2");
+		groundConfig.setProperty("p_frame_version", "2");
 		groundConfig.setProperty("spdu_version", "2");
-		groundConfig.setProperty("maximum_frame_sequence_length", "2");
+		groundConfig.setProperty("copp_variable_size", "2");
 
 		ground.stop();
 		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
 		ground.start();
 
 		satelliteConfig.setProperty("maximum_frame_length", "255");
-		satelliteConfig.setProperty("u_frame_version", "4");
-		satelliteConfig.setProperty("frame_version", "4");
+		satelliteConfig.setProperty("default_frame_type", "2");
+		satelliteConfig.setProperty("p_frame_version", "2");
 		satelliteConfig.setProperty("spdu_version", "2");
-		satelliteConfig.setProperty("maximum_frame_sequence_length", "2");
+		satelliteConfig.setProperty("copp_variable_size", "2");
 
 		satellite.stop();
 		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
@@ -540,7 +533,7 @@ public class NodeTest {
 		// across sequence overflow
 		int rate = 2;
 		byte[] packet = TestUtil.createTestData(rate * maxFrameLength);
-		int maxNumber = groundConfig.getInteger("maximum_frame_sequence_length", 1) == 1 ? 0xFF : 0xFFFF;
+		int maxNumber = groundConfig.getInteger("copp_variable_size", 1) == 1 ? 0xFF : 0xFFFF;
 		resetSequences(maxNumber - 10);
 		int totalPackets = 10;
 		LOG.info("sending {} packets. each ~ {} frames", totalPackets, (rate + 1));
@@ -556,15 +549,15 @@ public class NodeTest {
 	public void testStartSendStop() throws Exception {
 		for (CommSettings cur : getSupportedSettingsCombination()) {
 			LOG.info("testing: {}", cur);
-			groundConfig.setProperty("u_frame_version", String.valueOf(cur.getuFrameVersion()));
+			groundConfig.setProperty("default_frame_type", String.valueOf(cur.getuFrameVersion()));
 			groundConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
-			groundConfig.setProperty("frame_version", String.valueOf(cur.getpFrameVersion()));
-			groundConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
+			groundConfig.setProperty("p_frame_version", String.valueOf(cur.getpFrameVersion()));
+			groundConfig.setProperty("copp_variable_size", String.valueOf(cur.getMaxFrameSequenceLength()));
 
-			satelliteConfig.setProperty("u_frame_version", String.valueOf(cur.getuFrameVersion()));
+			satelliteConfig.setProperty("default_frame_type", String.valueOf(cur.getuFrameVersion()));
 			satelliteConfig.setProperty("spdu_version", String.valueOf(cur.getSpduVersion()));
-			satelliteConfig.setProperty("frame_version", String.valueOf(cur.getpFrameVersion()));
-			satelliteConfig.setProperty("maximum_frame_sequence_length", String.valueOf(cur.getMaxFrameSequenceLength()));
+			satelliteConfig.setProperty("p_frame_version", String.valueOf(cur.getpFrameVersion()));
+			satelliteConfig.setProperty("copp_variable_size", String.valueOf(cur.getMaxFrameSequenceLength()));
 
 			ground.stop();
 			ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
@@ -584,7 +577,7 @@ public class NodeTest {
 				throw new IllegalArgumentException("unsupported: " + cur.getuFrameVersion());
 			}
 
-			if (cur.getuFrameVersion() == 2) {
+			if (cur.getuFrameVersion() == TransceiverMode.AOS.getCode()) {
 				testAosComm(ground, satelliteDataCallback);
 				testAosComm(satellite, groundDataCallback);
 			} else {
@@ -603,7 +596,7 @@ public class NodeTest {
 	@Test
 	public void testSeqIsNotSupportedForAos() throws Exception {
 		// aos
-		groundConfig.setProperty("u_frame_version", "2");
+		groundConfig.setProperty("default_frame_type", "3");
 		ground.stop();
 		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
 		ground.start();
@@ -786,57 +779,52 @@ public class NodeTest {
 		}
 	}
 
-	private void establishType5Session() throws InterruptedException {
+	private void establishType5Session() {
 		satellite.setDuplex(duplex);
 		satellite.waitForSession();
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType5CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 	}
 
-	private void establishType4Session() throws InterruptedException {
+	private void establishType4Session() {
 		satellite.setDuplex(duplex);
 		satellite.waitForSession();
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType4CommParameters());
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 	}
 
-	private void establishType1Session() throws InterruptedException {
+	private void establishType1Session() {
 		establishType1Session(DataRate.R8C);
 	}
 
-	private void establishType1Session(DataRate dataRate) throws InterruptedException {
+	private void establishType1Session(DataRate dataRate) {
 		satellite.setDuplex(duplex);
 		satellite.waitForSession();
 		ground.setDuplex(duplex);
 		ground.setCommParameters(createType1CommParameters(dataRate));
 		ground.startSession();
-		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
-		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), true);
 
-		waitPersistenceActivityCompletion();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 	}
 
 	public static List<CommSettings> getSupportedSettingsCombination() {
 		List<CommSettings> settings = new ArrayList<>();
 		// different combinations of transfer frames, spdu directives and seq numbers
-		settings.add(new CommSettings(2, 3, 1, 1));
-		settings.add(new CommSettings(3, 3, 1, 1));
-		settings.add(new CommSettings(4, 4, 1, 1));
+		settings.add(new CommSettings(TransceiverMode.AOS.getCode(), TransceiverMode.PROXIMITY_1.getCode(), 1, 1));
+		settings.add(new CommSettings(TransceiverMode.PROXIMITY_1.getCode(), TransceiverMode.PROXIMITY_1.getCode(), 1, 1));
+		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 1, 1));
 		// TODO re-enable for full test suite
-//		settings.add(new CommSettings(4, 4, 2, 1));
-//		settings.add(new CommSettings(4, 4, 3, 1));
-//		settings.add(new CommSettings(4, 4, 2, 2));
-//		settings.add(new CommSettings(4, 4, 3, 2));
+//		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 2, 1));
+//		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 3, 1));
+//		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 2, 2));
+//		settings.add(new CommSettings(TransceiverMode.USLP.getCode(), TransceiverMode.USLP.getCode(), 3, 2));
 		return settings;
 	}
 
@@ -884,9 +872,8 @@ public class NodeTest {
 
 	public static Type5Directive createType5CommParameters() {
 		Type5LinkEstablishment rx = new Type5LinkEstablishment();
-		rx.setAosFrameLength(0);
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
-		rx.setCoherency(Coherency.COHERENT_PSK);
+		rx.setCoherency(Coherency.COHERENT);
 		rx.setDemandQuery(Type5NegotiationType.DEMAND);
 		rx.setFrequency(2_100_000_000f);
 		rx.setLinkSnr(0);
@@ -899,9 +886,8 @@ public class NodeTest {
 		rx.setTransmitToken(false);
 
 		Type5LinkEstablishment tx = new Type5LinkEstablishment();
-		tx.setAosFrameLength(0);
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
-		tx.setCoherency(Coherency.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT);
 		tx.setDemandQuery(Type5NegotiationType.DEMAND);
 		tx.setFrequency(2_200_000_000f);
 		tx.setLinkSnr(0);
@@ -958,7 +944,7 @@ public class NodeTest {
 		tx.setDataRate(dataRate);
 		tx.setFrequency(Frequency.CH3);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setCoherency(Coherency.COHERENT_PSK);
+		tx.setCoherency(Coherency.COHERENT);
 
 		PlExtensions txExt = new PlExtensions();
 		txExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);
@@ -975,7 +961,7 @@ public class NodeTest {
 		rx.setDataRate(dataRate);
 		rx.setFrequency(Frequency.CH3);
 		rx.setMode(Mode.PROXIMITY1);
-		rx.setCoherency(Coherency.COHERENT_PSK);
+		rx.setCoherency(Coherency.COHERENT);
 
 		PlExtensions rxExt = new PlExtensions();
 		rxExt.setCarrierModulation(Type1CarrierModulation.PCM_PSK_PM);

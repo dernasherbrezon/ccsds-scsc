@@ -273,6 +273,7 @@ public class HalfDuplexMac {
 
 				timer.cancelWait();
 				LOG.info("session established");
+				callback.handle(new ControllerEvent(ControllerEventType.START_OF_SESSION));
 				LOG.info("data services ready");
 				timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
 				state.setState(MacState.S60_DATA_SERVICES_RECEIVE);
@@ -294,6 +295,7 @@ public class HalfDuplexMac {
 				state.setState(MacState.S51_RADIATE_CARRIER);
 				timer.scheduleWait(EventType.E40_CARRIER_ONLY_TIMEOUT, config.getDuration("carrier_only_duration"));
 				LOG.info("session established");
+				callback.handle(new ControllerEvent(ControllerEventType.START_OF_SESSION));
 				LOG.info("data services ready");
 			}
 			break;

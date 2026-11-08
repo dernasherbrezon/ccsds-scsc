@@ -56,7 +56,7 @@ public class TransferFrameParserTest {
 
 	@Test
 	public void testPFrame() throws Exception {
-		assertDirectives(parser.createPFrame(new byte[] { 0 }));
+		assertDirectives(parser.createPFrame(new byte[] { 0 }, null));
 	}
 
 	@Test
