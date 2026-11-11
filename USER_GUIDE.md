@@ -447,10 +447,6 @@ This implementation uses integer status codes to report the success or failure o
 
 Integer status codes are used for performance reasons and because they map easily to C code on the OBC.
 
-#### Transceiver Status Codes
-
-Methods in the `Transceiver` interface also return status codes. These codes are offset by the constant `TRANSCEIVER_ERROR`. For example, if `setRxSymbolRate()` returns status code `44`, the value propagated to the OBC will be `48` (`TRANSCEIVER_ERROR + 44`).
-
 #### Error Reporting via Callbacks
 
 Because some operations execute on the TX thread, their results are delivered asynchronously through the `NodeCallback` interface.

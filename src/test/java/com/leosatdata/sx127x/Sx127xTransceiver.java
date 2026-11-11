@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
 import com.leosatdata.model.CommParameters;
+import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.ScramblerType;
@@ -94,6 +95,7 @@ public class Sx127xTransceiver implements Transceiver {
 	}
 	
 	private int setCommParameters(CommParameters params) {
+		//TODO check requested modulation. sx127x can support lora or fsk
 		int code = impl.sx127x_fsk_ook_set_bitrate(params.getSymbolRate());
 		if (code != 0) {
 			return code;
@@ -113,21 +115,21 @@ public class Sx127xTransceiver implements Transceiver {
 			return code;
 		}
 		if (params.getScrambler() != null && !params.getScrambler().equals(ScramblerType.NONE)) {
-			return 1;
+			return ErrorCode.UNSUPPORTED.ordinal();
 		}
 		if (params.getPolarization() != null && !params.getPolarization().equals(Polarization.UNKNOWN)) {
-			return 1;
+			return ErrorCode.UNSUPPORTED.ordinal();
 		}
 		if (params.getEncoding() != null && !params.getEncoding().equals(Coding.UNCODED)) {
-			return 1;
+			return ErrorCode.UNSUPPORTED.ordinal();
 		}
 		if (params.getCarrierModulation() != null && !params.getCarrierModulation().equals(CarrierModulation.FSK)) {
-			return 1;
+			return ErrorCode.UNSUPPORTED.ordinal();
 		}
 		if (params.isDifferentialEncoding()) {
-			return 1;
+			return ErrorCode.UNSUPPORTED.ordinal();
 		}
-		return 0;
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
 	@Override
@@ -225,12 +227,12 @@ public class Sx127xTransceiver implements Transceiver {
 
 	@Override
 	public int enableAsmRxCallback(boolean enable) {
-		return 0;
+		return ErrorCode.UNSUPPORTED.ordinal();
 	}
 
 	@Override
 	public int enableAsmTxCallback(boolean enable) {
-		return 0;
+		return ErrorCode.UNSUPPORTED.ordinal();
 	}
 
 }

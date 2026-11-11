@@ -159,10 +159,7 @@ public class TransceiverUtil {
 		} else {
 			result = ErrorCode.INVALID_ARGUMENT.ordinal();
 		}
-		if (result == ErrorCode.SUCCESS.ordinal()) {
-			return result;
-		}
-		return ErrorCode.TRANSCEIVER_ERROR.ordinal() + result;
+		return result;
 	}
 
 	public int applyTxParameters(Spdu params, boolean invert) {
@@ -176,10 +173,7 @@ public class TransceiverUtil {
 		} else {
 			result = ErrorCode.INVALID_ARGUMENT.ordinal();
 		}
-		if (result == ErrorCode.SUCCESS.ordinal()) {
-			return result;
-		}
-		return ErrorCode.TRANSCEIVER_ERROR.ordinal() + result;
+		return result;
 	}
 
 	private CommParameters convertType1Parameters(TxRxParameters commParams, PlExtensions plParams, String direction) {
