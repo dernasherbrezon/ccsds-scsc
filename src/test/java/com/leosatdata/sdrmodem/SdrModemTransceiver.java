@@ -5,12 +5,17 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.leosatdata.model.CommParameters;
 import com.leosatdata.sdrmodem.model.CommSettings;
 import com.leosatdata.sdrmodem.model.GfskSettings;
 import com.leosatdata.sdrmodem.model.ModemSettings;
+import com.leosatdata.sdrmodem.model.ModemType;
 import com.leosatdata.sdrmodem.model.Response;
 import com.leosatdata.sdrmodem.model.SdrChannelConfig;
+import com.leosatdata.sdrmodem.model.SoftBits;
 import com.leosatdata.service.Transceiver;
 import com.leosatdata.service.TransceiverCallback;
 import com.leosatdata.service.TransceiverRxState;
@@ -28,6 +33,8 @@ import ru.r2cloud.jradio.ccsds.ScramblerType;
 import ru.r2cloud.jradio.source.InputStreamSource;
 
 public class SdrModemTransceiver implements Transceiver {
+
+	private final static Logger LOG = LoggerFactory.getLogger(SdrModemTransceiver.class);
 
 	private TransceiverTxState tx = TransceiverTxState.OFF;
 	private TransceiverRxState rx = TransceiverRxState.OFF;
@@ -70,10 +77,21 @@ public class SdrModemTransceiver implements Transceiver {
 			}
 
 			@Override
-			public void onRx(byte[] data) {
-				is.feed(data);
+			public void onRx(SoftBits data) {
+				is.feed(data.getData());
+			}
+
+			// sdr-modem is packet modem (currently)
+			// ignore back and forth carrier acquired/lost
+			@Override
+			public void onCarrierAcquired() {
+			}
+
+			@Override
+			public void onCarrierLost() {
 			}
 		});
+		client.start();
 
 		executor = Executors.newScheduledThreadPool(1, new NamingThreadFactory("transceiver-" + config.getInteger("local_spacecraft_id", 0)));
 		executor.execute(new Runnable() {
@@ -115,12 +133,13 @@ public class SdrModemTransceiver implements Transceiver {
 	public int send(byte[] data) {
 		try {
 			byte[] sync = new byte[] { (byte) 0xAA, (byte) 0xAA, (byte) 0xAA, (byte) 0xAA, (byte) 0xAA };
-			byte[] padded = new byte[sync.length + data.length]; // FIXME packet mode
+			byte[] padded = new byte[sync.length + data.length];
 			System.arraycopy(sync, 0, padded, 0, sync.length);
 			System.arraycopy(data, 0, padded, sync.length, data.length);
 			client.sendFrame(padded);
 			return 0;
 		} catch (IOException e) {
+			LOG.error("unable to send", e);
 			return 1;
 		}
 	}
@@ -149,6 +168,7 @@ public class SdrModemTransceiver implements Transceiver {
 		settings.setSyncwordBits(syncword.length() * 4);
 		ModemSettings modemSettings = new ModemSettings();
 		modemSettings.setGfsk(settings);
+		modemSettings.setType(ModemType.GFSK);
 
 		CommSettings result = new CommSettings();
 		result.setSdrSettings(channel);
@@ -168,6 +188,7 @@ public class SdrModemTransceiver implements Transceiver {
 			}
 			return result;
 		} catch (IOException e) {
+			LOG.error("unable to set rx comm", e);
 			return 1;
 		}
 	}
@@ -184,6 +205,7 @@ public class SdrModemTransceiver implements Transceiver {
 			}
 			return result;
 		} catch (IOException e) {
+			LOG.error("unable to set tx comm", e);
 			return 1;
 		}
 	}
