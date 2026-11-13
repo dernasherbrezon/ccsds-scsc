@@ -74,3 +74,5 @@ Updtes RED BOOK September 22 2026
 3. "Working channel ADR" use case from Annex L starts with function "Demand" followed by "Query". Is it a typo? What is the purpose of doing demand and then change?
 
 4. "Report SNR" use case from Annex L has function "report rqst" or "report". However function enumeration doesn't define them.
+
+5. "QUERY_ACK" reply is not defined in state machines. During hail negotiation ack sent back without prior CARRIER_ONLY and MODULATION states
