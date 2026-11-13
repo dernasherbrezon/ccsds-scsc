@@ -131,12 +131,24 @@ public class Sx127xTransceiver implements Transceiver {
 		}
 		return ErrorCode.SUCCESS.ordinal();
 	}
+	
+	@Override
+	public boolean acceptRxCommParameters(CommParameters params) {
+		//TODO implement
+		return true;
+	}
 
 	@Override
 	public int setRxCommParameters(CommParameters params) {
 		return setCommParameters(params);
 	}
 
+	@Override
+	public boolean acceptTxCommParameters(CommParameters params) {
+		//TODO implement
+		return true;
+	}
+	
 	// for now both rx and tx are the same
 	// can be different though
 	@Override

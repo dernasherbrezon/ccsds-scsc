@@ -82,6 +82,11 @@ public class TcpTransceiver implements Transceiver {
 		}
 		return 0;
 	}
+	
+	@Override
+	public boolean acceptRxCommParameters(CommParameters params) {
+		return true;
+	}
 
 	@Override
 	public int setRxCommParameters(CommParameters params) {
@@ -96,6 +101,11 @@ public class TcpTransceiver implements Transceiver {
 	@Override
 	public TransceiverCallback getCallback() {
 		return callback;
+	}
+	
+	@Override
+	public boolean acceptTxCommParameters(CommParameters params) {
+		return true;
 	}
 
 	@Override

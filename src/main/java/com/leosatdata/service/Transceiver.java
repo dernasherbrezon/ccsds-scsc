@@ -14,6 +14,10 @@ public interface Transceiver {
 	int setRxCommParameters(CommParameters params);
 	int setTxCommParameters(CommParameters params);
 
+	// check if transceiver support comm parameters. used in the comm negotiations
+	boolean acceptRxCommParameters(CommParameters params);
+	boolean acceptTxCommParameters(CommParameters params);
+
 	// callback
 	void setCallback(TransceiverCallback callback);
 	TransceiverCallback getCallback();
@@ -31,4 +35,5 @@ public interface Transceiver {
 	// for tx and rx can be different
 	int enableAsmRxCallback(boolean enable);
 	int enableAsmTxCallback(boolean enable);
+
 }

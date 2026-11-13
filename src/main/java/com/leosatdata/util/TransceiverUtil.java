@@ -364,6 +364,13 @@ public class TransceiverUtil {
 		return result;
 	}
 
+	public boolean acceptType5RxParameters(Type5Directive directive, boolean invert) {
+		Type5LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
+		Type5LinkEstablishment otherSide = invert ? directive.getRxLink() : directive.getTxLink();
+		CommParameters comm = convertType5Parameters(params, otherSide);
+		return transceiver.acceptRxCommParameters(comm);
+	}
+
 	private int applyType5RxParameters(Type5Directive directive, boolean invert) {
 		Type5LinkEstablishment params = invert ? directive.getTxLink() : directive.getRxLink();
 		Type5LinkEstablishment otherSide = invert ? directive.getRxLink() : directive.getTxLink();
@@ -371,6 +378,13 @@ public class TransceiverUtil {
 		return transceiver.setRxCommParameters(comm);
 	}
 
+	public boolean acceptType5TxParameters(Type5Directive directive, boolean invert) {
+		Type5LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
+		Type5LinkEstablishment otherSide = invert ? directive.getTxLink() : directive.getRxLink();
+		CommParameters comm = convertType5Parameters(params, otherSide);
+		return transceiver.acceptTxCommParameters(comm);
+	}
+	
 	private int applyType5TxParameters(Type5Directive directive, boolean invert) {
 		Type5LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		Type5LinkEstablishment otherSide = invert ? directive.getTxLink() : directive.getRxLink();

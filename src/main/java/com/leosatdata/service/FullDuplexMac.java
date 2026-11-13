@@ -17,6 +17,8 @@ import com.leosatdata.model.Plcw;
 import com.leosatdata.model.Spdu;
 import com.leosatdata.model.State;
 import com.leosatdata.model.TransceiverOperationMode;
+import com.leosatdata.model.Type5Directive;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.util.Configuration;
 import com.leosatdata.util.SpduUtil;
 import com.leosatdata.util.TransceiverUtil;
@@ -64,10 +66,19 @@ public class FullDuplexMac {
 			SpduUtil.setDuplex(hailCommParameters, state.getDuplex());
 			int code = transceiverUtil.applyRxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 			if (code != 0) {
-				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply hail parameters"));
+				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply hail rx"));
 			}
-			transceiver.setTxState(TransceiverTxState.OFF);
 			transceiver.setRxState(TransceiverRxState.RECEIVING);
+			// expect link negotiation
+			if (spduVersion == Type5Directive.SPDU_VERSION) {
+				code = transceiverUtil.applyTxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+				if (code != 0) {
+					callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply hail tx"));
+				}
+				transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
+			} else {
+				transceiver.setTxState(TransceiverTxState.OFF);
+			}
 			break;
 		case E2_CONNECTING_T:
 			if (state.getCommParameters() == null) {
@@ -87,7 +98,12 @@ public class FullDuplexMac {
 				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply hail tx"));
 			}
 			transceiver.setTxState(TransceiverTxState.CARRIER_ONLY);
-			code = transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			// negotiation expect response on the hail channel
+			if (SpduUtil.isCommNegotiation(spduVersion, state.getCommParameters())) {
+				code = transceiverUtil.applyRxParameters(hailCommParameters, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			} else {
+				code = transceiverUtil.applyRxParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
+			}
 			if (code != 0) {
 				callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to apply comm rx"));
 			}
@@ -123,7 +139,6 @@ public class FullDuplexMac {
 		case E7_TAIL_IDLE_TIMEOUT:
 			if (state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
 				state.setState(MacState.S35_WAITING_FOR_HAIL_RESPONSE);
-				transceiver.setTxState(TransceiverTxState.OFF);
 				timer.scheduleWait(EventType.E8_HAIL_WAIT_TIMEOUT, config.getDuration("hail_wait_duration"));
 			}
 			break;
@@ -132,6 +147,27 @@ public class FullDuplexMac {
 			// check several states because responder can send response faster than extra
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
+				if (SpduUtil.isCommNegotiation(spduVersion, state.getCommParameters())) {
+					if (SpduUtil.isCommAccepted(spdu)) {
+						Type5Directive type5 = (Type5Directive) state.getCommParameters();
+						if (type5.getRxLink() != null) {
+							type5.getRxLink().setDemandQuery(Type5NegotiationType.DEMAND);
+						}
+						if (type5.getTxLink() != null) {
+							type5.getTxLink().setDemandQuery(Type5NegotiationType.DEMAND);
+						}
+						state.setCommParameters(type5);
+						// re-run hail with agreed parameteres
+						timer.cancelWait();
+						currentHailAttempt = 0;
+						sendEvent(new Event(EventType.E2_CONNECTING_T));
+					} else {
+						timer.cancelWait();
+						currentHailAttempt = 0;
+						callback.handle(config.createNotification("hail", ErrorCode.INVALID_ARGUMENT.ordinal(), "comm request was rejected"));
+					}
+					break;
+				}
 				timer.cancelWait();
 				callback.handle(config.createNotification("hail"));
 				currentHailAttempt = 0;
@@ -149,9 +185,38 @@ public class FullDuplexMac {
 				if (!SpduUtil.isCommDirective(spduVersion, spdu) || !SpduUtil.isCommChange(spdu)) {
 					break;
 				}
+				if (SpduUtil.isCommNegotiation(spduVersion, spdu)) {
+					Type5Directive type5 = (Type5Directive) spdu;
+					// support only passive communication parameters negotiation: check if transceiver can support them
+					// active (not implemented) assume extra callback to Node where application can choose ACK/NACK
+					boolean rxRequest = type5.getRxLink() != null && type5.getRxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
+					boolean txRequest = type5.getTxLink() != null && type5.getTxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
+					if (rxRequest) {
+						if (transceiverUtil.acceptType5RxParameters(type5, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER))) {
+							type5.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_ACK);
+						} else {
+							type5.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_NACK);
+						}
+					}
+					if (txRequest) {
+						if (transceiverUtil.acceptType5TxParameters(type5, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER))) {
+							type5.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_ACK);
+						} else {
+							type5.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_NACK);
+						}
+					}
+					transceiver.setTxState(TransceiverTxState.MODULATION);
+					// do not apply parameters until both DEMAND
+					// echo result back
+					try {
+						state.getMacQueue().put(type5);
+					} catch (InterruptedException e1) {
+						Thread.currentThread().interrupt();
+					}
+					break;
+				}
 				state.setCommParameters(spdu);
 				// switch over to the agreed link once plcw sent
-				// assume
 				code = transceiverUtil.applyParameters(state.getCommParameters(), state.getTransceiverMode().equals(TransceiverOperationMode.CALLER));
 				if (code != 0) {
 					callback.handle(new ControllerEvent(ControllerEventType.TRANSCEIVER_ERROR, code, "unable to switch to the agreed link"));

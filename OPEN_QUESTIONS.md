@@ -70,3 +70,7 @@ Updtes RED BOOK September 22 2026
 1. E2.3.1 has "The REPORT REQUEST directive is the mechanism for requesting ...  time-tag sample collection ...". Which is no longer the case for type5 directive. 
 
 2. E2.8.3.2 says 1100 while Figure E-2 shows PN Ranging as 0110
+
+3. "Working channel ADR" use case from Annex L starts with function "Demand" followed by "Query". Is it a typo? What is the purpose of doing demand and then change?
+
+4. "Report SNR" use case from Annex L has function "report rqst" or "report". However function enumeration doesn't define them.

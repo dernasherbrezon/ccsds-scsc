@@ -15,6 +15,7 @@ import com.leosatdata.model.Type4Directive;
 import com.leosatdata.model.Type4LinkEstablishment;
 import com.leosatdata.model.Type5Directive;
 import com.leosatdata.model.Type5LinkEstablishment;
+import com.leosatdata.model.Type5NegotiationType;
 import com.leosatdata.model.Vr;
 
 public class SpduUtil {
@@ -167,6 +168,29 @@ public class SpduUtil {
 			return true;
 		}
 		return false;
+	}
+
+	public static boolean isCommNegotiation(int spduVersion, Spdu obj) {
+		if (spduVersion != Type5Directive.SPDU_VERSION) {
+			return false;
+		}
+		Type5Directive type5 = (Type5Directive) obj;
+		boolean rxRequest = type5.getRxLink() != null && type5.getRxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
+		boolean txRequest = type5.getTxLink() != null && type5.getTxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
+		return rxRequest || txRequest;
+	}
+
+	public static boolean isCommAccepted(Spdu obj) {
+		if (!(obj instanceof Type5Directive)) {
+			LOG.info("unexpected response received for QUERY_REQ: " + obj);
+			return false;
+		}
+		Type5Directive type5 = (Type5Directive) obj;
+		// support rx demand, tx query_req
+		// response can be rx demand, tx query_ack
+		boolean rxReject = type5.getRxLink() != null && type5.getRxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_NACK);
+		boolean txReject = type5.getTxLink() != null && type5.getTxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_NACK);
+		return !rxReject && !txReject;
 	}
 
 	public static Vr getVr(Spdu obj) {

@@ -30,6 +30,9 @@ public class NullTransceiver implements Transceiver {
 	private CommParameters tx;
 
 	private Long txDelay;
+	
+	private boolean acceptRx = true;
+	private boolean acceptTx = true;
 
 	private volatile boolean asmRxCallback;
 	private volatile boolean asmTxCallback;
@@ -76,6 +79,15 @@ public class NullTransceiver implements Transceiver {
 		otherSide.executor.schedule(new DelayedRxTask(otherSide, data, otherSide.rxFrameFilter), channelDelay + txMillisToWait, TimeUnit.MILLISECONDS);
 		return 0;
 	}
+	
+	@Override
+	public boolean acceptRxCommParameters(CommParameters params) {
+		return acceptRx;
+	}
+	
+	public void setAcceptRx(boolean acceptRx) {
+		this.acceptRx = acceptRx;
+	}
 
 	@Override
 	public int setRxCommParameters(CommParameters params) {
@@ -105,6 +117,15 @@ public class NullTransceiver implements Transceiver {
 			}
 		}
 		return 0;
+	}
+	
+	@Override
+	public boolean acceptTxCommParameters(CommParameters params) {
+		return acceptTx;
+	}
+	
+	public void setAcceptTx(boolean acceptTx) {
+		this.acceptTx = acceptTx;
 	}
 
 	@Override

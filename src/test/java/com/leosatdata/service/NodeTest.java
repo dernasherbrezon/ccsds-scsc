@@ -42,6 +42,7 @@ import com.leosatdata.model.ControllerEvent;
 import com.leosatdata.model.ControllerEventType;
 import com.leosatdata.model.DataRate;
 import com.leosatdata.model.Duplex;
+import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.Frequency;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Mode;
@@ -291,10 +292,99 @@ public class NodeTest {
 		tx.setCoherency(Coherency.COHERENT);
 		result.setTxParams(tx);
 
-		ground.setCommParameters(result);
+		assertEquals(0, ground.setCommParameters(result));
 
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.COMM_CHANGE), true);
 		waitPersistenceActivityCompletion();
+		assertTestExpPacket();
+
+		// rx params must be specified even if not changing
+		result.setRxParams(null);
+		result.setRxPlExtensions(null);
+		tx.setFrequency(Frequency.CH3);
+		assertEquals(ErrorCode.INVALID_ARGUMENT.ordinal(), ground.setCommParameters(result));
+	}
+
+	@Test
+	public void testCommNegotiation() throws Exception {
+		if (!duplex.equals(Duplex.FULL_DUPLEX)) {
+			return;
+		}
+		// switch to type5
+		groundConfig.setProperty("spdu_version", String.valueOf(Type5Directive.SPDU_VERSION));
+		satelliteConfig.setProperty("spdu_version", String.valueOf(Type5Directive.SPDU_VERSION));
+		ground.stop();
+		ground = new Node(groundConfig, groundTransceiver, groundCallback, groundDataCallback);
+		ground.start();
+		satellite.stop();
+		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
+		satellite.start();
+		
+		satellite.setDuplex(duplex);
+		ground.setDuplex(duplex);
+		satellite.waitForSession();
+		Type5Directive commParameters = createType5CommParameters();
+		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		assertEquals(0, ground.setCommParameters(commParameters));
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertTestExpPacket();
+		
+		// test one side is demand
+		ground.stop();
+		ground.start();
+		satellite.stop();
+		satellite.start();
+		satellite.waitForSession();
+		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.DEMAND);
+		assertEquals(0, ground.setCommParameters(commParameters));
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertTestExpPacket();
+
+		// test partial nack
+		satelliteTransceiver.setAcceptTx(false);
+		ground.stop();
+		ground.start();
+		satellite.stop();
+		satellite.start();
+		satellite.waitForSession();
+		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		assertEquals(0, ground.setCommParameters(commParameters));
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
+		// and recovery
+		satelliteTransceiver.setAcceptTx(true);
+		assertEquals(0, ground.setCommParameters(commParameters));
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertTestExpPacket();
+		
+		// test tx/rx nack
+		satelliteTransceiver.setAcceptTx(false);
+		satelliteTransceiver.setAcceptRx(false);
+		ground.stop();
+		ground.start();
+		satellite.stop();
+		satellite.start();
+		satellite.waitForSession();
+		assertEquals(0, ground.setCommParameters(commParameters));
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
+		
+		// and recovery
+		satelliteTransceiver.setAcceptTx(true);
+		satelliteTransceiver.setAcceptRx(true);
+		assertEquals(0, ground.setCommParameters(commParameters));
+		ground.startSession();
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 		assertTestExpPacket();
 	}
 
@@ -873,7 +963,7 @@ public class NodeTest {
 	public static Type5Directive createType5CommParameters() {
 		Type5LinkEstablishment rx = new Type5LinkEstablishment();
 		rx.setCoding(Type4Coding.CONVOLUTIONAL);
-		rx.setCoherency(Coherency.COHERENT);
+		rx.setCoherency(Coherency.NON_COHERENT);
 		rx.setDemandQuery(Type5NegotiationType.DEMAND);
 		rx.setFrequency(2_100_000_000f);
 		rx.setLinkSnr(0);
@@ -887,7 +977,7 @@ public class NodeTest {
 
 		Type5LinkEstablishment tx = new Type5LinkEstablishment();
 		tx.setCoding(Type4Coding.CONVOLUTIONAL);
-		tx.setCoherency(Coherency.COHERENT);
+		tx.setCoherency(Coherency.NON_COHERENT);
 		tx.setDemandQuery(Type5NegotiationType.DEMAND);
 		tx.setFrequency(2_200_000_000f);
 		tx.setLinkSnr(0);
