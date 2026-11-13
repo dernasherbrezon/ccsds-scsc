@@ -49,10 +49,10 @@ public class Node implements Runnable, TransceiverCallback {
 	private final FrameSublayer frameSublayer;
 	private final TimerService timer;
 
-	private final Thread t;
 	private final int localScid;
 	private final boolean testSource;
 	private final int maxSequenceNumber;
+	private Thread t;
 	private int remoteScid;
 	// there are 2 vr variables. One is thread-local onRx, the other one is in State
 	// this is done to synchronize the state across 2 threads
@@ -79,8 +79,6 @@ public class Node implements Runnable, TransceiverCallback {
 		this.halfDuplexMac = new HalfDuplexMac(state, config, transceiver, callback, timer);
 		this.simplexMac = new SimplexMac(state, config, transceiver, callback, timer);
 		this.frameSublayer = new FrameSublayer(state, config, transceiver, callback);
-		t = new Thread(this, "node-" + localScid);
-		t.setDaemon(true);
 	}
 
 	@SuppressWarnings("incomplete-switch")
@@ -523,6 +521,8 @@ public class Node implements Runnable, TransceiverCallback {
 	public void start() {
 		frameSublayer.start();
 		timer.start();
+		t = new Thread(this, "node-" + localScid);
+		t.setDaemon(true);
 		t.start();
 	}
 
@@ -536,6 +536,7 @@ public class Node implements Runnable, TransceiverCallback {
 		}
 		timer.stop();
 		frameSublayer.stop();
+		state.reset();
 	}
 
 	private void sendEvent(Event e) {
