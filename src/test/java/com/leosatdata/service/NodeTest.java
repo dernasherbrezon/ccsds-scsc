@@ -360,6 +360,8 @@ public class NodeTest {
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
 		// and recovery
 		satelliteTransceiver.setAcceptTx(true);
+		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
 		assertEquals(0, ground.setCommParameters(commParameters));
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
@@ -374,6 +376,8 @@ public class NodeTest {
 		satellite.stop();
 		satellite.start();
 		satellite.waitForSession();
+		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
 		assertEquals(0, ground.setCommParameters(commParameters));
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
@@ -381,10 +385,33 @@ public class NodeTest {
 		// and recovery
 		satelliteTransceiver.setAcceptTx(true);
 		satelliteTransceiver.setAcceptRx(true);
+		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
 		assertEquals(0, ground.setCommParameters(commParameters));
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
+		assertTestExpPacket();
+
+		// comm negotiation during active session
+		satelliteTransceiver.setAcceptTx(false);
+		commParameters.getRxLink().setFrequency(2_200_000_000f);
+		commParameters.getTxLink().setFrequency(2_400_000_000f);
+		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		assertEquals(0, ground.setCommParameters(commParameters));
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.COMM_CHANGE), false);
+		waitPersistenceActivityCompletion();
+		// send using old comm parameters
+		assertTestExpPacket();
+		
+		satelliteTransceiver.setAcceptTx(true);
+		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
+		assertEquals(0, ground.setCommParameters(commParameters));
+		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.COMM_CHANGE), true);
+		waitPersistenceActivityCompletion();
+		// send using new comm parameters
 		assertTestExpPacket();
 	}
 

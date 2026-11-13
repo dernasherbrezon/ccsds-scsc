@@ -174,6 +174,9 @@ public class SpduUtil {
 		if (spduVersion != Type5Directive.SPDU_VERSION) {
 			return false;
 		}
+		if (!(obj instanceof Type5Directive)) {
+			return false;
+		}
 		Type5Directive type5 = (Type5Directive) obj;
 		boolean rxRequest = type5.getRxLink() != null && type5.getRxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
 		boolean txRequest = type5.getTxLink() != null && type5.getTxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);

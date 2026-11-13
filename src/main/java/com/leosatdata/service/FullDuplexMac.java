@@ -148,6 +148,8 @@ public class FullDuplexMac {
 			// idle and carrier timeouts
 			if (state.getState().equals(MacState.S35_WAITING_FOR_HAIL_RESPONSE) || state.getState().equals(MacState.S34_SEND_HAIL_TAIL)) {
 				if (SpduUtil.isCommNegotiation(spduVersion, state.getCommParameters())) {
+					timer.cancelWait();
+					currentHailAttempt = 0;
 					if (SpduUtil.isCommAccepted(spdu)) {
 						Type5Directive type5 = (Type5Directive) state.getCommParameters();
 						if (type5.getRxLink() != null) {
@@ -156,14 +158,10 @@ public class FullDuplexMac {
 						if (type5.getTxLink() != null) {
 							type5.getTxLink().setDemandQuery(Type5NegotiationType.DEMAND);
 						}
-						state.setCommParameters(type5);
 						// re-run hail with agreed parameteres
-						timer.cancelWait();
-						currentHailAttempt = 0;
 						sendEvent(new Event(EventType.E2_CONNECTING_T));
 					} else {
-						timer.cancelWait();
-						currentHailAttempt = 0;
+						state.setPersistence(false);
 						callback.handle(config.createNotification("hail", ErrorCode.INVALID_ARGUMENT.ordinal(), "comm request was rejected"));
 					}
 					break;
@@ -186,33 +184,7 @@ public class FullDuplexMac {
 					break;
 				}
 				if (SpduUtil.isCommNegotiation(spduVersion, spdu)) {
-					Type5Directive type5 = (Type5Directive) spdu;
-					// support only passive communication parameters negotiation: check if transceiver can support them
-					// active (not implemented) assume extra callback to Node where application can choose ACK/NACK
-					boolean rxRequest = type5.getRxLink() != null && type5.getRxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
-					boolean txRequest = type5.getTxLink() != null && type5.getTxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
-					if (rxRequest) {
-						if (transceiverUtil.acceptType5RxParameters(type5, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER))) {
-							type5.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_ACK);
-						} else {
-							type5.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_NACK);
-						}
-					}
-					if (txRequest) {
-						if (transceiverUtil.acceptType5TxParameters(type5, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER))) {
-							type5.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_ACK);
-						} else {
-							type5.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_NACK);
-						}
-					}
-					transceiver.setTxState(TransceiverTxState.MODULATION);
-					// do not apply parameters until both DEMAND
-					// echo result back
-					try {
-						state.getMacQueue().put(type5);
-					} catch (InterruptedException e1) {
-						Thread.currentThread().interrupt();
-					}
+					handleCommNegotiationRequest(spdu);
 					break;
 				}
 				state.setCommParameters(spdu);
@@ -262,6 +234,36 @@ public class FullDuplexMac {
 				}
 			}
 			break;
+		}
+	}
+
+	private void handleCommNegotiationRequest(Spdu spdu) {
+		Type5Directive type5 = (Type5Directive) spdu;
+		// support only passive communication parameters negotiation: check if transceiver can support them
+		// active (not implemented) assume extra callback to Node where application can choose ACK/NACK
+		boolean rxRequest = type5.getRxLink() != null && type5.getRxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
+		boolean txRequest = type5.getTxLink() != null && type5.getTxLink().getDemandQuery().equals(Type5NegotiationType.QUERY_REQ);
+		if (rxRequest) {
+			if (transceiverUtil.acceptType5RxParameters(type5, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER))) {
+				type5.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_ACK);
+			} else {
+				type5.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_NACK);
+			}
+		}
+		if (txRequest) {
+			if (transceiverUtil.acceptType5TxParameters(type5, state.getTransceiverMode().equals(TransceiverOperationMode.CALLER))) {
+				type5.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_ACK);
+			} else {
+				type5.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_NACK);
+			}
+		}
+		transceiver.setTxState(TransceiverTxState.MODULATION);
+		// do not apply parameters until both DEMAND
+		// echo result back
+		try {
+			state.getMacQueue().put(type5);
+		} catch (InterruptedException e1) {
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -371,6 +373,26 @@ public class FullDuplexMac {
 			break;
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
+			if (state.getState().equals(MacState.S48_3_COMM_CHANGE_WAIT) && SpduUtil.isCommNegotiation(spduVersion, state.getCommParameters()) && (spdu instanceof Type5Directive)) {
+				timer.cancelWait();
+				currentCommChangeAttempt = 0;
+				if (SpduUtil.isCommAccepted(spdu)) {
+					Type5Directive type5 = (Type5Directive) state.getCommParameters();
+					if (type5.getRxLink() != null) {
+						type5.getRxLink().setDemandQuery(Type5NegotiationType.DEMAND);
+					}
+					if (type5.getTxLink() != null) {
+						type5.getTxLink().setDemandQuery(Type5NegotiationType.DEMAND);
+					}
+					// re-run with agreed parameters
+					sendEvent(new Event(EventType.E14_COMM_CHANGE));
+				} else {
+					state.setPersistence(false);
+					state.setState(MacState.S40_DATA_SERVICES);
+					callback.handle(config.createNotification("comm_change", ErrorCode.INVALID_ARGUMENT.ordinal(), "comm change rejected"));
+				}
+				break;
+			}
 			if (state.getState().equals(MacState.S48__1_RX_COMM_CHANGE)) {
 				timer.cancelWait();
 				state.setPersistence(false);
@@ -385,19 +407,21 @@ public class FullDuplexMac {
 				LOG.info("tx comm parameters changed: {}", state.getCommParameters());
 				callback.handle(config.createNotification("comm_change"));
 			}
-			if (state.getState().equals(MacState.S40_DATA_SERVICES)) {
-				if (SpduUtil.isCommChange(spdu)) {
-					LOG.info("remote comm change parameters requested: {}", spdu);
-					state.setPersistence(true);
-					state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), spdu));
-					// FIXME switch mode if changed
-					state.setDuplex(SpduUtil.getDuplex(state.getCommParameters()));
-					if (state.noSpduPending() && state.isTxReady()) {
-						state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
-						timer.scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
-					} else {
-						state.setState(MacState.S48_4_REMOTE_COMM_CHANGE);
-					}
+			if (state.getState().equals(MacState.S40_DATA_SERVICES) && SpduUtil.isCommChange(spdu)) {
+				LOG.info("remote comm change parameters requested: {}", spdu);
+				if (SpduUtil.isCommNegotiation(spduVersion, spdu)) {
+					handleCommNegotiationRequest(spdu);
+					break;
+				}
+				state.setPersistence(true);
+				state.setCommParameters(SpduUtil.mergeCommParameters(state.getCommParameters(), spdu));
+				// FIXME switch mode if changed
+				state.setDuplex(SpduUtil.getDuplex(state.getCommParameters()));
+				if (state.noSpduPending() && state.isTxReady()) {
+					state.setState(MacState.S48_5_COMM_CHANGE_TAIL);
+					timer.scheduleWait(EventType.E20_COMM_CHANGE_TAIL_TIMEOUT, config.getDuration("tail_idle_duration"));
+				} else {
+					state.setState(MacState.S48_4_REMOTE_COMM_CHANGE);
 				}
 			}
 			break;
