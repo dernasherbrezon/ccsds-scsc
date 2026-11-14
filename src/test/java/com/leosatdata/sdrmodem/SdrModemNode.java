@@ -60,8 +60,8 @@ public class SdrModemNode {
 	public void run(String[] args) throws Exception {
 		Properties props = new Properties();
 		props.putAll(NodeTest.load("src/main/resources/mib.properties"));
-		props.putAll(NodeTest.load("src/test/resources/sdr-modem.properties"));
 		props.putAll(NodeTest.load("src/main/resources/custom.properties"));
+		props.putAll(NodeTest.load("src/test/resources/sdr-modem.properties"));
 		for (String cur : args) {
 			props.putAll(NodeTest.load(cur));
 		}
@@ -154,7 +154,7 @@ public class SdrModemNode {
 		tx.setDataRate(dataRate);
 		tx.setFrequency(Frequency.CH3);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setCoherency(Coherency.COHERENT);
+		tx.setCoherency(Coherency.NON_COHERENT);
 
 		PlExtensions txExt = new PlExtensions();
 		txExt.setCarrierModulation(Type1CarrierModulation.FSK);
@@ -162,7 +162,7 @@ public class SdrModemNode {
 		txExt.setDifferentialEncoding(false);
 		txExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		txExt.setRsCode(RsCodeType.RS255_239);
-		txExt.setScrambler(ScramblerType.CCITT);
+		txExt.setScrambler(ScramblerType.NONE);
 		txExt.setUseExtendedDataRate(false);
 		txExt.setUseExtendedFreqSet(false);
 
@@ -171,7 +171,7 @@ public class SdrModemNode {
 		rx.setDataRate(dataRate);
 		rx.setFrequency(Frequency.CH3);
 		rx.setMode(Mode.PROXIMITY1);
-		rx.setCoherency(Coherency.COHERENT);
+		rx.setCoherency(Coherency.NON_COHERENT);
 
 		PlExtensions rxExt = new PlExtensions();
 		rxExt.setCarrierModulation(Type1CarrierModulation.FSK);
@@ -179,7 +179,7 @@ public class SdrModemNode {
 		rxExt.setDifferentialEncoding(false);
 		rxExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		rxExt.setRsCode(RsCodeType.RS255_239);
-		rxExt.setScrambler(ScramblerType.CCITT);
+		rxExt.setScrambler(ScramblerType.NONE);
 		rxExt.setUseExtendedDataRate(false);
 		rxExt.setUseExtendedFreqSet(false);
 

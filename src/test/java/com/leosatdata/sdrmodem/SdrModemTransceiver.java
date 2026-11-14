@@ -9,8 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.leosatdata.model.CarrierModulation;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.CommParameters;
 import com.leosatdata.model.ErrorCode;
+import com.leosatdata.model.Polarization;
 import com.leosatdata.sdrmodem.model.CommSettings;
 import com.leosatdata.sdrmodem.model.GfskSettings;
 import com.leosatdata.sdrmodem.model.ModemSettings;
@@ -160,7 +162,27 @@ public class SdrModemTransceiver implements Transceiver {
 			LOG.info("{} modulation is not supported. Expected: FSK", params.getCarrierModulation());
 			return false;
 		}
-		return false;
+		if (params.isDifferentialEncoding()) {
+			LOG.info("differential encoding is not supported");
+			return false;
+		}
+		if (params.getCoding() != null && !params.getCoding().equals(com.leosatdata.model.Coding.UNCODED)) {
+			LOG.info("{} encoding is not supported", params.getCoding());
+			return false;
+		}
+		if (params.getPolarization() != null && !params.getPolarization().equals(Polarization.UNKNOWN)) {
+			LOG.info("{} polarization is not supported", params.getPolarization());
+			return false;
+		}
+		if (params.getScrambler() != null && !params.getScrambler().equals(com.leosatdata.model.ScramblerType.NONE)) {
+			LOG.info("{} scrambler is not supported", params.getScrambler());
+			return false;
+		}
+		if (params.getCoherency() != null && !params.getCoherency().equals(Coherency.NON_COHERENT)) {
+			LOG.info("{} coherency is not supported", params.getCoherency());
+			return false;
+		}
+		return true;
 	}
 
 	@Override
