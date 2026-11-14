@@ -10,8 +10,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coding;
+import com.leosatdata.model.Coherency;
 import com.leosatdata.model.CommParameters;
 import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.LineCoding;
@@ -26,6 +30,9 @@ import com.leosatdata.util.NamingThreadFactory;
 import com.leosatdata.util.Util;
 
 public class Sx127xTransceiver implements Transceiver {
+
+	private final static Logger LOG = LoggerFactory.getLogger(Sx127xTransceiver.class);
+	private final static int MAX_VARIABLE_LENGTH = 255 - 4; // 4 is for crc32
 
 	private final Sx127x impl;
 	private final Configuration config;
@@ -46,9 +53,6 @@ public class Sx127xTransceiver implements Transceiver {
 		if (config.getBoolean("cs.sublayer.asm.prepend")) {
 			throw new IllegalArgumentException("asm should be prepended by transceiver");
 		}
-		if (config.getBoolean("cs.sublayer.crc.append")) {
-			throw new IllegalArgumentException("crc should be appended by transceiver");
-		}
 	}
 
 	public void start() {
@@ -58,8 +62,8 @@ public class Sx127xTransceiver implements Transceiver {
 
 		impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_SLEEP, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		impl.sx127x_fsk_ook_set_syncword(config.getProperty("cs.sublayer.asm"));
-		// This is not crc32 as stated by the CCSDS 211.2
-		impl.sx127x_fsk_ook_set_crc(sx127x_crc_type_t.SX127X_CRC_CCITT);
+		// Generate CRC32 in CSSublayer according to CCSDS 211.2
+		impl.sx127x_fsk_ook_set_crc(sx127x_crc_type_t.SX127X_CRC_NONE);
 		// extra parameters can be configured in the property file
 		impl.sx127x_tx_set_pa_config(new PaConfig(sx127x_pa_pin_t.SX127X_PA_PIN_BOOST, 4));
 
@@ -68,10 +72,10 @@ public class Sx127xTransceiver implements Transceiver {
 			throw new IllegalArgumentException("only variable transfer frames are supported: u_frame_version=" + uFrameVersion);
 		}
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
-		if (maxFrameLength > 255) {
-			throw new IllegalArgumentException("maximum_frame_length can be up to 255, got: " + maxFrameLength);
+		if (maxFrameLength > MAX_VARIABLE_LENGTH) {
+			throw new IllegalArgumentException("maximum_frame_length can be up to " + MAX_VARIABLE_LENGTH + ", got: " + maxFrameLength);
 		}
-		impl.sx127x_fsk_ook_set_packet_format(new PacketFormat(sx127x_packet_format_t.SX127X_VARIABLE, maxFrameLength));
+		impl.sx127x_fsk_ook_set_packet_format(new PacketFormat(sx127x_packet_format_t.SX127X_VARIABLE, maxFrameLength + 4));
 		executor = Executors.newScheduledThreadPool(1, new NamingThreadFactory("transceiver-" + config.getInteger("local_spacecraft_id", 0)));
 	}
 
@@ -93,9 +97,11 @@ public class Sx127xTransceiver implements Transceiver {
 		});
 		return 0;
 	}
-	
+
 	private int setCommParameters(CommParameters params) {
-		//TODO check requested modulation. sx127x can support lora or fsk
+		if (!acceptCommParameters(params)) {
+			return ErrorCode.UNSUPPORTED.ordinal();
+		}
 		int code = impl.sx127x_fsk_ook_set_bitrate(params.getSymbolRate());
 		if (code != 0) {
 			return code;
@@ -114,28 +120,48 @@ public class Sx127xTransceiver implements Transceiver {
 		if (code != 0) {
 			return code;
 		}
-		if (params.getScrambler() != null && !params.getScrambler().equals(ScramblerType.NONE)) {
-			return ErrorCode.UNSUPPORTED.ordinal();
-		}
-		if (params.getPolarization() != null && !params.getPolarization().equals(Polarization.UNKNOWN)) {
-			return ErrorCode.UNSUPPORTED.ordinal();
-		}
-		if (params.getEncoding() != null && !params.getEncoding().equals(Coding.UNCODED)) {
-			return ErrorCode.UNSUPPORTED.ordinal();
-		}
-		if (params.getCarrierModulation() != null && !params.getCarrierModulation().equals(CarrierModulation.FSK)) {
-			return ErrorCode.UNSUPPORTED.ordinal();
-		}
-		if (params.isDifferentialEncoding()) {
-			return ErrorCode.UNSUPPORTED.ordinal();
-		}
 		return ErrorCode.SUCCESS.ordinal();
 	}
-	
+
+	private static boolean acceptCommParameters(CommParameters params) {
+		if (!params.getCarrierModulation().equals(CarrierModulation.FSK)) {
+			LOG.info("carrier modulation {} is not supported. only gmsk is supported", params.getCarrierModulation());
+			return false;
+		}
+		if (params.getFrequency() < 137_000_000 || params.getFrequency() > 1020_000_000) {
+			LOG.info("frequency {} outside of supported range: 137Mhz - 1020Mhz", params.getFrequency());
+			return false;
+		}
+		if (params.getSymbolRate() < 1200 || params.getSymbolRate() > 300_000) {
+			LOG.info("symbol rate {} outside of supported range: 1200 - 300000", params.getSymbolRate());
+			return false;
+		}
+		if (params.isDifferentialEncoding()) {
+			LOG.info("differential encoding is not supported");
+			return false;
+		}
+		if (params.getCoding() != null && !params.getCoding().equals(Coding.UNCODED)) {
+			LOG.info("{} encoding is not supported", params.getCoding());
+			return false;
+		}
+		if (params.getPolarization() != null && !params.getPolarization().equals(Polarization.UNKNOWN)) {
+			LOG.info("{} polarization is not supported", params.getPolarization());
+			return false;
+		}
+		if (params.getScrambler() != null && !params.getScrambler().equals(ScramblerType.NONE)) {
+			LOG.info("{} scrambler is not supported", params.getScrambler());
+			return false;
+		}
+		if (params.getCoherency() != null && !params.getCoherency().equals(Coherency.NON_COHERENT)) {
+			LOG.info("{} coherency is not supported", params.getCoherency());
+			return false;
+		}
+		return true;
+	}
+
 	@Override
 	public boolean acceptRxCommParameters(CommParameters params) {
-		//TODO implement
-		return true;
+		return acceptCommParameters(params);
 	}
 
 	@Override
@@ -145,10 +171,9 @@ public class Sx127xTransceiver implements Transceiver {
 
 	@Override
 	public boolean acceptTxCommParameters(CommParameters params) {
-		//TODO implement
-		return true;
+		return acceptCommParameters(params);
 	}
-	
+
 	// for now both rx and tx are the same
 	// can be different though
 	@Override

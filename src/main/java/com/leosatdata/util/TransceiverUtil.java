@@ -203,7 +203,7 @@ public class TransceiverUtil {
 			channelId += 8;
 		}
 		result.setFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
-		result.setEncoding(convertType1Coding(commParams.getCoding(), plParams));
+		result.setCoding(convertType1Coding(commParams.getCoding(), plParams));
 		result.setCoherency(commParams.getCoherency());
 		result.setPolarization(Polarization.RHCP); // defined in 211.1
 		ScramblerType scrambler;
@@ -317,7 +317,7 @@ public class TransceiverUtil {
 		result.setCarrierModulation(convertType4CarrierModulation(params.getCarrierModulation()));
 		result.setModulationIndex(params.getModulationIndex());
 		result.setFrequency(config.getLong("frequency.4.ch" + params.getFreqChannel() + direction.getShortCode(), 0));
-		result.setEncoding(convertType4Coding(params.getCoding()));
+		result.setCoding(convertType4Coding(params.getCoding()));
 		result.setCoherency(Coherency.UNKNOWN); // not clear from the spec
 		result.setPolarization(params.getPolarization());
 		result.setScrambler(ScramblerType.NONE); // not defined in the spec. assume none
@@ -356,7 +356,7 @@ public class TransceiverUtil {
 		} else {
 			result.setFrequency(otherSide.getFrequency() * params.getTurnaroundRatio().getNumerator() / params.getTurnaroundRatio().getDenominator());
 		}
-		result.setEncoding(convertType4Coding(params.getCoding()));
+		result.setCoding(convertType4Coding(params.getCoding()));
 		result.setCoherency(params.getCoherency());
 		result.setPolarization(params.getPolarization());
 		result.setScrambler(ScramblerType.NONE); // not defined in the spec. assume none

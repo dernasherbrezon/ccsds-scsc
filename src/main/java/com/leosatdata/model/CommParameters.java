@@ -6,7 +6,7 @@ public class CommParameters {
 	private float symbolRate;
 	private LineCoding lineCoding;
 	private float frequency;
-	private Coding encoding;
+	private Coding coding;
 	private Polarization polarization;
 	private Coherency coherency;
 	private CarrierModulation carrierModulation;
@@ -38,12 +38,12 @@ public class CommParameters {
 		this.frequency = frequency;
 	}
 
-	public Coding getEncoding() {
-		return encoding;
+	public Coding getCoding() {
+		return coding;
 	}
 
-	public void setEncoding(Coding encoding) {
-		this.encoding = encoding;
+	public void setCoding(Coding coding) {
+		this.coding = coding;
 	}
 
 	public Polarization getPolarization() {
@@ -101,7 +101,7 @@ public class CommParameters {
 		result = prime * result + ((carrierModulation == null) ? 0 : carrierModulation.hashCode());
 		result = prime * result + ((coherency == null) ? 0 : coherency.hashCode());
 		result = prime * result + (differentialEncoding ? 1231 : 1237);
-		result = prime * result + ((encoding == null) ? 0 : encoding.hashCode());
+		result = prime * result + ((coding == null) ? 0 : coding.hashCode());
 		result = prime * result + Float.floatToIntBits(frequency);
 		result = prime * result + ((lineCoding == null) ? 0 : lineCoding.hashCode());
 		result = prime * result + ((modulationIndex == null) ? 0 : modulationIndex.hashCode());
@@ -126,7 +126,7 @@ public class CommParameters {
 			return false;
 		if (differentialEncoding != other.differentialEncoding)
 			return false;
-		if (encoding != other.encoding)
+		if (coding != other.coding)
 			return false;
 		if (Float.floatToIntBits(frequency) != Float.floatToIntBits(other.frequency))
 			return false;
@@ -145,8 +145,8 @@ public class CommParameters {
 
 	@Override
 	public String toString() {
-		return "[symbolRate=" + symbolRate + ", lineCoding=" + lineCoding + ", frequency=" + frequency + ", encoding=" + encoding + ", polarization=" + polarization + ", coherency=" + coherency + ", carrierModulation=" + carrierModulation + ", modulationIndex=" + modulationIndex
-				+ ", scrambler=" + scrambler + ", differentialEncoding=" + differentialEncoding + "]";
+		return "[symbolRate=" + symbolRate + ", lineCoding=" + lineCoding + ", frequency=" + frequency + ", encoding=" + coding + ", polarization=" + polarization + ", coherency=" + coherency + ", carrierModulation=" + carrierModulation + ", modulationIndex=" + modulationIndex + ", scrambler="
+				+ scrambler + ", differentialEncoding=" + differentialEncoding + "]";
 	}
 
 }
