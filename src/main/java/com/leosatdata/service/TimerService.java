@@ -84,7 +84,6 @@ public class TimerService {
 		if (carrierLossTask == null) {
 			return;
 		}
-		LOG.info("carrier recovered");
 		carrierLossTask.cancel();
 		carrierLossTask = null;
 	}
