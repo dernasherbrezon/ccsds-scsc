@@ -51,6 +51,7 @@ public class TransceiverUtil {
 	private final Type1CarrierModulation type1HailCarrierModulation;
 	private final Type4CarrierModulation type4HailCarrierModulation;
 	private final Type4CarrierModulation type5HailCarrierModulation;
+	private final Polarization type1HailPolarization;
 
 	public TransceiverUtil(Configuration config, Transceiver transceiver) {
 		this.config = config;
@@ -75,6 +76,12 @@ public class TransceiverUtil {
 			type5HailCarrierModulation = Type4CarrierModulation.PCM_PM_BI_PHASE;
 		} else {
 			type5HailCarrierModulation = Type4CarrierModulation.valueOf(type5HailCarrierModulationStr);
+		}
+		String type1HailPolarizationStr = config.getProperty("hailing_polarization_type1");
+		if (type1HailPolarizationStr == null) {
+			type1HailPolarization = Polarization.RHCP;
+		} else {
+			type1HailPolarization = Polarization.valueOf(type1HailPolarizationStr);
 		}
 	}
 
@@ -205,7 +212,7 @@ public class TransceiverUtil {
 		result.setFrequency(config.getLong("frequency.3.ch" + channelId + direction, 0));
 		result.setCoding(convertType1Coding(commParams.getCoding(), plParams));
 		result.setCoherency(commParams.getCoherency());
-		result.setPolarization(Polarization.RHCP); // defined in 211.1
+		result.setPolarization(type1HailPolarization); // defined in 211.1
 		ScramblerType scrambler;
 		if (plParams != null) {
 			scrambler = plParams.getScrambler();
@@ -384,7 +391,7 @@ public class TransceiverUtil {
 		CommParameters comm = convertType5Parameters(params, otherSide);
 		return transceiver.acceptTxCommParameters(comm);
 	}
-	
+
 	private int applyType5TxParameters(Type5Directive directive, boolean invert) {
 		Type5LinkEstablishment params = invert ? directive.getRxLink() : directive.getTxLink();
 		Type5LinkEstablishment otherSide = invert ? directive.getTxLink() : directive.getRxLink();
