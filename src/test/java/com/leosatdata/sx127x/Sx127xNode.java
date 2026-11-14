@@ -60,8 +60,8 @@ public class Sx127xNode {
 	public void run(String[] args) throws Exception {
 		Properties props = new Properties();
 		props.putAll(NodeTest.load("src/main/resources/mib.properties"));
-		props.putAll(NodeTest.load("src/test/resources/sx127x.properties"));
 		props.putAll(NodeTest.load("src/main/resources/custom.properties"));
+		props.putAll(NodeTest.load("src/test/resources/sx127x.properties"));
 		for (String cur : args) {
 			props.putAll(NodeTest.load(cur));
 		}

@@ -62,10 +62,18 @@ public class Sx127xTransceiver implements Transceiver {
 
 		impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_SLEEP, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		impl.sx127x_fsk_ook_set_syncword(config.getProperty("cs.sublayer.asm"));
+		impl.sx127x_set_preamble_length(config.getInteger("sx127x_preamble_length", 0));
+		String preambleType = config.getProperty("sx127x_preamble_type");
+		if (preambleType != null) {
+			impl.sx127x_fsk_ook_set_preamble_type(convertPreambleType(preambleType));
+		}
 		// Generate CRC32 in CSSublayer according to CCSDS 211.2
 		impl.sx127x_fsk_ook_set_crc(sx127x_crc_type_t.SX127X_CRC_NONE);
-		// extra parameters can be configured in the property file
-		impl.sx127x_tx_set_pa_config(new PaConfig(sx127x_pa_pin_t.SX127X_PA_PIN_BOOST, 4));
+
+		String paPin = config.getProperty("sx127x_pa_pin");
+		if (paPin != null) {
+			impl.sx127x_tx_set_pa_config(new PaConfig(convertPaPin(paPin), config.getInteger("sx127x_power", 4)));
+		}
 
 		int uFrameVersion = config.getInteger("u_frame_version", 0);
 		if (uFrameVersion == 2) {
@@ -270,6 +278,26 @@ public class Sx127xTransceiver implements Transceiver {
 	@Override
 	public int enableAsmTxCallback(boolean enable) {
 		return ErrorCode.UNSUPPORTED.ordinal();
+	}
+
+	private static sx127x_preamble_type_t convertPreambleType(String preambleType) {
+		if (preambleType.equalsIgnoreCase("aa")) {
+			return sx127x_preamble_type_t.SX127X_PREAMBLE_AA;
+		} else if (preambleType.equalsIgnoreCase("55")) {
+			return sx127x_preamble_type_t.SX127X_PREAMBLE_55;
+		} else {
+			throw new IllegalArgumentException("unsupported preamble type: " + preambleType + " expected: 55 or aa");
+		}
+	}
+
+	private static sx127x_pa_pin_t convertPaPin(String str) {
+		if (str.equalsIgnoreCase("boost")) {
+			return sx127x_pa_pin_t.SX127X_PA_PIN_BOOST;
+		} else if (str.equalsIgnoreCase("rfo")) {
+			return sx127x_pa_pin_t.SX127X_PA_PIN_RFO;
+		} else {
+			throw new IllegalArgumentException("unsupportede pa pin: " + str + " expected: boost or rfo");
+		}
 	}
 
 }
