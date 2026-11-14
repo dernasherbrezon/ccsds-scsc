@@ -8,7 +8,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.CommParameters;
+import com.leosatdata.model.ErrorCode;
 import com.leosatdata.sdrmodem.model.CommSettings;
 import com.leosatdata.sdrmodem.model.GfskSettings;
 import com.leosatdata.sdrmodem.model.ModemSettings;
@@ -47,9 +49,15 @@ public class SdrModemTransceiver implements Transceiver {
 	private CommParameters txParams;
 
 	private final Configuration config;
+	private final byte[] preamble;
 
 	public SdrModemTransceiver(Configuration config) {
 		this.config = config;
+		this.preamble = new byte[config.getInteger("sdrmodem_preamble_length", 0)];
+		byte preambleType = convertPreambleType(config.getProperty("sdrmodem_preamble_type"));
+		for (int i = 0; i < preamble.length; i++) {
+			preamble[i] = preambleType;
+		}
 	}
 
 	@SuppressWarnings("resource")
@@ -132,11 +140,14 @@ public class SdrModemTransceiver implements Transceiver {
 	@Override
 	public int send(byte[] data) {
 		try {
-			byte[] sync = new byte[] { (byte) 0xAA, (byte) 0xAA, (byte) 0xAA, (byte) 0xAA, (byte) 0xAA };
-			byte[] padded = new byte[sync.length + data.length];
-			System.arraycopy(sync, 0, padded, 0, sync.length);
-			System.arraycopy(data, 0, padded, sync.length, data.length);
-			client.sendFrame(padded);
+			if (preamble.length > 0) {
+				byte[] padded = new byte[preamble.length + data.length];
+				System.arraycopy(preamble, 0, padded, 0, preamble.length);
+				System.arraycopy(data, 0, padded, preamble.length, data.length);
+				client.sendFrame(padded);
+			} else {
+				client.sendFrame(data);
+			}
 			return 0;
 		} catch (IOException e) {
 			LOG.error("unable to send", e);
@@ -144,10 +155,25 @@ public class SdrModemTransceiver implements Transceiver {
 		}
 	}
 
+	private static boolean acceptCommParameters(CommParameters params) {
+		if (!params.getCarrierModulation().equals(CarrierModulation.FSK)) {
+			LOG.info("{} modulation is not supported. Expected: FSK", params.getCarrierModulation());
+			return false;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean acceptTxCommParameters(CommParameters params) {
+		return acceptCommParameters(params);
+	}
+
+	@Override
+	public boolean acceptRxCommParameters(CommParameters params) {
+		return acceptCommParameters(params);
+	}
+
 	private CommSettings convert(CommParameters params, float gain) {
-//		if (!params.getCarrierModulation().equals(CarrierModulation.FSK)) {
-//			return null;
-//		}
 		long sampleRate = config.getLong("sdrmodem_sampleRate", 0);
 		long deviation = config.getLong("sdrmodem_deviation", 0);
 		int bandwidth = config.getInteger("sdrmodem_bandwidth", 0);
@@ -181,6 +207,9 @@ public class SdrModemTransceiver implements Transceiver {
 		if (this.rxParams != null && this.rxParams.equals(params)) {
 			return 0;
 		}
+		if (!acceptCommParameters(params)) {
+			return ErrorCode.UNSUPPORTED.ordinal();
+		}
 		try {
 			int result = convertCode(client.setRxParameters(convert(params, config.getFloat("sdrmodem_gain", 0))));
 			if (result == 0) {
@@ -197,6 +226,9 @@ public class SdrModemTransceiver implements Transceiver {
 	public int setTxCommParameters(CommParameters params) {
 		if (this.txParams != null && this.txParams.equals(params)) {
 			return 0;
+		}
+		if (!acceptCommParameters(params)) {
+			return ErrorCode.UNSUPPORTED.ordinal();
 		}
 		try {
 			int result = convertCode(client.setTxParameters(convert(params, config.getFloat("sdrmodem_power", 0))));
@@ -242,6 +274,7 @@ public class SdrModemTransceiver implements Transceiver {
 				result = convertCode(client.rxStart());
 			}
 		} catch (IOException e) {
+			LOG.error("unable to change state", e);
 			return 1;
 		}
 		if (result == 0) {
@@ -257,14 +290,12 @@ public class SdrModemTransceiver implements Transceiver {
 
 	@Override
 	public int enableAsmRxCallback(boolean enable) {
-		// TODO not supported
-		return 1;
+		return ErrorCode.UNSUPPORTED.ordinal();
 	}
 
 	@Override
 	public int enableAsmTxCallback(boolean enable) {
-		// TODO not supported
-		return 1;
+		return ErrorCode.UNSUPPORTED.ordinal();
 	}
 
 	private static int convertCode(Response response) {
@@ -274,4 +305,16 @@ public class SdrModemTransceiver implements Transceiver {
 		return 0;
 	}
 
+	private static byte convertPreambleType(String str) {
+		if (str == null) {
+			return 0;
+		}
+		if (str.equalsIgnoreCase("aa")) {
+			return (byte) 0xaa;
+		} else if (str.equalsIgnoreCase("55")) {
+			return (byte) 0x55;
+		} else {
+			throw new IllegalArgumentException("unsupported preamble type: " + str);
+		}
+	}
 }
