@@ -156,7 +156,7 @@ public class Sx127xNode {
 		tx.setDataRate(dataRate);
 		tx.setFrequency(Frequency.CH3);
 		tx.setMode(Mode.PROXIMITY1);
-		tx.setCoherency(Coherency.COHERENT);
+		tx.setCoherency(Coherency.NON_COHERENT);
 
 		PlExtensions txExt = new PlExtensions();
 		txExt.setCarrierModulation(Type1CarrierModulation.FSK);
@@ -164,7 +164,7 @@ public class Sx127xNode {
 		txExt.setDifferentialEncoding(false);
 		txExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		txExt.setRsCode(RsCodeType.RS255_239);
-		txExt.setScrambler(ScramblerType.CCITT);
+		txExt.setScrambler(ScramblerType.NONE);
 		txExt.setUseExtendedDataRate(false);
 		txExt.setUseExtendedFreqSet(false);
 
@@ -173,7 +173,7 @@ public class Sx127xNode {
 		rx.setDataRate(dataRate);
 		rx.setFrequency(Frequency.CH3);
 		rx.setMode(Mode.PROXIMITY1);
-		rx.setCoherency(Coherency.COHERENT);
+		rx.setCoherency(Coherency.NON_COHERENT);
 
 		PlExtensions rxExt = new PlExtensions();
 		rxExt.setCarrierModulation(Type1CarrierModulation.FSK);
@@ -181,7 +181,7 @@ public class Sx127xNode {
 		rxExt.setDifferentialEncoding(false);
 		rxExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		rxExt.setRsCode(RsCodeType.RS255_239);
-		rxExt.setScrambler(ScramblerType.CCITT);
+		rxExt.setScrambler(ScramblerType.NONE);
 		rxExt.setUseExtendedDataRate(false);
 		rxExt.setUseExtendedFreqSet(false);
 
