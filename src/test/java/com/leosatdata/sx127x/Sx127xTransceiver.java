@@ -63,12 +63,16 @@ public class Sx127xTransceiver implements Transceiver {
 		impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_SLEEP, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		impl.sx127x_fsk_ook_set_syncword(config.getProperty("cs.sublayer.asm"));
 		impl.sx127x_set_preamble_length(config.getInteger("sx127x_preamble_length", 0));
+		impl.sx127x_fsk_set_data_shaping(new FskDataShaping(sx127x_fsk_data_shaping_t.SX127X_BT_0_5, sx127x_pa_ramp_t.SX127X_PA_RAMP_5));
+		impl.sx127x_fsk_set_fdev(4000);
 		String preambleType = config.getProperty("sx127x_preamble_type");
 		if (preambleType != null) {
 			impl.sx127x_fsk_ook_set_preamble_type(convertPreambleType(preambleType));
 		}
+		// sx127x produce crc16, not crc32
 		// Generate CRC32 in CSSublayer according to CCSDS 211.2
 		impl.sx127x_fsk_ook_set_crc(sx127x_crc_type_t.SX127X_CRC_NONE);
+		impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
 
 		String paPin = config.getProperty("sx127x_pa_pin");
 		if (paPin != null) {
@@ -114,16 +118,6 @@ public class Sx127xTransceiver implements Transceiver {
 		if (code != 0) {
 			return code;
 		}
-		if (params.getLineCoding().equals(LineCoding.NRZ_L)) {
-			code = impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_NRZ);
-		} else if (params.getLineCoding().equals(LineCoding.MANCHESTER)) {
-			code = impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_MANCHESTER);
-		} else {
-			code = impl.sx127x_fsk_ook_set_packet_encoding(sx127x_packet_encoding_t.SX127X_SCRAMBLED);
-		}
-		if (code != 0) {
-			return code;
-		}
 		code = impl.sx127x_set_frequency((long) params.getFrequency());
 		if (code != 0) {
 			return code;
@@ -162,6 +156,12 @@ public class Sx127xTransceiver implements Transceiver {
 		}
 		if (params.getCoherency() != null && !params.getCoherency().equals(Coherency.NON_COHERENT)) {
 			LOG.info("{} coherency is not supported", params.getCoherency());
+			return false;
+		}
+		// sx127x apply manchester coding to the payload only
+		// while ccsds 211.1-B-3 expect Bi-Phase-L (Manchester) applied right before/after RF modulator
+		if (params.getLineCoding() != null && params.getLineCoding().equals(LineCoding.MANCHESTER)) {
+			LOG.info("{} line coding is not supported", params.getLineCoding());
 			return false;
 		}
 		return true;

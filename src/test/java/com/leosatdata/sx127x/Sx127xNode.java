@@ -160,7 +160,7 @@ public class Sx127xNode {
 
 		PlExtensions txExt = new PlExtensions();
 		txExt.setCarrierModulation(Type1CarrierModulation.FSK);
-		txExt.setLineCoding(LineCoding.MANCHESTER);
+		txExt.setLineCoding(LineCoding.NONE);
 		txExt.setDifferentialEncoding(false);
 		txExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		txExt.setRsCode(RsCodeType.RS255_239);
@@ -177,7 +177,7 @@ public class Sx127xNode {
 
 		PlExtensions rxExt = new PlExtensions();
 		rxExt.setCarrierModulation(Type1CarrierModulation.FSK);
-		rxExt.setLineCoding(LineCoding.MANCHESTER);
+		rxExt.setLineCoding(LineCoding.NONE);
 		rxExt.setDifferentialEncoding(false);
 		rxExt.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER);
 		rxExt.setRsCode(RsCodeType.RS255_239);
