@@ -70,7 +70,7 @@ public class Configuration {
 		return Integer.valueOf(result);
 	}
 
-	public float getFloat(String name, int defaultValue) {
+	public float getFloat(String name, float defaultValue) {
 		String result = config.getProperty(name);
 		if (result == null) {
 			return defaultValue;

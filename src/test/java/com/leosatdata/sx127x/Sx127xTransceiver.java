@@ -63,8 +63,7 @@ public class Sx127xTransceiver implements Transceiver {
 		impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_SLEEP, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		impl.sx127x_fsk_ook_set_syncword(config.getProperty("cs.sublayer.asm"));
 		impl.sx127x_set_preamble_length(config.getInteger("sx127x_preamble_length", 0));
-		impl.sx127x_fsk_set_data_shaping(new FskDataShaping(sx127x_fsk_data_shaping_t.SX127X_BT_0_5, sx127x_pa_ramp_t.SX127X_PA_RAMP_5));
-		impl.sx127x_fsk_set_fdev(4000);
+		impl.sx127x_fsk_set_data_shaping(new FskDataShaping(convertBt(config.getProperty("sx127x_bt")), sx127x_pa_ramp_t.SX127X_PA_RAMP_5));
 		String preambleType = config.getProperty("sx127x_preamble_type");
 		if (preambleType != null) {
 			impl.sx127x_fsk_ook_set_preamble_type(convertPreambleType(preambleType));
@@ -115,6 +114,10 @@ public class Sx127xTransceiver implements Transceiver {
 			return ErrorCode.UNSUPPORTED.ordinal();
 		}
 		int code = impl.sx127x_fsk_ook_set_bitrate(params.getSymbolRate());
+		if (code != 0) {
+			return code;
+		}
+		code = impl.sx127x_fsk_set_fdev(params.getSymbolRate() * config.getFloat("sx127x_modulation_index", 0.5f) / 2);
 		if (code != 0) {
 			return code;
 		}
@@ -296,7 +299,19 @@ public class Sx127xTransceiver implements Transceiver {
 		} else if (str.equalsIgnoreCase("rfo")) {
 			return sx127x_pa_pin_t.SX127X_PA_PIN_RFO;
 		} else {
-			throw new IllegalArgumentException("unsupportede pa pin: " + str + " expected: boost or rfo");
+			throw new IllegalArgumentException("unsupported pa pin: " + str + " expected: boost or rfo");
+		}
+	}
+
+	private static sx127x_fsk_data_shaping_t convertBt(String str) {
+		if (str.equalsIgnoreCase("0.3")) {
+			return sx127x_fsk_data_shaping_t.SX127X_BT_0_3;
+		} else if (str.equalsIgnoreCase("0.5")) {
+			return sx127x_fsk_data_shaping_t.SX127X_BT_0_5;
+		} else if (str.equalsIgnoreCase("1.0")) {
+			return sx127x_fsk_data_shaping_t.SX127X_BT_1_0;
+		} else {
+			throw new IllegalArgumentException("unsupported bt: " + str);
 		}
 	}
 
