@@ -52,6 +52,7 @@ public class TransceiverUtil {
 	private final Type4CarrierModulation type4HailCarrierModulation;
 	private final Type4CarrierModulation type5HailCarrierModulation;
 	private final Polarization type1HailPolarization;
+	private final LineCoding type1HailLineCoding;
 
 	public TransceiverUtil(Configuration config, Transceiver transceiver) {
 		this.config = config;
@@ -82,6 +83,12 @@ public class TransceiverUtil {
 			type1HailPolarization = Polarization.RHCP;
 		} else {
 			type1HailPolarization = Polarization.valueOf(type1HailPolarizationStr);
+		}
+		String type1HailLineCodingStr = config.getProperty("hailing_line_coding_type1");
+		if (type1HailLineCodingStr == null) {
+			type1HailLineCoding = LineCoding.MANCHESTER;
+		} else {
+			type1HailLineCoding = LineCoding.valueOf(type1HailLineCodingStr);
 		}
 	}
 
@@ -133,7 +140,7 @@ public class TransceiverUtil {
 	private PlExtensions createType1PlExtensions() {
 		PlExtensions result = new PlExtensions();
 		result.setCarrierModulation(type1HailCarrierModulation);
-		result.setLineCoding(LineCoding.MANCHESTER);
+		result.setLineCoding(type1HailLineCoding);
 		result.setDifferentialEncoding(false);
 		result.setCarrierSuppression(CarrierSuppression.RESIDUAL_CARRIER); // default is unclear from the spec
 		result.setRsCode(RsCodeType.UNKNOWN);

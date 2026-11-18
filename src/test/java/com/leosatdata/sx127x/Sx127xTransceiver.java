@@ -47,6 +47,8 @@ public class Sx127xTransceiver implements Transceiver {
 	private Object stateLock = new Object();
 	private RxThreadState state;
 
+	private CommParameters currentCommParameters;
+
 	public Sx127xTransceiver(Sx127x impl, Configuration config) {
 		this.impl = impl;
 		this.config = config;
@@ -113,11 +115,14 @@ public class Sx127xTransceiver implements Transceiver {
 		if (!acceptCommParameters(params)) {
 			return ErrorCode.UNSUPPORTED.ordinal();
 		}
+		if (currentCommParameters != null && currentCommParameters.equals(params)) {
+			return ErrorCode.SUCCESS.ordinal();
+		}
 		int code = impl.sx127x_fsk_ook_set_bitrate(params.getSymbolRate());
 		if (code != 0) {
 			return code;
 		}
-		code = impl.sx127x_fsk_set_fdev(params.getSymbolRate() * config.getFloat("sx127x_modulation_index", 0.5f) / 2);
+		code = impl.sx127x_fsk_set_fdev(params.getSymbolRate() * config.getFloat("sx127x_modulation_index", 0.625f) / 2);
 		if (code != 0) {
 			return code;
 		}
@@ -125,6 +130,7 @@ public class Sx127xTransceiver implements Transceiver {
 		if (code != 0) {
 			return code;
 		}
+		currentCommParameters = params;
 		return ErrorCode.SUCCESS.ordinal();
 	}
 
@@ -242,6 +248,8 @@ public class Sx127xTransceiver implements Transceiver {
 		state = RxThreadState.RUNNING;
 		rxTask = executor.scheduleAtFixedRate(new Runnable() {
 
+			private boolean carrierAcquired = false;
+
 			@Override
 			public void run() {
 				synchronized (stateLock) {
@@ -249,6 +257,10 @@ public class Sx127xTransceiver implements Transceiver {
 						return;
 					}
 					List<sx127x_frame_t> frames = impl.pull();
+					if (!frames.isEmpty() && !carrierAcquired) {
+						callback.onCarrierAcquired();
+						carrierAcquired = true;
+					}
 					for (sx127x_frame_t cur : frames) {
 						callback.onRx(Util.hexToBytes(cur.getMessage()));
 					}
