@@ -540,7 +540,7 @@ public class Sx127x {
 		return sendRequest(request, true);
 	}
 
-	private List<String> sendRequest(String request, boolean log) throws Exception {
+	private synchronized List<String> sendRequest(String request, boolean log) throws Exception {
 		request = request + "\r\n";
 		if (log) {
 			LOG.info("[{}] {}", id, request.trim());
