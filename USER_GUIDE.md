@@ -321,6 +321,14 @@ A communication parameter change requires a round-trip of the message plus an ad
 comm_change_waiting_period > 2 * channel_latency + tail_idle_duration + carrier_only_duration + acquisition_idle_duration
 ```
 
+#### Half duplex
+
+During half-duplex operation, the transceiver periodically switches between RX and TX modes. The time spent in each state must satisfy the following condition:
+
+```
+send_duration or receive_duration > carrier_only_duration + acquisition_idle_duration + channel_latency
+```
+
 ### Time services
 
 Although time services are not defined in the CCSDS 235.1 specification, the data structures in this implementation support them. The time service behavior follows the definition provided in the Proximity-1 Space Link Protocol specification.
