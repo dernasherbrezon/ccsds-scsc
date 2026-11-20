@@ -63,6 +63,8 @@ public class Sx127xTransceiver implements Transceiver {
 		impl.resetUart();
 
 		impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_SLEEP, sx127x_modulation_t.SX127X_MODULATION_FSK));
+		impl.sx127x_rx_set_lna_gain(convertValidateGain(config.getProperty("sx127x_gain")));
+		impl.sx127x_rx_set_lna_boost_hf(config.getBoolean("sx127x_gain_boost"));
 		impl.sx127x_fsk_ook_set_syncword(config.getProperty("cs.sublayer.asm"));
 		impl.sx127x_set_preamble_length(config.getInteger("sx127x_preamble_length", 0));
 		impl.sx127x_fsk_set_data_shaping(new FskDataShaping(convertBt(config.getProperty("sx127x_bt")), sx127x_pa_ramp_t.SX127X_PA_RAMP_5));
@@ -265,7 +267,7 @@ public class Sx127xTransceiver implements Transceiver {
 					callback.onRx(Util.hexToBytes(cur.getMessage()));
 				}
 			}
-		}, 1000, 1000, TimeUnit.MILLISECONDS);
+		}, 0, config.getLong("interval_clock", 1000) / 2, TimeUnit.MILLISECONDS);
 	}
 
 	private void stopRx() {
@@ -328,4 +330,11 @@ public class Sx127xTransceiver implements Transceiver {
 		}
 	}
 
+	private static int convertValidateGain(String str) {
+		int result = Integer.parseInt(str);
+		if (result < 0 || result > 6) {
+			throw new IllegalArgumentException("invalid gain setting: " + str);
+		}
+		return result;
+	}
 }
