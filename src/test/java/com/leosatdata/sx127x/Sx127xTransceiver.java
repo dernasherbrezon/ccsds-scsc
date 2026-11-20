@@ -47,6 +47,8 @@ public class Sx127xTransceiver implements Transceiver {
 	private Object stateLock = new Object();
 	private RxThreadState state;
 	private boolean carrierAcquired = false;
+	private CommParameters rxParams;
+	private CommParameters txParams;
 	private CommParameters currentCommParameters;
 
 	public Sx127xTransceiver(Sx127x impl, Configuration config) {
@@ -120,17 +122,25 @@ public class Sx127xTransceiver implements Transceiver {
 		if (currentCommParameters != null && currentCommParameters.equals(params)) {
 			return ErrorCode.SUCCESS.ordinal();
 		}
-		int code = impl.sx127x_fsk_ook_set_bitrate(params.getSymbolRate());
+		int code = impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_STANDBY, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		if (code != 0) {
 			return code;
 		}
-		code = impl.sx127x_fsk_set_fdev(params.getSymbolRate() * config.getFloat("sx127x_modulation_index", 0.625f) / 2);
-		if (code != 0) {
-			return code;
+		if (currentCommParameters == null || currentCommParameters.getSymbolRate() != params.getSymbolRate()) {
+			code = impl.sx127x_fsk_ook_set_bitrate(params.getSymbolRate());
+			if (code != 0) {
+				return code;
+			}
+			code = impl.sx127x_fsk_set_fdev(params.getSymbolRate() * config.getFloat("sx127x_modulation_index", 0.625f) / 2);
+			if (code != 0) {
+				return code;
+			}
 		}
-		code = impl.sx127x_set_frequency((long) params.getFrequency());
-		if (code != 0) {
-			return code;
+		if (currentCommParameters == null || currentCommParameters.getFrequency() != params.getFrequency()) {
+			code = impl.sx127x_set_frequency((long) params.getFrequency());
+			if (code != 0) {
+				return code;
+			}
 		}
 		currentCommParameters = params;
 		return ErrorCode.SUCCESS.ordinal();
@@ -185,7 +195,11 @@ public class Sx127xTransceiver implements Transceiver {
 
 	@Override
 	public int setRxCommParameters(CommParameters params) {
-		return setCommParameters(params);
+		if (!acceptCommParameters(params)) {
+			return ErrorCode.UNSUPPORTED.ordinal();
+		}
+		this.rxParams = params;
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
 	@Override
@@ -193,11 +207,13 @@ public class Sx127xTransceiver implements Transceiver {
 		return acceptCommParameters(params);
 	}
 
-	// for now both rx and tx are the same
-	// can be different though
 	@Override
 	public int setTxCommParameters(CommParameters params) {
-		return setCommParameters(params);
+		if (!acceptCommParameters(params)) {
+			return ErrorCode.UNSUPPORTED.ordinal();
+		}
+		this.txParams = params;
+		return ErrorCode.SUCCESS.ordinal();
 	}
 
 	@Override
@@ -219,6 +235,7 @@ public class Sx127xTransceiver implements Transceiver {
 			}
 		} else if (state.equals(TransceiverTxState.CARRIER_ONLY)) {
 			stopRx();
+			setCommParameters(txParams);
 			result = impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_FSTX, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		} else if (state.equals(TransceiverTxState.MODULATION)) {
 			stopRx();
@@ -239,6 +256,7 @@ public class Sx127xTransceiver implements Transceiver {
 		if (state.equals(TransceiverRxState.OFF)) {
 			stopRx();
 		} else {
+			setCommParameters(rxParams);
 			startRx();
 			result = impl.sx127x_set_opmod(new OpMode(sx127x_mode_t.SX127X_MODE_RX_CONT, sx127x_modulation_t.SX127X_MODULATION_FSK));
 		}
