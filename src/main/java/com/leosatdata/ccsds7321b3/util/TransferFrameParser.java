@@ -28,6 +28,8 @@ import com.leosatdata.util.Util;
 public class TransferFrameParser {
 
 	private final static Logger LOG = LoggerFactory.getLogger(TransferFrameParser.class);
+	private final static byte[] IDLE_PATTERN = { 0x35, 0x2E, (byte) 0xF8, 0x53 };
+
 	public final static int SPACECRAFT_LENGTH_BITS = 16;
 
 	private final int insertZoneLength;
@@ -62,7 +64,7 @@ public class TransferFrameParser {
 		headerLength += 24 / 8; // not truncated header
 		headerLength += vcfCountLength;
 		headerLength += insertZoneLength;
-		headerLength += 16; // segmented SDU
+		headerLength += 16 / 8; // segmented SDU
 		headerLength += com.leosatdata.ccsds7321b3.model.TransferFrame.TFDF_HEADER_LENGTH;
 		headerLength += 0; // no ocf
 		headerLength += frameErrorControl ? com.leosatdata.ccsds7321b3.model.TransferFrame.FEC_LENGTH : 0;
@@ -178,7 +180,7 @@ public class TransferFrameParser {
 			}
 		}
 		frameLength += insertZoneLength;
-		if (hasFirstHeaderPointer(frame)) {
+		if (hasFirstHeaderPointer(frame) || fixedFrameLength) {
 			frameLength += 16 / 8;
 		}
 		frameLength += TransferFrame.TFDF_HEADER_LENGTH;
@@ -218,7 +220,7 @@ public class TransferFrameParser {
 				bos.writeFully(frame.getInsertZone());
 			} else {
 				// if missing just sent zeroes
-				bos.writeFully(new byte[insertZoneLength]);
+				bos.writeFully(idleFrame(insertZoneLength));
 			}
 		}
 		bos.writeUnsignedInt(3, frame.getConstructionRule().getCode());
@@ -233,22 +235,25 @@ public class TransferFrameParser {
 		bos.writeFully(frame.getDataField());
 		if (fixedFrameLength) {
 			int padding = maxDataLength - frame.getDataField().length;
+			if (!hasFirstHeaderPointer(frame)) {
+				padding += 2;
+			}
 			if (padding > 0) {
-				bos.writeFully(new byte[padding]);
+				bos.writeFully(idleFrame(padding));
 			}
 		}
 		if (frame.isOcf()) {
 			if (frame.getOperationalControl() != null) {
 				bos.writeFully(frame.getOperationalControl());
 			} else {
-				bos.writeFully(new byte[TransferFrame.OCF_LENGTH]);
+				bos.writeFully(idleFrame(TransferFrame.OCF_LENGTH));
 			}
 		}
 		if (frameErrorControl) {
 			if (frame.getFrameErrorControl() != null) {
 				bos.writeFully(frame.getFrameErrorControl());
 			} else {
-				bos.writeFully(new byte[TransferFrame.FEC_LENGTH]);
+				bos.writeFully(idleFrame(TransferFrame.FEC_LENGTH));
 			}
 		}
 	}
@@ -401,6 +406,23 @@ public class TransferFrameParser {
 			callback.onPacketData(result, frame.getMapid());
 			return;
 		}
+	}
+
+	private static byte[] idleFrame(int length) {
+		byte[] result = new byte[length];
+		if (length == 0) {
+			return result;
+		}
+		int head = Math.min(IDLE_PATTERN.length, length);
+		System.arraycopy(IDLE_PATTERN, 0, result, 0, head);
+		// Double the filled region on each pass
+		int filled = head;
+		while (filled < length) {
+			int chunk = Math.min(filled, length - filled);
+			System.arraycopy(result, 0, result, filled, chunk);
+			filled += chunk;
+		}
+		return result;
 	}
 
 }

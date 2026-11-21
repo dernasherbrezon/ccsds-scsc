@@ -41,7 +41,7 @@ public class TransferFrameParserTest {
 
 		byte[] data = baos.toByteArray();
 		assertEquals(data.length, TransferFrameParser.decodeFrameLength(data, 0));
-		
+
 		byte[] pltu = new byte[2 + data.length];
 		System.arraycopy(data, 0, pltu, 2, data.length);
 		assertEquals(data.length, TransferFrameParser.decodeFrameLength(pltu, 2));
@@ -82,8 +82,14 @@ public class TransferFrameParserTest {
 		config.setProperty("framev4.fixedLength", "true");
 		parser = new TransferFrameParser(config);
 		TransferFrame frame = createTestFrame();
+		frame.setOcf(false);
 		TransferFrame actual = encodeDecode(frame);
 		assertEquals(parser.getMaxDataLength(), actual.getDataField().length);
+		// U-frame
+		assertMaxFrameLength(frame);
+		// P-frame
+		frame.setConstructionRule(ConstructionRules.NO_SEGMENTATION);
+		assertMaxFrameLength(frame);
 	}
 
 	@Test
@@ -167,5 +173,19 @@ public class TransferFrameParserTest {
 		props.putAll(TestUtil.load("src/test/resources/ground.properties"));
 		config = new Configuration(props);
 		parser = new TransferFrameParser(config);
+	}
+
+	private void assertMaxFrameLength(TransferFrame frame) throws Exception {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (BitOutputStream bos = new BitOutputStream(baos)) {
+			parser.encode(frame, bos);
+		}
+		byte[] data = baos.toByteArray();
+		assertEquals(config.getInteger("maximum_frame_length", 0), data.length);
+		TransferFrame actual;
+		try (BitInputStream bis = new BitInputStream(data)) {
+			actual = parser.decode(bis);
+		}
+		assertEquals(config.getInteger("maximum_frame_length", 0), actual.getFrameLength() + 1);
 	}
 }
