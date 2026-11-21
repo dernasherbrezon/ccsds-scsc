@@ -21,6 +21,7 @@ import com.leosatdata.model.ErrorCode;
 import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.model.ScramblerType;
+import com.leosatdata.model.TransceiverMode;
 import com.leosatdata.service.Transceiver;
 import com.leosatdata.service.TransceiverCallback;
 import com.leosatdata.service.TransceiverRxState;
@@ -32,7 +33,7 @@ import com.leosatdata.util.Util;
 public class Sx127xTransceiver implements Transceiver {
 
 	private final static Logger LOG = LoggerFactory.getLogger(Sx127xTransceiver.class);
-	private final static int MAX_VARIABLE_LENGTH = 255 - 4; // 4 is for crc32
+	private final static int MAX_FIXED_LENGTH = 2047 - 4; // 4 is for crc32
 
 	private final Sx127x impl;
 	private final Configuration config;
@@ -84,15 +85,18 @@ public class Sx127xTransceiver implements Transceiver {
 			impl.sx127x_tx_set_pa_config(new PaConfig(convertPaPin(paPin), config.getInteger("sx127x_power", 4)));
 		}
 
-		int uFrameVersion = config.getInteger("u_frame_version", 0);
-		if (uFrameVersion == 2) {
-			throw new IllegalArgumentException("only variable transfer frames are supported: u_frame_version=" + uFrameVersion);
+		int uFrameVersion = config.getInteger("default_frame_type", 0);
+		if (uFrameVersion != TransceiverMode.USLP.getCode()) {
+			throw new IllegalArgumentException("only fixed-length transfer frames (USLP) are supported: default_frame_type=" + uFrameVersion);
+		}
+		if (!config.getBoolean("framev4.fixedLength")) {
+			throw new IllegalArgumentException("only fixed-length transfer frames (USLP) are supported: framev4.fixedLength=" + false);
 		}
 		int maxFrameLength = config.getInteger("maximum_frame_length", 0);
-		if (maxFrameLength > MAX_VARIABLE_LENGTH) {
-			throw new IllegalArgumentException("maximum_frame_length can be up to " + MAX_VARIABLE_LENGTH + ", got: " + maxFrameLength);
+		if (maxFrameLength > MAX_FIXED_LENGTH) {
+			throw new IllegalArgumentException("maximum_frame_length can be up to " + MAX_FIXED_LENGTH + ", got: " + maxFrameLength);
 		}
-		impl.sx127x_fsk_ook_set_packet_format(new PacketFormat(sx127x_packet_format_t.SX127X_VARIABLE, maxFrameLength + 4));
+		impl.sx127x_fsk_ook_set_packet_format(new PacketFormat(sx127x_packet_format_t.SX127X_FIXED, maxFrameLength + 4));
 		executor = Executors.newScheduledThreadPool(1, new NamingThreadFactory("transceiver-" + config.getInteger("local_spacecraft_id", 0)));
 	}
 
