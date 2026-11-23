@@ -47,7 +47,6 @@ public class Sx127xTransceiver implements Transceiver {
 	private Future<?> rxTask;
 	private Object stateLock = new Object();
 	private RxThreadState state;
-	private boolean carrierAcquired = false;
 	private CommParameters rxParams;
 	private CommParameters txParams;
 	private CommParameters currentCommParameters;
@@ -280,10 +279,6 @@ public class Sx127xTransceiver implements Transceiver {
 						return;
 					}
 					frames = impl.pull();
-					if (!frames.isEmpty() && !carrierAcquired) {
-						callback.onCarrierAcquired();
-						carrierAcquired = true;
-					}
 				}
 				for (sx127x_frame_t cur : frames) {
 					LOG.info("{} / {} - {}", cur.getRssi(), cur.getFrequency_error(), cur.getMessage());
@@ -300,8 +295,6 @@ public class Sx127xTransceiver implements Transceiver {
 		rxTask.cancel(true);
 		synchronized (stateLock) {
 			state = RxThreadState.SHUTDOWN;
-			carrierAcquired = false;
-			callback.onCarrierLost();
 		}
 		rxTask = null;
 	}

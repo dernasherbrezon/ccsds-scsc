@@ -60,6 +60,8 @@ public class HalfDuplexMac {
 
 	@SuppressWarnings("incomplete-switch")
 	private void handleRxDataExchange(Event e) {
+		// protection from bad carrier sense implementation by Transceiver or missed events
+		boolean awaitingFirstFrame = state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME) || state.getState().equals(MacState.S62_WAIT_FOR_CARRIER);
 		switch (e.getType()) {
 		case E44_RECEIVE_TIMEOUT:
 			if (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE)) {
@@ -70,14 +72,11 @@ public class HalfDuplexMac {
 					switchToTx();
 				}
 			}
-			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME) || state.getState().equals(MacState.S62_WAIT_FOR_CARRIER)) {
+			if (awaitingFirstFrame) {
 				if (state.isCarrierAcquired()) {
 					timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
 					callback.handle(new ControllerEvent(ControllerEventType.NO_DATA_RECEIVED));
-				}
-			}
-			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME) || state.getState().equals(MacState.S62_WAIT_FOR_CARRIER)) {
-				if (!state.isCarrierAcquired()) {
+				} else {
 					callback.handle(new ControllerEvent(ControllerEventType.NO_CARRIER_RECEIVED));
 					switchToTx();
 				}
@@ -91,14 +90,14 @@ public class HalfDuplexMac {
 		case SPDU:
 			Spdu spdu = (Spdu) e.getArg();
 			// explicit switch to tx by responder
-			if (SpduUtil.isTransmit(spdu) && (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME))) {
+			if (SpduUtil.isTransmit(spdu) && (state.getState().equals(MacState.S60_DATA_SERVICES_RECEIVE) || awaitingFirstFrame)) {
 				// cancel E44_RECEIVE_TIMEOUT
 				timer.cancelWait();
 				switchToTx();
 			}
 			// TODO track every received frame here? s61 only used for granular messages to
 			// vehicle controller
-			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
+			if (awaitingFirstFrame) {
 				// switch from tx was successfull, reset token
 				currentTokenPassAttempt = 0;
 				state.setState(MacState.S60_DATA_SERVICES_RECEIVE);

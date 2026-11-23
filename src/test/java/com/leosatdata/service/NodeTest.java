@@ -108,6 +108,22 @@ public class NodeTest {
 	}
 
 	@Test
+	public void testCarrierSensingIsNotImplemented() throws Exception {
+		if (!duplex.equals(Duplex.HALF_DUPLEX)) {
+			return;
+		}
+		groundTransceiver.setSkipCallbacks(true);
+		satelliteTransceiver.setSkipCallbacks(true);
+		establishType1Session();
+
+		// in half-duplex deafness on the one node should result in the session restart on the other node
+		groundTransceiver.setRxFrameFilter(new RejectAllFrameFilter());
+
+		Thread.sleep(groundConfig.getInteger("maximum_failed_token_passes", 1) * 6 * groundConfig.getDuration("receive_duration"));
+		assertEvent(groundCallback.waitForEvent(getOverallHailDuration(groundConfig), ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
+	}
+
+	@Test
 	public void testTimeDelayCalculation() throws Exception {
 		establishType1Session();
 		long unixTime = System.currentTimeMillis();
@@ -319,7 +335,7 @@ public class NodeTest {
 		satellite.stop();
 		satellite = new Node(satelliteConfig, satelliteTransceiver, satelliteCallback, satelliteDataCallback);
 		satellite.start();
-		
+
 		satellite.setDuplex(duplex);
 		ground.setDuplex(duplex);
 		satellite.waitForSession();
@@ -331,7 +347,7 @@ public class NodeTest {
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 		assertTestExpPacket();
-		
+
 		// test one side is demand
 		ground.stop();
 		ground.start();
@@ -367,7 +383,7 @@ public class NodeTest {
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 		assertEvent(satelliteCallback.waitForEvent(ControllerEventType.START_OF_SESSION), false);
 		assertTestExpPacket();
-		
+
 		// test tx/rx nack
 		satelliteTransceiver.setAcceptTx(false);
 		satelliteTransceiver.setAcceptRx(false);
@@ -381,7 +397,7 @@ public class NodeTest {
 		assertEquals(0, ground.setCommParameters(commParameters));
 		ground.startSession();
 		assertEvent(groundCallback.waitForEvent(ControllerEventType.PERSISTENT_ACTIVITY, PersistentActivityType.HAIL), false);
-		
+
 		// and recovery
 		satelliteTransceiver.setAcceptTx(true);
 		satelliteTransceiver.setAcceptRx(true);
@@ -404,7 +420,7 @@ public class NodeTest {
 		waitPersistenceActivityCompletion();
 		// send using old comm parameters
 		assertTestExpPacket();
-		
+
 		satelliteTransceiver.setAcceptTx(true);
 		commParameters.getRxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
 		commParameters.getTxLink().setDemandQuery(Type5NegotiationType.QUERY_REQ);
