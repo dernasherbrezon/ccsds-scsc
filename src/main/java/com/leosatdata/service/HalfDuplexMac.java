@@ -126,9 +126,7 @@ public class HalfDuplexMac {
 			break;
 		case E38_SEND_TIMEOUT:
 			if (state.getState().equals(MacState.S50_DATA_SERVICES_SEND)) {
-				if (currentTokenPassAttempt > config.getInteger("maximum_failed_token_passes", 0)) {
-					LOG.info("token pass exceeded, reconnect");
-					sendEvent(new Event(EventType.E83_TOKEN_PASS_EXCEEDED));
+				if (tokenPassExceeded()) {
 					break;
 				}
 				state.setPersistence(true);
@@ -149,9 +147,13 @@ public class HalfDuplexMac {
 				// sent and it takes more time than send_timeout, then switch to rx never happen
 				boolean switchAfterSendTimeout = state.getMacQueue().isEmpty() && state.isPersistence();
 				if (noMoreUserFramesToSend || switchAfterSendTimeout) {
-					state.setPersistence(true);
 					// cancel E38_SEND_TIMEOUT
 					timer.cancelWait();
+					// E38 is cancelled, so the limit must be checked here as well
+					if (tokenPassExceeded()) {
+						break;
+					}
+					state.setPersistence(true);
 					sendTransmitToken();
 				}
 			}
@@ -545,6 +547,15 @@ public class HalfDuplexMac {
 			LOG.error("unsupported transceiver operating mode: {}", state.getTransceiverMode());
 			break;
 		}
+	}
+
+	private boolean tokenPassExceeded() {
+		if (currentTokenPassAttempt > config.getInteger("maximum_failed_token_passes", 0)) {
+			LOG.info("token pass exceeded, reconnect");
+			sendEvent(new Event(EventType.E83_TOKEN_PASS_EXCEEDED));
+			return true;
+		}
+		return false;
 	}
 
 	private void sendTransmitToken() {
