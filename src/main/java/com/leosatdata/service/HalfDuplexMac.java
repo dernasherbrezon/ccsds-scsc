@@ -70,7 +70,7 @@ public class HalfDuplexMac {
 					switchToTx();
 				}
 			}
-			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME)) {
+			if (state.getState().equals(MacState.S61_AWAITING_FIRST_FRAME) || state.getState().equals(MacState.S62_WAIT_FOR_CARRIER)) {
 				if (state.isCarrierAcquired()) {
 					timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
 					callback.handle(new ControllerEvent(ControllerEventType.NO_DATA_RECEIVED));
@@ -558,7 +558,10 @@ public class HalfDuplexMac {
 	}
 
 	private void switchToRx() {
-		state.setState(MacState.S62_WAIT_FOR_CARRIER);
+		// remote carrier might have been acquired while still transmitting (tail). In
+		// this case CARRIER_ACQUIRED event was already consumed and will not be
+		// repeated, so skip waiting for it
+		state.setState(state.isCarrierAcquired() ? MacState.S61_AWAITING_FIRST_FRAME : MacState.S62_WAIT_FOR_CARRIER);
 		transceiver.setTxState(TransceiverTxState.OFF);
 		transceiver.setRxState(TransceiverRxState.RECEIVING);
 		timer.scheduleWait(EventType.E44_RECEIVE_TIMEOUT, config.getDuration("receive_duration"));
