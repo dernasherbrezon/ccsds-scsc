@@ -286,6 +286,7 @@ public class Sx127xTransceiver implements Transceiver {
 					}
 				}
 				for (sx127x_frame_t cur : frames) {
+					LOG.info("{} / {} - {}", cur.getRssi(), cur.getFrequency_error(), cur.getMessage());
 					callback.onRx(Util.hexToBytes(cur.getMessage()));
 				}
 			}
