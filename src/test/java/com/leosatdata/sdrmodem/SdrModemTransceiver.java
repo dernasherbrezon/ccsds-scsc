@@ -12,6 +12,7 @@ import com.leosatdata.model.CarrierModulation;
 import com.leosatdata.model.Coherency;
 import com.leosatdata.model.CommParameters;
 import com.leosatdata.model.ErrorCode;
+import com.leosatdata.model.LineCoding;
 import com.leosatdata.model.Polarization;
 import com.leosatdata.sdrmodem.model.CommSettings;
 import com.leosatdata.sdrmodem.model.GfskSettings;
@@ -69,7 +70,7 @@ public class SdrModemTransceiver implements Transceiver {
 
 		CcsdsFraming framing = new CcsdsFraming();
 		framing.setCoding(Coding.UNCODED);
-		framing.setFrameLength(config.getInteger("maximum_frame_length", 0));
+		framing.setFrameLength(config.getInteger("maximum_frame_length", 0) + 4); // 4 is for crc32
 		framing.setScrambler(ScramblerType.NONE);
 		framing.setSyncwordThreshold(1);
 		framing.setSyncword(asm);
@@ -88,6 +89,7 @@ public class SdrModemTransceiver implements Transceiver {
 
 			@Override
 			public void onRx(SoftBits data) {
+				context.setFrequencyError((long) data.getFrequencyOffset());
 				is.feed(data.getData());
 			}
 
@@ -106,17 +108,12 @@ public class SdrModemTransceiver implements Transceiver {
 		executor = Executors.newScheduledThreadPool(1, new NamingThreadFactory("transceiver-" + config.getInteger("local_spacecraft_id", 0)));
 		executor.execute(new Runnable() {
 
-			private boolean carrierAcquired = false;
-
 			@Override
 			public void run() {
 				while (deframing.hasNext() && !Thread.currentThread().isInterrupted()) {
 					RawBeacon frame = (RawBeacon) deframing.next();
+					LOG.info("{} / {} - {}", frame.getRxMeta().getSnr(), frame.getRxMeta().getFrequencyError(), Util.bytesToHex(frame.getRawData()));
 					if (callback != null) {
-						if (!carrierAcquired) {
-							callback.onCarrierAcquired();
-							carrierAcquired = true;
-						}
 						byte[] payload = new byte[frame.getRawData().length + asmBytes.length];
 						System.arraycopy(asmBytes, 0, payload, 0, asmBytes.length);
 						System.arraycopy(frame.getRawData(), 0, payload, asmBytes.length, frame.getRawData().length);
@@ -182,6 +179,11 @@ public class SdrModemTransceiver implements Transceiver {
 			LOG.info("{} coherency is not supported", params.getCoherency());
 			return false;
 		}
+		// not implemented by sdr-modem
+		if (params.getLineCoding() != null && params.getLineCoding().equals(LineCoding.MANCHESTER)) {
+			LOG.info("{} line coding is not supported", params.getLineCoding());
+			return false;
+		}
 		return true;
 	}
 
@@ -197,7 +199,6 @@ public class SdrModemTransceiver implements Transceiver {
 
 	private CommSettings convert(CommParameters params, float gain) {
 		long sampleRate = config.getLong("sdrmodem_sampleRate", 0);
-		long deviation = config.getLong("sdrmodem_deviation", 0);
 		int bandwidth = config.getInteger("sdrmodem_bandwidth", 0);
 		String syncword = config.getProperty("cs.sublayer.asm");
 		SdrChannelConfig channel = new SdrChannelConfig();
@@ -208,9 +209,9 @@ public class SdrModemTransceiver implements Transceiver {
 		GfskSettings settings = new GfskSettings();
 		settings.setSampleRate(sampleRate);
 		settings.setBaudRate((int) params.getSymbolRate());
-		settings.setDeviation(deviation);
+		settings.setDeviation((long) (params.getSymbolRate() * config.getFloat("sdrmodem_modulation_index", 0.625f) / 2));
 		settings.setBandwidth(bandwidth);
-		settings.setBt(0.5f);
+		settings.setBt(config.getFloat("sdrmodem_bt", 0.5f));
 		settings.setUseDcBlock(true);
 		settings.setSyncword(Long.parseLong(syncword, 16));
 		settings.setSyncwordBits(syncword.length() * 4);
